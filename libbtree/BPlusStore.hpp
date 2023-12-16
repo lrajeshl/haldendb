@@ -10,20 +10,24 @@
 #include <cmath>
 
 #include "ErrorCodes.h"
+#include "IFlushCallback.h"
 
 //#define __CONCURRENT__
 
 template <typename KeyType, typename ValueType, typename CacheType>
-class BPlusStore
+class BPlusStore /* : public IFlushCallback<CacheType::KeyType>*/
 {
-    typedef CacheType::KeyType CacheKeyType;
+    typedef CacheType::CacheKeyType CacheKeyType;
     typedef CacheType::CacheValueType CacheValueType;
+
+    typedef shared_ptr<CacheValueType> CacheValueTypePtr;
 
 private:
     uint32_t m_nDegree;
     std::shared_ptr<CacheType> m_ptrCache;
     std::optional<CacheKeyType> m_cktRootNodeKey;
     mutable std::shared_mutex mutex;
+
 public:
     ~BPlusStore()
     {
@@ -33,12 +37,14 @@ public:
     BPlusStore(uint32_t nDegree, CacheArgs... args)
         : m_nDegree(nDegree)
     {    
+        std::cout << sizeof...(CacheArgs) << std::endl;
         m_ptrCache = std::make_shared<CacheType>(args...);
     }
 
     template <typename DefaultNodeType>
     void init()
     {
+       //m_ptrCache->init(this);
         m_cktRootNodeKey = m_ptrCache->template createObjectOfType<DefaultNodeType>();
     }
 
@@ -48,10 +54,10 @@ public:
 #ifdef __CONCURRENT__
         std::vector<std::unique_lock<std::shared_mutex>> vtLocks;
 #endif // __CONCURRENT__
-
-        std::vector<std::pair<CacheKeyType, CacheValueType>> vtNodes;
-        CacheValueType ptrLastNode = nullptr, ptrCurrentNode = nullptr;
-        CacheKeyType ckLastNode = NULL, ckCurrentNode = NULL;
+        
+        std::vector<std::pair<CacheKeyType, CacheValueTypePtr>> vtNodes;
+        CacheValueTypePtr ptrLastNode = nullptr, ptrCurrentNode = nullptr;
+        CacheKeyType ckLastNode, ckCurrentNode;
 
 #ifdef __CONCURRENT__
         vtLocks.push_back(std::unique_lock<std::shared_mutex>(mutex));
@@ -78,7 +84,7 @@ public:
 
                 if (ptrIndexNode->canTriggerSplit(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckLastNode, ptrLastNode));
                 }
                 else
                 {
@@ -101,8 +107,8 @@ public:
 
                 if (ptrDataNode->requireSplit(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckLastNode, ptrLastNode));
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckCurrentNode, ptrCurrentNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckCurrentNode, ptrCurrentNode));
                 }
                 else
                 {
@@ -122,7 +128,7 @@ public:
 
         while (vtNodes.size() > 0) 
         {
-            std::pair<CacheKeyType, CacheValueType> prNodeDetails = vtNodes.back();
+            std::pair<CacheKeyType, CacheValueTypePtr> prNodeDetails = vtNodes.back();
 
             if (prNodeDetails.second == nullptr)
             {
@@ -186,7 +192,7 @@ public:
         CacheKeyType ckCurrentNode = m_cktRootNodeKey.value();
         do
         {
-            CacheValueType prNodeDetails = m_ptrCache->getObject(ckCurrentNode);    //TODO: lock
+            CacheValueTypePtr prNodeDetails = m_ptrCache->getObject(ckCurrentNode);    //TODO: lock
 
 #ifdef __CONCURRENT__
             vtLocks.push_back(std::shared_lock<std::shared_mutex>(prNodeDetails->mutex));
@@ -224,9 +230,9 @@ public:
         std::vector<std::unique_lock<std::shared_mutex>> vtLocks;
 #endif __CONCURRENT__
 
-        std::vector<std::pair<CacheKeyType, CacheValueType>> vtNodes;
-        CacheValueType ptrLastNode = nullptr, ptrCurrentNode = nullptr;
-        CacheKeyType ckLastNode = NULL, ckCurrentNode = NULL;
+        std::vector<std::pair<CacheKeyType, CacheValueTypePtr>> vtNodes;
+        CacheValueTypePtr ptrLastNode = nullptr, ptrCurrentNode = nullptr;
+        CacheKeyType ckLastNode, ckCurrentNode;
 
 #ifdef __CONCURRENT__
         vtLocks.push_back(std::unique_lock<std::shared_mutex>(mutex));
@@ -253,7 +259,7 @@ public:
 
                 if (ptrIndexNode->canTriggerMerge(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckLastNode, ptrLastNode));
                 }
                 else
                 {
@@ -279,8 +285,8 @@ public:
 
                 if (ptrDataNode->requireMerge(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckLastNode, ptrLastNode));
-                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueType>(ckCurrentNode, ptrCurrentNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<CacheKeyType, CacheValueTypePtr>(ckCurrentNode, ptrCurrentNode));
                 }
                 else
                 {
@@ -295,11 +301,11 @@ public:
         } while (true);
 
         CacheKeyType ckChildNode;
-        CacheValueType ptrChildNode = nullptr;
+        CacheValueTypePtr ptrChildNode = nullptr;
 
         while (vtNodes.size() > 0)
         {
-            std::pair<CacheKeyType, CacheValueType> prNodeDetails = vtNodes.back();
+            std::pair<CacheKeyType, CacheValueTypePtr> prNodeDetails = vtNodes.back();
 
             if (prNodeDetails.second == nullptr)
             {
@@ -403,12 +409,12 @@ public:
     template <typename IndexNodeType, typename DataNodeType>
     void print()
     {
-        CacheValueType ptrRootNode = m_ptrCache->getObjectOfType(m_cktRootNodeKey.value());
+        CacheValueTypePtr ptrRootNode = m_ptrCache->getObjectOfType(m_cktRootNodeKey.value());
         if (std::holds_alternative<shared_ptr<IndexNodeType>>(*ptrRootNode->data))
         {
             shared_ptr<IndexNodeType> ptrIndexNode = std::get<shared_ptr<IndexNodeType>>(*ptrRootNode->data);
 
-            ptrIndexNode->template print<std::shared_ptr<CacheType>, CacheValueType, DataNodeType>(m_ptrCache, 0);
+            ptrIndexNode->template print<std::shared_ptr<CacheType>, CacheValueTypePtr, DataNodeType>(m_ptrCache, 0);
         }
         else if (std::holds_alternative<shared_ptr<DataNodeType>>(*ptrRootNode->data))
         {
@@ -417,4 +423,14 @@ public:
             ptrDataNode->print(0);
         }
     }
+
+public:
+#pragma region IFlushCallback
+    CacheErrorCode keyUpdate(CacheKeyType oldKey, CacheKeyType newKey, CacheKeyType parentKey)
+    {
+
+        return CacheErrorCode::Success;
+    }
+#pragma endregion
+
 };

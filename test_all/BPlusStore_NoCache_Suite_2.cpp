@@ -14,7 +14,7 @@
 #include "DataNode.hpp"
 #include "BPlusStore.hpp"
 #include "NoCacheObject.hpp"
-
+#include "TypeId.h"
 namespace BPlusStore_NoCache_Suite
 {
     class BPlusStore_NoCache_Suite_2 : public ::testing::TestWithParam<std::tuple<int, int, int>>
@@ -24,8 +24,8 @@ namespace BPlusStore_NoCache_Suite
         typedef string ValueType;
         typedef uintptr_t CacheKeyType;
 
-        typedef DataNode<KeyType, ValueType> LeadNodeType;
-        typedef IndexNode<KeyType, ValueType, CacheKeyType> InternalNodeType;
+        typedef DataNode<KeyType, ValueType, TYPE_UID::DATA_NODE_STRING_STRING> LeadNodeType;
+        typedef IndexNode<KeyType, ValueType, CacheKeyType, TYPE_UID::DATA_NODE_STRING_STRING> InternalNodeType;
 
         typedef BPlusStore<KeyType, ValueType, NoCache<CacheKeyType, NoCacheObject, LeadNodeType, InternalNodeType>> BPlusStoreType;
 

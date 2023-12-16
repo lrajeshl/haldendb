@@ -15,11 +15,11 @@
 //class BPlusStore_NVRAMLRU_Suite_1 : public ::testing::Test 
 //{
 //protected:
-//    BTree<int, int, NVRAMLRUCache<NVRAMVolatileStorage, uintptr_t, NVRAMCacheObject2, INVRAMCacheObject, int>>* m_ptrTree;
+//    BTree<int, int, NVRAMLRUCache<NVRAMVolatileStorage, CacheObjectKey, NVRAMCacheObject2, INVRAMCacheObject, int>>* m_ptrTree;
 //
 //    void SetUp() override 
 //    {
-//        m_ptrTree = new BTree<int, int, NVRAMLRUCache<NVRAMVolatileStorage, uintptr_t, NVRAMCacheObject2, INVRAMCacheObject, int>>(5, 10);
+//        m_ptrTree = new BTree<int, int, NVRAMLRUCache<NVRAMVolatileStorage, CacheObjectKey, NVRAMCacheObject2, INVRAMCacheObject, int>>(5, 10);
 //    }
 //
 //    void TearDown() override {

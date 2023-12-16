@@ -141,6 +141,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CacheObjectFatKey.h" />
+    <ClInclude Include="CacheObjectKey.h" />
     <ClInclude Include="DRAMCacheObject.h" />
     <ClInclude Include="DRAMCacheObjectKey.h" />
     <ClInclude Include="DRAMLRUCache.h" />
@@ -153,6 +155,7 @@
     <ClInclude Include="ICacheObject.h" />
     <ClInclude Include="ICacheObjectKey.h" />
     <ClInclude Include="IDRAMCacheObject.h" />
+    <ClInclude Include="IFlushCallback.h" />
     <ClInclude Include="INVRAMCacheObject.h" />
     <ClInclude Include="LRUCache.hpp" />
     <ClInclude Include="LRUCacheObject.hpp" />
@@ -169,6 +172,8 @@
     <ClInclude Include="VolatileStorage.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CacheObjectFatKey.cpp" />
+    <ClCompile Include="CacheObjectKey.cpp" />
     <ClCompile Include="DRAMCacheObject.cpp" />
     <ClCompile Include="DRAMCacheObjectKey.cpp" />
     <ClCompile Include="DRAMLRUCache.cpp" />

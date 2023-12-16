@@ -14,7 +14,7 @@
 #include "DataNode.hpp"
 #include "BPlusStore.hpp"
 #include "NoCacheObject.hpp"
-
+#include "TypeId.h"
 namespace BPlusStore_NoCache_Suite
 {
 
@@ -22,8 +22,8 @@ namespace BPlusStore_NoCache_Suite
     typedef int ValueType;
     typedef uintptr_t CacheKeyType;
 
-    typedef DataNode<KeyType, ValueType> LeadNodeType;
-    typedef IndexNode<KeyType, ValueType, CacheKeyType> InternalNodeType;
+    typedef DataNode<KeyType, ValueType, TYPE_UID::DATA_NODE_INT_INT > LeadNodeType;
+    typedef IndexNode<KeyType, ValueType, CacheKeyType, TYPE_UID::DATA_NODE_INT_INT > InternalNodeType;
 
     typedef BPlusStore<KeyType, ValueType, NoCache<CacheKeyType, NoCacheObject, LeadNodeType, InternalNodeType>> BPlusStoreType;
 

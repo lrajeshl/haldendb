@@ -13,10 +13,10 @@
 //class BPlusStore_DRAMLRU_Suite_1 : public ::testing::Test 
 //{
 //protected:
-//    BTree<int, string, DRAMLRUCache<DRAMVolatileStorage, uintptr_t, IDRAMCacheObject, DRAMCacheObject>>* m_ptrTree;
+//    BTree<int, string, DRAMLRUCache<DRAMVolatileStorage, CacheObjectKey, IDRAMCacheObject, DRAMCacheObject>>* m_ptrTree;
 //
 //    void SetUp() override {
-//        m_ptrTree = new BTree<int, string, DRAMLRUCache<DRAMVolatileStorage, uintptr_t, IDRAMCacheObject, DRAMCacheObject>>(5, 10);
+//        m_ptrTree = new BTree<int, string, DRAMLRUCache<DRAMVolatileStorage, CacheObjectKey, IDRAMCacheObject, DRAMCacheObject>>(5, 10);
 //    }
 //
 //    void TearDown() override {

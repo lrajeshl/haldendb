@@ -16,17 +16,21 @@
 #include "LRUCacheObject.hpp"
 #include "VolatileStorage.hpp"
 #include "TypeMarshaller.hpp"
+#include "TypeId.h"
+#include "CacheObjectKey.h"
 
 namespace BPlusStore_LRUCache_VolatileStorage_Suite
 {
     typedef int KeyType;
     typedef int ValueType;
-    typedef uintptr_t CacheKeyType;
+    typedef CacheObjectKey CacheKeyType;
 
-    typedef DataNode<KeyType, ValueType> LeadNodeType;
-    typedef IndexNode<KeyType, ValueType, CacheKeyType> InternalNodeType;
+    typedef DataNode<KeyType, ValueType, TYPE_UID::DATA_NODE_INT_INT > LeadNodeType;
+    typedef IndexNode<KeyType, ValueType, CacheKeyType, TYPE_UID::DATA_NODE_INT_INT > InternalNodeType;
 
-    typedef BPlusStore<KeyType, ValueType, LRUCache<VolatileStorage, CacheKeyType, LRUCacheObject, TypeMarshaller, LeadNodeType, InternalNodeType>> BPlusStoreType;
+    typedef IFlushCallback<CacheKeyType> ICallback;
+
+    typedef BPlusStore<KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, CacheKeyType, LRUCacheObject, TypeMarshaller, LeadNodeType, InternalNodeType>>> BPlusStoreType;
 
     class BPlusStore_LRUCache_VolatileStorage_Suite_3 : public ::testing::TestWithParam<std::tuple<int, int, int, int, int>>
     {

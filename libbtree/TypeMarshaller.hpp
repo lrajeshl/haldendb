@@ -33,10 +33,6 @@ public:
 
 	template <typename... Types>
 	static void deserialize(uint8_t uid, std::byte* bytes, std::variant<Types...>& variant) {
-		DataNode<string, float, __COUNTER__> f;
-		DataNode<int, float, __COUNTER__> b;
-		DataNode<double, float, __COUNTER__> c;
-		DataNode<uint64_t, float, __COUNTER__> d;
 
 		if (uid == DataNode<string, string, __COUNTER__>::UID)
 		{

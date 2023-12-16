@@ -159,6 +159,7 @@
     <ClInclude Include="INode.h" />
     <ClInclude Include="InternalNode.h" />
     <ClInclude Include="LeafNode.h" />
+    <ClInclude Include="NodePointer.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="TypeId.h" />
     <ClInclude Include="TypeMarshaller.hpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="BTree.cpp" />
     <ClCompile Include="InternalNode.cpp" />
     <ClCompile Include="LeafNode.cpp" />
+    <ClCompile Include="NodePointer.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

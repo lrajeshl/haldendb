@@ -8,16 +8,21 @@
 #include <typeinfo>
 
 #include "ErrorCodes.h"
+#include "IFlushCallback.h"
 
 template<typename KeyType, template <typename...> typename ValueType, typename... ValueCoreTypes>
 class NoCache
 {
 public:
-	typedef KeyType KeyType;
-	typedef ValueType<ValueCoreTypes...>* CacheValueType;
+	typedef KeyType CacheKeyType;
+	typedef ValueType<ValueCoreTypes...> CacheValueType;
+	
+	//typedef KeyType KeyType;
+	//typedef ValueType<ValueCoreTypes...>* CacheValueType;
+
+	typedef ValueType<ValueCoreTypes...>* CacheValueTypePtr;
 
 private:
-	typedef ValueType<ValueCoreTypes...>* CacheValueTypePtr;
 
 public:
 	~NoCache()
@@ -28,6 +33,12 @@ public:
 	{
 	}
 
+	CacheErrorCode init(IFlushCallback<KeyType> ptrCallback)
+	{
+		return CacheErrorCode::Success;
+	}
+
+
 	CacheErrorCode remove(KeyType objKey)
 	{
 		CacheValueTypePtr ptrValue = reinterpret_cast<CacheValueTypePtr>(objKey);
@@ -36,9 +47,10 @@ public:
 		return CacheErrorCode::KeyDoesNotExist;
 	}
 
-	CacheValueTypePtr getObject(KeyType objKey)
+	std::shared_ptr<CacheValueType> getObject(KeyType objKey)
 	{
-		return reinterpret_cast<CacheValueTypePtr>(objKey);
+		CacheValueTypePtr ptr = reinterpret_cast<CacheValueTypePtr>(objKey);
+		return std::shared_ptr<CacheValueType>(ptr);
 	}
 
 	template <typename Type>

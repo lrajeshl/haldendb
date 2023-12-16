@@ -36,18 +36,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_1.cpp" />
-    <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_2.cpp" />
-    <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_3.cpp" />
-    <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_1.cpp" />
-    <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_2.cpp" />
-    <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_3.cpp" />
     <ClCompile Include="BPlusStore_NoCache_Suite_3.cpp" />
-    <ClCompile Include="BPlusTree_DRAMLRU_Suite_2.cpp" />
-    <ClCompile Include="BPlusStore_NoCache_Suite_1.cpp" />
-    <ClCompile Include="BPlusStore_NoCache_Suite_2.cpp" />
-    <ClCompile Include="BPlusTree_NVRAMLRU_Suite_1.cpp" />
-    <ClCompile Include="BPlusTree_DRAMLRU_Suite_1.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

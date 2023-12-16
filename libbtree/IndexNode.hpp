@@ -13,14 +13,14 @@
 
 using namespace std;
 
-template <typename KeyType, typename ValueType, typename CacheKeyType, uint8_t TYPE_UID = 0>
+template <typename KeyType, typename ValueType, typename CacheKeyType, uint8_t TYPE_UID>
 class IndexNode
 {
 public:
-	static const uint8_t UID = __COUNTER__;
+	static const uint8_t UID = TYPE_UID;
 
 private:
-	typedef IndexNode<KeyType, ValueType, CacheKeyType> SelfType;
+	typedef IndexNode<KeyType, ValueType, CacheKeyType, UID> SelfType;
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<CacheKeyType>::const_iterator CacheKeyTypeIterator;
 
@@ -223,7 +223,7 @@ public:
 		return nChildIdx;
 	}
 
-	inline size_t getChildAt(size_t nIdx) {
+	inline CacheKeyType getChildAt(size_t nIdx) {
 		return m_ptrData->m_vtChildren[nIdx];
 	}
 

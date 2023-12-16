@@ -17,6 +17,9 @@
 #include "FileStorage.hpp"
 #include "TypeMarshaller.hpp"
 
+#include "TypeId.h"
+#include "CacheObjectKey.h"
+
 namespace BPlusStore_LRUCache_FileStorage_Suite
 {
 
@@ -25,12 +28,14 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     protected:
         typedef string KeyType;
         typedef string ValueType;
-        typedef uintptr_t CacheKeyType;
+        typedef CacheObjectKey CacheKeyType;
 
-        typedef DataNode<KeyType, ValueType> LeadNodeType;
-        typedef IndexNode<KeyType, ValueType, CacheKeyType> InternalNodeType;
+        typedef IFlushCallback<CacheKeyType> ICallback;
 
-        typedef BPlusStore<KeyType, ValueType, LRUCache<FileStorage, CacheKeyType, LRUCacheObject, TypeMarshaller, LeadNodeType, InternalNodeType>> BPlusStoreType;
+        typedef DataNode<KeyType, ValueType, TYPE_UID::DATA_NODE_STRING_STRING> LeadNodeType;
+        typedef IndexNode<KeyType, ValueType, CacheKeyType, TYPE_UID::DATA_NODE_STRING_STRING> InternalNodeType;
+
+        typedef BPlusStore<KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, CacheKeyType, LRUCacheObject, TypeMarshaller, LeadNodeType, InternalNodeType>>> BPlusStoreType;
 
         BPlusStoreType* m_ptrTree;
 
