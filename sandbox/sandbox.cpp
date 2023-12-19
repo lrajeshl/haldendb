@@ -90,7 +90,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
 
     int i = 0;
     while (i++ < 10) {
-        std::cout << i << std::endl;
+        //std::cout << i << std::endl;
 
         for (int nIdx = 0; nIdx < thread_count; nIdx++)
         {
@@ -164,7 +164,7 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
     int i = 0;
     while (i++ < 10) {
-        std::cout << i << std::endl;
+        //std::cout << i << std::endl;
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
@@ -201,7 +201,7 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
     }
     i = 0;
     while (i++ < 10) {
-        std::cout << "rev:" << i << std::endl;
+        //std::cout << "rev:" << i << std::endl;
         for (int nCntr = total_entries; nCntr >= 0; nCntr = nCntr - 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
@@ -250,7 +250,7 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
     int i = 0;
 
     while (i++ < 10) {
-        std::cout << i << std::endl;
+        //std::cout << i << std::endl;
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(to_string(nCntr), to_string(nCntr));
@@ -289,7 +289,7 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
     i = 0;
     while (i++ < 10) {
-        std::cout << "rev:" << i << std::endl;
+        //std::cout << "rev:" << i << std::endl;
         for (int nCntr = total_entries - 1; nCntr >= 0; nCntr = nCntr - 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(to_string(nCntr), to_string(nCntr));
@@ -333,10 +333,11 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
 void test_for_ints()
 {
+    std::cout << "test_for_ints................................................." << std::endl;
     for (int idx = 3; idx < 20; idx++) {
         std::cout << "iteration.." << idx << std::endl;
         {
-            typedef int KeyType;
+            /*typedef int KeyType;
             typedef int ValueType;
             typedef uintptr_t ObjectUIDType;
 
@@ -349,7 +350,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);*/
         }
         {
             typedef int KeyType;
@@ -365,7 +366,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx, 1000, 100000000);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            //int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
         }
         {
             typedef int KeyType;
@@ -378,21 +379,22 @@ void test_for_ints()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 10, 1024, 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
-            //int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
         }
     }
 }
 
 void test_for_string()
 {
+    std::cout << "test_for_string................................................." << std::endl;
     for (int idx = 3; idx < 20; idx++) {
         std::cout << "iteration.." << idx << std::endl;
 
         {
-            typedef string KeyType;
+            /*typedef string KeyType;
             typedef string ValueType;
             typedef uintptr_t ObjectUIDType;
 
@@ -405,7 +407,7 @@ void test_for_string()
             BPlusStoreType* ptrTree1 = new BPlusStoreType(idx);
             ptrTree1->template init<DataNodeType>();
 
-            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree1, idx, 10000);
+            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree1, idx, 10000);*/
         }
         {
             typedef string KeyType;
@@ -421,7 +423,7 @@ void test_for_string()
             BPlusStoreType* ptrTree2 = new BPlusStoreType(idx, 1000, 100000000);
             ptrTree2->template init<DataNodeType>();
 
-            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree2, idx, 10000);
+            //string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree2, idx, 10000);
         }
         {
             typedef string KeyType;
@@ -434,20 +436,21 @@ void test_for_string()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree3 = new BPlusStoreType(idx, 10, 1024, 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType* ptrTree3 = new BPlusStoreType(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
             ptrTree3->template init<DataNodeType>();
 
-            //string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree3, idx, 10000);
+            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree3, idx, 10000);
         }
     }
 }
 
 void test_for_threaded()
 {
+    std::cout << "test_for_threaded................................................." << std::endl;
     for (int idx = 3; idx < 20; idx++) {
         std::cout << "iteration.." << idx << std::endl;
         {
-            typedef int KeyType;
+           /* typedef int KeyType;
             typedef int ValueType;
             typedef uintptr_t ObjectUIDType;
 
@@ -460,7 +463,7 @@ void test_for_threaded()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);*/
         }
         {
             typedef int KeyType;
@@ -476,7 +479,7 @@ void test_for_threaded()
             BPlusStoreType ptrTree(idx, 1000, 100000000);
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            //threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
         }
         {
             typedef int KeyType;
@@ -489,19 +492,20 @@ void test_for_threaded()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 10, 1024, 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
-            //threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
         }
     }
 }
 
 int main(int argc, char* argv[])
-{
-    //test_for_ints();
-    //test_for_string();
-    //test_for_threaded();
+{    
+    test_for_ints();
+    test_for_string();
+    test_for_threaded();
+    
 
     typedef int KeyType;
     typedef int ValueType;
@@ -526,7 +530,6 @@ int main(int argc, char* argv[])
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     BPlusStoreType* ptrTree = new BPlusStoreType(3, 10, 1024, 1024 * 1024, "D:\\filestore.hdb");
-
 
     ptrTree->template init<DataNodeType>();
 

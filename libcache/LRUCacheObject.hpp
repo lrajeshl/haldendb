@@ -34,6 +34,15 @@ public:
 		return std::make_shared<LRUCacheObject>(ptrValue);
 	}
 
+	template<class Type, typename... ArgsType>
+	static std::shared_ptr<LRUCacheObject> createObjectOfType(std::shared_ptr<Type>& ptrCoreValue, ArgsType... args)
+	{
+		ptrCoreValue = std::make_shared<Type>(args...);
+		CacheValueTypePtr ptrValue = std::make_shared<CacheValueType>(ptrCoreValue);
+
+		return std::make_shared<LRUCacheObject>(ptrValue);
+	}
+
 	std::tuple<uint8_t, const std::byte*, size_t> serialize()
 	{
 		return ValueCoreTypesMarshaller::template serialize<ValueCoreTypes...>(*data);

@@ -10,10 +10,12 @@
 #include <cmath>
 #include <exception>
 #include <variant>
+#include <unordered_map>
 #include "CacheErrorCodes.h"
 #include "ErrorCodes.h"
 
 #define __CONCURRENT__
+#define __PARENT_AWARE_NODES__
 
 template <typename ICallback, typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore : public ICallback
@@ -26,6 +28,7 @@ private:
     std::shared_ptr<CacheType> m_ptrCache;
     std::optional<ObjectUIDType> m_cktRootNodeKey;
     mutable std::shared_mutex mutex;
+
 public:
     ~BPlusStore()
     {
@@ -54,17 +57,17 @@ public:
 
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtNodes;
         ObjectTypePtr ptrLastNode = nullptr, ptrCurrentNode = nullptr;
-        ObjectUIDType ckLastNode, ckCurrentNode;
+        ObjectUIDType uidLastNode, uidCurrentNode;
 
 #ifdef __CONCURRENT__
         vtLocks.push_back(std::unique_lock<std::shared_mutex>(mutex));
 #endif // __CONCURRENT__
 
-        ckCurrentNode = m_cktRootNodeKey.value();
+        uidCurrentNode = m_cktRootNodeKey.value();
 
         do
         {
-            ptrCurrentNode = m_ptrCache->getObject(ckCurrentNode);    //TODO: lock
+            ptrCurrentNode = m_ptrCache->getObject(uidCurrentNode);    //TODO: lock
 
 #ifdef __CONCURRENT__
             vtLocks.push_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->mutex));
@@ -81,7 +84,7 @@ public:
 
                 if (ptrIndexNode->canTriggerSplit(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidLastNode, ptrLastNode));
                 }
                 else
                 {
@@ -91,10 +94,10 @@ public:
                     vtNodes.clear(); //TODO: release locks
                 }
 
-                ckLastNode = ckCurrentNode;
+                uidLastNode = uidCurrentNode;
                 ptrLastNode = ptrCurrentNode;
 
-                ckCurrentNode = ptrIndexNode->getChild(key); // fid it.. there are two kinds of methods..
+                uidCurrentNode = ptrIndexNode->getChild(key); // fid it.. there are two kinds of methods..
             }
             else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
             {
@@ -104,8 +107,8 @@ public:
 
                 if (ptrDataNode->requireSplit(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckLastNode, ptrLastNode));
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckCurrentNode, ptrCurrentNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidCurrentNode, ptrCurrentNode));
                 }
                 else
                 {
@@ -120,8 +123,12 @@ public:
         } while (true);
 
         KeyType pivotKey;
-        ObjectUIDType ckLHSNode;
-        std::optional<ObjectUIDType> ckRHSNode;
+        ObjectUIDType uidLHSNode;
+        std::optional<ObjectUIDType> uidRHSNode;
+
+#ifdef __PARENT_AWARE_NODES__
+        ObjectTypePtr ptrLHSNode = nullptr, ptrRHSNode = nullptr;
+#endif __PARENT_AWARE_NODES__
 
         while (vtNodes.size() > 0) 
         {
@@ -134,7 +141,21 @@ public:
                     throw new std::exception("should not occur!");
                 }
 
-                m_cktRootNodeKey = m_ptrCache->template createObjectOfType<IndexNodeType>(pivotKey, ckLHSNode, *ckRHSNode);
+                m_cktRootNodeKey = m_ptrCache->template createObjectOfType<IndexNodeType>(pivotKey, uidLHSNode, *uidRHSNode, std::nullopt);
+
+#ifdef __PARENT_AWARE_NODES__
+                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrLHSNode->data))
+                {
+                    std::get<std::shared_ptr<IndexNodeType>>(*ptrLHSNode->data)->m_uidParent = m_cktRootNodeKey;
+                    std::get<std::shared_ptr<IndexNodeType>>(*ptrRHSNode->data)->m_uidParent = m_cktRootNodeKey;
+                }
+                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrLHSNode->data))
+                {
+                    std::get<std::shared_ptr<DataNodeType>>(*ptrLHSNode->data)->m_uidParent = m_cktRootNodeKey;
+                    std::get<std::shared_ptr<DataNodeType>>(*ptrRHSNode->data)->m_uidParent = m_cktRootNodeKey;
+                }
+#endif __PARENT_AWARE_NODES__
+
                 break;
             }
 
@@ -142,13 +163,17 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data);
 
-                ptrIndexNode->insert(pivotKey, *ckRHSNode);
+                ptrIndexNode->insert(pivotKey, *uidRHSNode);
 
-                ckRHSNode = std::nullopt;
+                uidRHSNode = std::nullopt;
 
                 if (ptrIndexNode->requireSplit(m_nDegree))
                 {
-                    ErrorCode errCode = ptrIndexNode->template split<std::shared_ptr<CacheType>>(m_ptrCache, ckRHSNode, pivotKey);
+#ifdef __PARENT_AWARE_NODES__
+                    ErrorCode errCode = ptrIndexNode->template split<std::shared_ptr<CacheType>, ObjectTypePtr>(m_ptrCache, uidRHSNode, ptrRHSNode, pivotKey);
+#else
+                    ErrorCode errCode = ptrIndexNode->template split<std::shared_ptr<CacheType>>(m_ptrCache, uidRHSNode, pivotKey);
+#endif __PARENT_AWARE_NODES__
 
                     if (errCode != ErrorCode::Success)
                     {
@@ -160,7 +185,11 @@ public:
             {
                 std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data);
 
-                ErrorCode errCode = ptrDataNode->template split<std::shared_ptr<CacheType>, ObjectUIDType>(m_ptrCache, ckRHSNode, pivotKey);
+#ifdef __PARENT_AWARE_NODES__
+                ErrorCode errCode = ptrDataNode->template split<std::shared_ptr<CacheType>, ObjectTypePtr>(m_ptrCache, uidRHSNode, ptrRHSNode, pivotKey);
+#else
+                ErrorCode errCode = ptrDataNode->template split<std::shared_ptr<CacheType>>(m_ptrCache, uidRHSNode, pivotKey);
+#endif __PARENT_AWARE_NODES__
 
                 if (errCode != ErrorCode::Success)
                 {
@@ -168,7 +197,10 @@ public:
                 }                
             }
 
-            ckLHSNode = prNodeDetails.first;
+            uidLHSNode = prNodeDetails.first;
+#ifdef __PARENT_AWARE_NODES__
+            ptrLHSNode = prNodeDetails.second;
+#endif __PARENT_AWARE_NODES__
 
             vtNodes.pop_back();
         }
@@ -186,10 +218,10 @@ public:
         vtLocks.push_back(std::shared_lock<std::shared_mutex>(mutex));
 #endif __CONCURRENT__
 
-        ObjectUIDType ckCurrentNode = m_cktRootNodeKey.value();
+        ObjectUIDType uidCurrentNode = m_cktRootNodeKey.value();
         do
         {
-            ObjectTypePtr prNodeDetails = m_ptrCache->getObject(ckCurrentNode);    //TODO: lock
+            ObjectTypePtr prNodeDetails = m_ptrCache->getObject(uidCurrentNode);    //TODO: lock
 
 #ifdef __CONCURRENT__
             vtLocks.push_back(std::shared_lock<std::shared_mutex>(prNodeDetails->mutex));
@@ -205,7 +237,7 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
 
-                ckCurrentNode = ptrIndexNode->getChild(key);
+                uidCurrentNode = ptrIndexNode->getChild(key);
             }
             else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
             {
@@ -229,17 +261,17 @@ public:
 
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtNodes;
         ObjectTypePtr ptrLastNode = nullptr, ptrCurrentNode = nullptr;
-        ObjectUIDType ckLastNode, ckCurrentNode;
+        ObjectUIDType uidLastNode, uidCurrentNode;
 
 #ifdef __CONCURRENT__
         vtLocks.push_back(std::unique_lock<std::shared_mutex>(mutex));
 #endif __CONCURRENT__
 
-        ckCurrentNode = m_cktRootNodeKey.value();
+        uidCurrentNode = m_cktRootNodeKey.value();
 
         do
         {
-            ptrCurrentNode = m_ptrCache->getObject(ckCurrentNode);    //TODO: lock
+            ptrCurrentNode = m_ptrCache->getObject(uidCurrentNode);    //TODO: lock
             
 #ifdef __CONCURRENT__
             vtLocks.push_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->mutex));
@@ -256,7 +288,7 @@ public:
 
                 if (ptrIndexNode->canTriggerMerge(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidLastNode, ptrLastNode));
                 }
                 else
                 {
@@ -269,10 +301,10 @@ public:
                     vtNodes.clear(); //TODO: release locks
                 }
 
-                ckLastNode = ckCurrentNode;
+                uidLastNode = uidCurrentNode;
                 ptrLastNode = ptrCurrentNode;
 
-                ckCurrentNode = ptrIndexNode->getChild(key); // fid it.. there are two kinds of methods..
+                uidCurrentNode = ptrIndexNode->getChild(key); // fid it.. there are two kinds of methods..
             }
             else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
             {
@@ -282,8 +314,8 @@ public:
 
                 if (ptrDataNode->requireMerge(m_nDegree))
                 {
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckLastNode, ptrLastNode));
-                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(ckCurrentNode, ptrCurrentNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidLastNode, ptrLastNode));
+                    vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidCurrentNode, ptrCurrentNode));
                 }
                 else
                 {
@@ -424,6 +456,23 @@ public:
 public:
     CacheErrorCode keyUpdate(ObjectUIDType uidObject)
     {
+        return CacheErrorCode::Success;
+    }
+
+    CacheErrorCode keysUpdate(std::unordered_map<ObjectUIDType, ObjectUIDType> mpUIDsUpdate)
+    {
+#ifdef __CONCURRENT__
+        std::unique_lock<std::shared_mutex> lock_updated_uids(this->m_mtxUIDsUpdate);
+#endif __CONCURRENT__
+
+        this->m_mpUIDsUpdate = std::move(mpUIDsUpdate);
+
+#ifdef __CONCURRENT__
+        lock_updated_uids.unlock();
+#endif __CONCURRENT__
+
+        // m_ptrCallback->keysUpdate(mpUIDsUpdate); TODO: When cache is shared across multiple trees.
+
         return CacheErrorCode::Success;
     }
 };

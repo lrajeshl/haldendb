@@ -19,7 +19,7 @@ class IndexNode
 public:
 	static const uint8_t UID = TYPE_UID;
 	
-	ObjectUIDType m_keyParent;
+	std::optional<ObjectUIDType> m_uidParent;
 
 private:
 	typedef IndexNode<KeyType, ValueType, ObjectUIDType, UID> SelfType;
@@ -44,24 +44,26 @@ public:
 
 	IndexNode()
 		: m_ptrData(make_shared<INDEXNODESTRUCT>())
-	{	
+		, m_uidParent(std::nullopt) {
 	}
 
-	IndexNode(const std::vector<std::byte>& bytes)
-	{
-		INDEXNODESTRUCT ptrData = reinterpret_cast<INDEXNODESTRUCT>(bytes);
-		m_ptrData(ptrData);
-	}
+	//IndexNode(const std::vector<std::byte>& bytes)
+	//{
+	//	INDEXNODESTRUCT ptrData = reinterpret_cast<INDEXNODESTRUCT>(bytes);
+	//	m_ptrData(ptrData);
+	//}
 
-	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren)
+	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(make_shared<INDEXNODESTRUCT>())
+		, m_uidParent(uidParent)
 	{
 		m_ptrData->m_vtPivots.assign(itBeginPivots, itEndPivots);
 		m_ptrData->m_vtChildren.assign(itBeginChildren, itEndChildren);
 	}
 
-	IndexNode(const KeyType& pivotKey, const ObjectUIDType& ptrLHSNode, const ObjectUIDType& ptrRHSNode)
+	IndexNode(const KeyType& pivotKey, const ObjectUIDType& ptrLHSNode, const ObjectUIDType& ptrRHSNode, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(make_shared<INDEXNODESTRUCT>())
+		, m_uidParent(uidParent)
 	{
 		m_ptrData->m_vtPivots.push_back(pivotKey);
 		m_ptrData->m_vtChildren.push_back(ptrLHSNode);
@@ -261,10 +263,39 @@ public:
 		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
 
 		ptrSibling = ptrCache->template createObjectOfType<SelfType>(
-			m_ptrData->m_vtPivots.begin() + nMid + 1, m_ptrData->m_vtPivots.end(),
-			m_ptrData->m_vtChildren.begin() + nMid + 1, m_ptrData->m_vtChildren.end());
+			m_ptrData->m_vtPivots.begin() + nMid + 1,
+			m_ptrData->m_vtPivots.end(),
+			m_ptrData->m_vtChildren.begin() + nMid + 1, 
+			m_ptrData->m_vtChildren.end(),
+			m_uidParent);
 
 		if (!ptrSibling)
+		{
+			return ErrorCode::Error;
+		}
+
+		pivotKey = m_ptrData->m_vtPivots[nMid];
+
+		m_ptrData->m_vtPivots.resize(nMid);
+		m_ptrData->m_vtChildren.resize(nMid + 1);
+
+		return ErrorCode::Success;
+	}
+
+	template <typename Cache, typename ObjectTypePtr>
+	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, ObjectTypePtr& ptrSibling, KeyType& pivotKey)
+	{
+		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
+
+		uidSibling = ptrCache->template createObjectOfType<SelfType>(
+			ptrSibling,
+			m_ptrData->m_vtPivots.begin() + nMid + 1,
+			m_ptrData->m_vtPivots.end(),
+			m_ptrData->m_vtChildren.begin() + nMid + 1,
+			m_ptrData->m_vtChildren.end(),
+			m_uidParent);
+
+		if (!uidSibling)
 		{
 			return ErrorCode::Error;
 		}

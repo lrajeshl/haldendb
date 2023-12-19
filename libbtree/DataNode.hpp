@@ -14,7 +14,8 @@ class DataNode
 public:
 	static const uint8_t UID = TYPE_UID;
 
-	ObjectUIDType m_keyParent;
+	std::optional<ObjectUIDType> m_uidParent;
+
 private:
 	typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID> SelfType;
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
@@ -52,16 +53,18 @@ public:
 
 	DataNode()
 		: m_ptrData(make_shared<DATANODESTRUCT>())
+		, m_uidParent(std::nullopt)
 	{
 	}
 
-	DataNode(DATANODESTRUCT* bytes)
-	{
-		//m_ptrData(ptrData);
-	}
+	//DataNode(DATANODESTRUCT* bytes)
+	//{
+	//	//m_ptrData(ptrData);
+	//}
 
-	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
+	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(make_shared<DATANODESTRUCT>())
+		, m_uidParent(uidParent)
 	{
 		m_ptrData->m_vtKeys.assign(itBeginKeys, itEndKeys);
 		m_ptrData->m_vtValues.assign(itBeginValues, itEndValues);
@@ -133,10 +136,39 @@ public:
 		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
 
 		ptrSibling = ptrCache->template createObjectOfType<SelfType>(
-			m_ptrData->m_vtKeys.begin() + nMid, m_ptrData->m_vtKeys.end(),
-			m_ptrData->m_vtValues.begin() + nMid, m_ptrData->m_vtValues.end());
+			m_ptrData->m_vtKeys.begin() + nMid, 
+			m_ptrData->m_vtKeys.end(),
+			m_ptrData->m_vtValues.begin() + nMid, 
+			m_ptrData->m_vtValues.end(),
+			m_uidParent);
 
 		if (!ptrSibling)
+		{
+			return ErrorCode::Error;
+		}
+
+		pivotKey = m_ptrData->m_vtKeys[nMid];
+
+		m_ptrData->m_vtKeys.resize(nMid);
+		m_ptrData->m_vtValues.resize(nMid);
+
+		return ErrorCode::Success;
+	}
+
+	template <typename Cache, typename ObjectTypePtr>
+	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, ObjectTypePtr& ptrSibling, KeyType& pivotKey)
+	{
+		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
+
+		uidSibling = ptrCache->template createObjectOfType<SelfType>(
+			ptrSibling,
+			m_ptrData->m_vtKeys.begin() + nMid,
+			m_ptrData->m_vtKeys.end(),
+			m_ptrData->m_vtValues.begin() + nMid,
+			m_ptrData->m_vtValues.end(),
+			m_uidParent);
+
+		if (!uidSibling)
 		{
 			return ErrorCode::Error;
 		}

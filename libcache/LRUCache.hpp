@@ -18,7 +18,7 @@
 #define __CONCURRENT__
 
 template <typename ICallback, typename StorageType>
-class LRUCache
+class LRUCache : public ICallback
 {
 	typedef LRUCache<ICallback, StorageType> SelfType;
 
@@ -57,6 +57,8 @@ private:
 	size_t m_nCapacity;
 	std::shared_ptr<Item> m_ptrHead;
 	std::shared_ptr<Item> m_ptrTail;
+
+	ICallback* m_ptrCallback;
 
 #ifdef __CONCURRENT__
 	bool m_bStop;
@@ -97,10 +99,10 @@ public:
 	}
 
 	template <typename... InitArgs>
-	CacheErrorCode init(InitArgs... args)
+	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
 	{	
-		//m_ptrCallback = ptrCallback;
-		return m_ptrStorage->init(getNthElement<0>(args...));
+		m_ptrCallback = ptrCallback;
+		return m_ptrStorage->init(this/*getNthElement<0>(args...)*/);
 	}
 
 	CacheErrorCode remove(ObjectUIDType key)
@@ -289,6 +291,51 @@ public:
 		return key;
 	}
 
+	template<class Type, typename... ArgsType>
+	ObjectUIDType createObjectOfType(std::shared_ptr<ObjectType>& ptrObject, ArgsType... args)
+	{
+		ObjectUIDType key;
+		ptrObject = ObjectType::template createObjectOfType<Type>(args...);
+
+		key = ObjectUIDType::createAddressFromVolatilePointer(reinterpret_cast<uintptr_t>(ptrObject.get()));
+
+		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(key, ptrObject);
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
+
+		if (m_mpObject.find(key) != m_mpObject.end())
+		{
+			std::shared_ptr<Item> ptrItem = m_mpObject[key];
+			ptrItem->m_ptrValue = ptrObject;
+			moveToFront(ptrItem);
+		}
+		else
+		{
+			m_mpObject[key] = ptrItem;
+			if (!m_ptrHead)
+			{
+				m_ptrHead = ptrItem;
+				m_ptrTail = ptrItem;
+			}
+			else
+			{
+				ptrItem->m_ptrNext = m_ptrHead;
+				m_ptrHead->m_ptrPrev = ptrItem;
+				m_ptrHead = ptrItem;
+			}
+		}
+
+#ifdef __CONCURRENT__
+		//..
+#else
+		flushItemsToStorage();
+#endif __CONCURRENT__
+
+		return key;
+	}
+
 private:
 	inline void moveToFront(std::shared_ptr<Item> ptrItem)
 	{
@@ -432,4 +479,27 @@ private:
 		} while (!ptrSelf->m_bStop);
 	}
 #endif __CONCURRENT__
+
+public:
+	CacheErrorCode keyUpdate(ObjectUIDType uidObject)
+	{
+		return CacheErrorCode::Success;
+	}
+
+	CacheErrorCode keysUpdate(std::unordered_map<ObjectUIDType, ObjectUIDType> mpUIDsUpdate)
+	{
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_updated_uids(this->m_mtxUIDsUpdate);
+#endif __CONCURRENT__
+
+		this->m_mpUIDsUpdate = mpUIDsUpdate;
+
+#ifdef __CONCURRENT__
+		lock_updated_uids.unlock();
+#endif __CONCURRENT__
+
+		m_ptrCallback->keysUpdate(mpUIDsUpdate);
+
+		return CacheErrorCode::Success;
+	}
 };
