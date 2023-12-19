@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include "CacheErrorCodes.h"
 
-template <typename ObjectUIDType>
+template <typename ObjectUIDType, typename ObjectType>
 class IFlushCallback
 {
 protected:
@@ -10,6 +10,6 @@ protected:
 	std::unordered_map<ObjectUIDType, ObjectUIDType> m_mpUIDsUpdate;
 
 public:
-	virtual CacheErrorCode keyUpdate(ObjectUIDType uidObject) = 0;
+	virtual CacheErrorCode keyUpdate(std::shared_ptr<ObjectType> ptrParentNode, ObjectUIDType uidOld, ObjectUIDType uidNew) = 0;
 	virtual CacheErrorCode keysUpdate(std::unordered_map<ObjectUIDType, ObjectUIDType> mpUpdatedUIDs) = 0;
 };

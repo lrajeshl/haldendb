@@ -35,7 +35,7 @@ public:
 		ObjectFatUID key;
 		key.m_uid.m_nMediaType = File;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nSize= nSize;
+		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
 
 		return key;
 	}

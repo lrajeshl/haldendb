@@ -13,15 +13,26 @@
 #include <unordered_map>
 #include "CacheErrorCodes.h"
 #include "ErrorCodes.h"
+#include "VariadicNthType.h"
+#include <tuple>
 
-#define __CONCURRENT__
+//#define __CONCURRENT__
 #define __PARENT_AWARE_NODES__
+
+template<typename T>
+using unpack = typename T::type;
+
 
 template <typename ICallback, typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore : public ICallback
 {
     typedef CacheType::ObjectUIDType ObjectUIDType;
+    typedef CacheType::ObjectType ObjectType;
     typedef CacheType::ObjectTypePtr ObjectTypePtr;
+    typedef CacheType::ObjectCoreTypes ObjectCoreTypes;
+
+    using DNodeType = typename std::tuple_element<0, typename ObjectType::ObjectCoreTypes>::type;
+    using INodeType = typename std::tuple_element<1, typename ObjectType::ObjectCoreTypes>::type;
 
 private:
     uint32_t m_nDegree;
@@ -38,6 +49,8 @@ public:
     BPlusStore(uint32_t nDegree, CacheArgs... args)
         : m_nDegree(nDegree)
     {    
+        //std::cout << "Type in MyParameterPack at index 1: " << typeid(INodeType).name() << std::endl;
+
         m_ptrCache = std::make_shared<CacheType>(args...);
     }
 
@@ -454,8 +467,53 @@ public:
     }
 
 public:
-    CacheErrorCode keyUpdate(ObjectUIDType uidObject)
+    CacheErrorCode keyUpdate(ObjectTypePtr ptrChildNode, ObjectUIDType uidChildOld, ObjectUIDType uidChildNew)
     {
+#ifdef __CONCURRENT__
+        std::unique_lock<std::shared_mutex> lock_node(ptrChildNode->mutex);
+#endif __CONCURRENT__
+
+        if (ptrChildNode == nullptr)
+        {
+            throw new std::exception("should not occur!");   // TODO: critical log.
+        }
+
+        ObjectUIDType uidParent;
+
+        std::cout << "Type at the 1st index: " << typeid(INodeType).name() << std::endl;
+
+        if (std::holds_alternative<std::shared_ptr<INodeType>>(*ptrChildNode->data))
+        {
+            std::shared_ptr<INodeType> ptrCoreObject = std::get<std::shared_ptr<INodeType>>(*ptrChildNode->data);
+
+            uidParent = *ptrCoreObject->m_uidParent;
+        }
+        else if (std::holds_alternative<std::shared_ptr<DNodeType>>(*ptrChildNode->data))
+        {
+            std::shared_ptr<DNodeType> ptrCoreObject = std::get<std::shared_ptr<DNodeType>>(*ptrChildNode->data);
+
+            uidParent = *ptrCoreObject->m_uidParent;
+        }
+
+        ObjectTypePtr ptrParentNode = m_ptrCache->getObject(uidParent);
+
+#ifdef __CONCURRENT__
+        std::unique_lock<std::shared_mutex> lock_parent(ptrParentNode->mutex);
+        lock_node.unlock();
+#endif __CONCURRENT__
+
+        if (std::holds_alternative<std::shared_ptr<INodeType>>(*ptrParentNode->data))
+        {
+            std::shared_ptr<INodeType> ptrCoreObject = std::get<std::shared_ptr<INodeType>>(*ptrParentNode->data);
+
+            if (ptrCoreObject->updateChildUID(uidChildOld, uidChildNew) == ErrorCode::Success)
+                return CacheErrorCode::Success;
+        }
+        else //if (std::holds_alternative<std::shared_ptr<DNodeType>>(*ptrParentNode->data))
+        {
+            throw new std::exception("should not occur!");   // TODO: critical log.
+        }
+
         return CacheErrorCode::Success;
     }
 

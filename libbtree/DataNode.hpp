@@ -57,10 +57,10 @@ public:
 	{
 	}
 
-	//DataNode(DATANODESTRUCT* bytes)
-	//{
-	//	//m_ptrData(ptrData);
-	//}
+	DataNode(char* szData)
+	{
+		m_ptrData.reset(reinterpret_cast<DATANODESTRUCT*>(szData));
+	}
 
 	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(make_shared<DATANODESTRUCT>())
@@ -216,15 +216,12 @@ public:
 	}
 
 public:
-	std::tuple<uint8_t, const std::byte*, size_t> getSerializedBytes()
+	inline const char* getSerializedBytes(uint8_t& uidObjectType, size_t& nDataSize)
 	{
-		const std::byte* bytes = reinterpret_cast<const std::byte*>(m_ptrData.get());
+		nDataSize = sizeof(DATANODESTRUCT);
+		uidObjectType = UID;
 
-		//std::byte* _bytes = reinterpret_cast<std::byte*>(m_ptrData.get());
-		//DATANODESTRUCT* o = reinterpret_cast<DATANODESTRUCT*>(_bytes);
-
-		return std::tuple<uint8_t, const std::byte*, size_t>(UID, bytes, sizeof(DATANODESTRUCT));
-
+		return reinterpret_cast<const char*>(m_ptrData.get());
 	}
 
 	void instantiateSelf(std::byte* bytes)

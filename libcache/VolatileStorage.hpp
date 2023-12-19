@@ -15,6 +15,7 @@ class VolatileStorage
 public:
 	typedef ObjectUIDType ObjectUIDType;
 	typedef ObjectWrapperType<ObjectTypeMarshaller, ObjectTypes...> ObjectType;
+	typedef std::tuple<ObjectTypes...> ObjectCoreTypes;
 
 private:
 	size_t m_nPoolSize;

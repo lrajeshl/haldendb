@@ -15,7 +15,7 @@
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
-#define __CONCURRENT__
+//#define __CONCURRENT__
 
 template <typename ICallback, typename StorageType>
 class LRUCache : public ICallback
@@ -26,6 +26,7 @@ public:
 	typedef StorageType::ObjectUIDType ObjectUIDType;
 	typedef StorageType::ObjectType ObjectType;
 	typedef std::shared_ptr<ObjectType> ObjectTypePtr;
+	typedef StorageType::ObjectCoreTypes ObjectCoreTypes;
 
 private:
 	struct Item
@@ -74,8 +75,10 @@ private:
 public:
 	~LRUCache()
 	{
+#ifdef __CONCURRENT__
 		m_bStop = true;
 		m_threadCacheFlush.join();
+#endif __CONCURRENT__
 
 		m_ptrHead = nullptr;
 		m_ptrTail = nullptr;
@@ -101,8 +104,12 @@ public:
 	template <typename... InitArgs>
 	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
 	{	
+#ifdef __CONCURRENT__
 		m_ptrCallback = ptrCallback;
 		return m_ptrStorage->init(this/*getNthElement<0>(args...)*/);
+#else __CONCURRENT__
+		return m_ptrStorage->init(ptrCallback/*getNthElement<0>(args...)*/);
+#endif __CONCURRENT__
 	}
 
 	CacheErrorCode remove(ObjectUIDType key)
@@ -481,9 +488,9 @@ private:
 #endif __CONCURRENT__
 
 public:
-	CacheErrorCode keyUpdate(ObjectUIDType uidObject)
+	CacheErrorCode keyUpdate(std::shared_ptr<ObjectType> ptrParentNode, ObjectUIDType uidOld, ObjectUIDType uidNew)
 	{
-		return CacheErrorCode::Success;
+		return m_ptrCallback->keyUpdate(ptrParentNode, uidOld, uidNew);
 	}
 
 	CacheErrorCode keysUpdate(std::unordered_map<ObjectUIDType, ObjectUIDType> mpUIDsUpdate)

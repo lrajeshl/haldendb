@@ -12,9 +12,14 @@
 template <typename ValueCoreTypesMarshaller, typename... ValueCoreTypes>
 class LRUCacheObject
 {
+public:
+	typedef std::tuple<ValueCoreTypes...> ObjectCoreTypes;
+
+private:
 	typedef std::variant<ValueCoreTypes...> CacheValueType_;
 	typedef std::variant<std::shared_ptr<ValueCoreTypes>...> CacheValueType;
 	typedef std::shared_ptr<std::variant<std::shared_ptr<ValueCoreTypes>...>> CacheValueTypePtr;
+
 
 public:
 	CacheValueTypePtr data;
@@ -24,6 +29,11 @@ public:
 	LRUCacheObject(CacheValueTypePtr ptrValue)
 	{
 		data = ptrValue;
+	}
+
+	LRUCacheObject(char* szData)
+	{
+		ValueCoreTypesMarshaller::template deserialize<ValueCoreTypes..., CacheValueType>(szData, data);
 	}
 
 	template<class Type, typename... ArgsType>
@@ -43,18 +53,16 @@ public:
 		return std::make_shared<LRUCacheObject>(ptrValue);
 	}
 
-	std::tuple<uint8_t, const std::byte*, size_t> serialize()
+	const char* serialize(uint8_t& uidObjectType, size_t& nDataSize)
 	{
-		return ValueCoreTypesMarshaller::template serialize<ValueCoreTypes...>(*data);
+		return ValueCoreTypesMarshaller::template serialize<ValueCoreTypes...>(*data, uidObjectType, nDataSize);
 	}
 
 	void deserialize(uint8_t uid, std::byte* bytes) 
 	{
-
 		CacheValueType_ deserializedVariant;
 
 		ValueCoreTypesMarshaller::template deserialize<ValueCoreTypes...>(uid, bytes, deserializedVariant);
-
 	}
 
 };

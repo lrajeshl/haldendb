@@ -17,6 +17,7 @@ public:
 	typedef KeyType ObjectUIDType;
 	typedef ValueType<ValueCoreTypes...> ObjectType;
 	typedef ValueType<ValueCoreTypes...>* ObjectTypePtr;
+	typedef std::tuple<ValueCoreTypes...> ObjectCoreTypes;
 
 public:
 	~NoCache()

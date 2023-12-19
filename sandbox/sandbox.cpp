@@ -357,10 +357,10 @@ void test_for_ints()
             typedef int ValueType;
             typedef ObjectUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType ptrTree(idx, 1000, 100000000);
@@ -373,10 +373,10 @@ void test_for_ints()
             typedef int ValueType;
             typedef ObjectFatUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
@@ -414,10 +414,10 @@ void test_for_string()
             typedef string ValueType;
             typedef ObjectUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType* ptrTree2 = new BPlusStoreType(idx, 1000, 100000000);
@@ -430,10 +430,10 @@ void test_for_string()
             typedef string ValueType;
             typedef ObjectFatUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType* ptrTree3 = new BPlusStoreType(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
@@ -470,10 +470,10 @@ void test_for_threaded()
             typedef int ValueType;
             typedef ObjectUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType ptrTree(idx, 1000, 100000000);
@@ -486,10 +486,10 @@ void test_for_threaded()
             typedef int ValueType;
             typedef ObjectFatUID ObjectUIDType;
 
-            typedef IFlushCallback<ObjectUIDType> ICallback;
-
             typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+            typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
             BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024, "D:\\filestore.hdb");
@@ -500,11 +500,54 @@ void test_for_threaded()
     }
 }
 
+// Class with a parameter pack and alias
+template <typename... Types>
+class ParameterPackHolder {
+public:
+    // Alias for the parameter pack
+    using MyParameterPack = std::tuple<Types...>;
+};
+
+// Class that accesses the type at the 1st index of the parameter pack
+template <typename PackHolder>
+class AccessTypeAtIndex {
+public:
+    // Access the type at the 1st index of the parameter pack
+    using FirstType = typename std::tuple_element<0, typename PackHolder::MyParameterPack>::type;
+
+    // Function to demonstrate the access
+    static void printType() {
+        std::cout << "Type at the 1st index: " << typeid(FirstType).name() << std::endl;
+    }
+};
+
+
 int main(int argc, char* argv[])
-{    
-    test_for_ints();
+{   
+    // Instantiate the class with a parameter pack
+    using MyPackHolder = ParameterPackHolder<int, double, char>;
+
+    // Instantiate the class that accesses the type at the 1st index
+    AccessTypeAtIndex<MyPackHolder>::printType();
+
+    typedef std::tuple<int, double> abc;
+    // Define a parameter pack
+    using MyParameterPack = std::tuple<int, double, char>;
+
+    // Access the type at index 1 in the parameter pack
+    using TypeAtIndex1 = GetTypeAtIndex<1, int, double, char>::Type;
+
+    // Access the type at index 1 in the MyParameterPack
+    using TypeInMyPack = typename NthType<0, abc>::type;
+
+    // Print the types
+    std::cout << "Type at index 1: " << typeid(TypeAtIndex1).name() << std::endl;
+    //std::cout << "Type in MyParameterPack at index 1: " << typeid(std::get<0>(abc)).name() << std::endl;
+
+
+  /*  test_for_ints();
     test_for_string();
-    test_for_threaded();
+    test_for_threaded();*/
     
 
     typedef int KeyType;
@@ -525,9 +568,9 @@ int main(int argc, char* argv[])
     //BPlusStoreType* ptrTree = new BPlusStoreType(3, 100000, 100000);
 
     typedef ObjectFatUID ObjectUIDType;
-    typedef IFlushCallback<ObjectUIDType> ICallback;
     typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+    typedef IFlushCallback<ObjectUIDType, LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType>> ICallback;
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     BPlusStoreType* ptrTree = new BPlusStoreType(3, 10, 1024, 1024 * 1024, "D:\\filestore.hdb");
 

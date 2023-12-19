@@ -47,11 +47,12 @@ public:
 		, m_uidParent(std::nullopt) {
 	}
 
-	//IndexNode(const std::vector<std::byte>& bytes)
-	//{
-	//	INDEXNODESTRUCT ptrData = reinterpret_cast<INDEXNODESTRUCT>(bytes);
-	//	m_ptrData(ptrData);
-	//}
+	IndexNode(char* szData)
+	{
+		m_ptrData.reset(reinterpret_cast<INDEXNODESTRUCT*>(szData));
+		//	INDEXNODESTRUCT ptrData = reinterpret_cast<INDEXNODESTRUCT>(bytes);
+		//	m_ptrData(ptrData);
+	}
 
 	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(make_shared<INDEXNODESTRUCT>())
@@ -343,12 +344,28 @@ public:
 		m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.end(), ptrSibling->m_ptrData->m_vtChildren.begin(), ptrSibling->m_ptrData->m_vtChildren.end());
 	}
 
-public:
-	std::tuple<uint8_t, const std::byte*, size_t> getSerializedBytes()
+	inline ErrorCode updateChildUID(const ObjectUIDType& uidChildOld, const ObjectUIDType& uidChildNew)
 	{
-		const std::byte* bytes = reinterpret_cast<const std::byte*>(m_ptrData.get());
-		return std::tuple<uint8_t, const std::byte*, size_t>(UID, bytes, sizeof(INDEXNODESTRUCT));
+		auto it = m_ptrData->m_vtChildren.begin();
+		while (it != m_ptrData->m_vtChildren.end())
+		{
+			if (*it == uidChildOld)
+			{
+				*it = uidChildNew;
+				return ErrorCode::Success;
+			}
+			it++;
+		}
+		return ErrorCode::Error;
+	}
 
+public:
+	inline const char* getSerializedBytes(uint8_t& uidObjectType, size_t& nDataSize)
+	{
+		nDataSize = sizeof(INDEXNODESTRUCT);
+		uidObjectType = UID;
+
+		return reinterpret_cast<const char*>(m_ptrData.get());
 	}
 
 	void instantiateSelf(std::byte* bytes)

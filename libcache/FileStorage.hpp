@@ -46,6 +46,7 @@ class FileStorage
 public:
 	typedef ObjectUIDType ObjectUIDType;
 	typedef ObjectWrapperType<ObjectTypeMarshaller, ObjectTypes...> ObjectType;
+	typedef std::tuple<ObjectTypes...> ObjectCoreTypes;
 
 private:
 	size_t m_nFileSize;
@@ -90,10 +91,10 @@ public:
 		
 		if (!m_fsStorage.is_open())
 		{
-			//throw new exception("should not occur!");   // TODO: critical log.
+			throw new exception("should not occur!");   // TODO: critical log.
 		}
 
-		m_threadBatchFlush = std::thread(handlerBatchFlush, this);
+		//m_threadBatchFlush = std::thread(handlerBatchFlush, this);
 	}
 
 	template <typename... InitArgs>
@@ -107,7 +108,6 @@ public:
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
 
 		if (m_mpObject.find(uidObject) == m_mpObject.end())
 		{
@@ -119,24 +119,26 @@ public:
 
 		return ptrObject;
 
-#ifdef __CONCURRENT__
 		lock_file_storage.unlock();
 #endif __CONCURRENT__
 
 		// Fetch from file.
 
-		//char* szBuffer = new char[m_nBlockSize];
+		char* szBuffer = new char[m_nBlockSize];
+		memset(szBuffer, 0, m_nBlockSize);
 
-		//m_fsStorage.read(szBuffer, m_nBlockSize);
+		m_fsStorage.seekg(uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+		m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize);
 
-		//return nullptr;
+		std::shared_ptr<ObjectType> ptrDeserializedObject = std::make_shared<ObjectType>(szBuffer);
+
+		return ptrDeserializedObject;
 	}
 
 	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject)
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
 
 		//if (m_mpObject.find(ptrKey) != m_mpObject.end())
 		//{
@@ -146,6 +148,31 @@ public:
 		m_mpObject[uidObject] = ptrObject;
 
 		return CacheErrorCode::Success;
+#else __CONCURRENT__
+		size_t nDataSize = 0;
+		uint8_t uidObjectType = 0;
+
+		const char* szData = ptrObject->serialize(uidObjectType, nDataSize);
+
+		m_fsStorage.seekp(m_nNextBlock * m_nBlockSize);
+		m_fsStorage.write((const char*)&uidObjectType, sizeof(uint8_t));
+		m_fsStorage.write((const char*)(szData), nDataSize);
+
+		size_t nBlockRequired = std::ceil( (nDataSize + sizeof(uint8_t)) / (float)m_nBlockSize);
+
+		ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromFileOffset(m_nNextBlock * m_nBlockSize, nDataSize + sizeof(uint8_t));
+
+		for (int idx = 0; idx < nBlockRequired; idx++)
+		{
+			m_vtAllocationTable[m_nNextBlock++] = true;
+		}
+	
+		m_fsStorage.flush();
+
+		m_ptrCallback->keyUpdate(ptrObject, uidObject, uidUpdated);
+
+		return CacheErrorCode::Success;
+#endif __CONCURRENT__
 	}
 
 	void performBatchFlush() 
