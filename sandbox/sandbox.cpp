@@ -530,12 +530,15 @@ int main(int argc, char* argv[])
 
     ptrTree->template init<DataNodeType>();
 
-    for (size_t nCntr = 0; nCntr < 1000; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr < 10000; nCntr = nCntr + 2)
     {
+        //std::cout << "..........................." << nCntr << std::endl;
         ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
     }
-    for (size_t nCntr = 1; nCntr < 1000; nCntr = nCntr + 2)
+    //std::cout << "\n\n\n\n\n\n\n\n\n..........................." << std::endl;
+    for (size_t nCntr = 1; nCntr < 10000; nCntr = nCntr + 2)
     {
+        //std::cout << "..........................." << nCntr << std::endl;
         ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
     }
         

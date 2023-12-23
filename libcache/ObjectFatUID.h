@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-
+#include <iostream>
 class ObjectFatUID
 {
 public:
@@ -85,6 +85,11 @@ public:
 public:
 	ObjectFatUID()
 	{
+	}
+
+	void print()
+	{
+		std::cout << "<" << (m_uid.m_nMediaType == Media::File ? "F" : "V") << ":" << m_uid.FATPOINTER.m_ptrVolatile << ">";
 	}
 };
 

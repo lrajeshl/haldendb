@@ -456,6 +456,64 @@ public:
 		return reinterpret_cast<Item*>(ptr)->m_oKey;
 	}
 
+	int getlrucount()
+	{
+		int cnt = 0;
+		std::shared_ptr<Item> _ptrItem = m_ptrHead;
+		do
+		{
+			cnt++;
+			_ptrItem = _ptrItem->m_ptrNext;
+
+		} while (_ptrItem != nullptr);
+		return cnt;
+	}
+
+	void printlru()
+	{
+		return;
+		int cnt = 0;
+		std::shared_ptr<Item> _ptrItem = m_ptrHead;
+		do
+		{
+			cnt++;
+			_ptrItem = _ptrItem->m_ptrNext;
+
+		} while (_ptrItem != nullptr);
+		/*
+		if (m_mpObject.size() > 100 && cnt < 99)
+		{
+		}
+		else
+		{
+			return;
+		}*/
+
+		std::cout << "Total count: " << m_mpObject.size() << ", cnt: " << cnt << std::endl;
+		std::shared_ptr<Item> ptrItem = m_ptrHead;
+		do
+		{
+			std::cout << "[";
+			if (ptrItem->m_ptrPrev != nullptr)
+				ptrItem->m_ptrPrev->m_oKey.print();
+			else
+				std::cout << "<>";
+
+			ptrItem->m_oKey.print();
+
+			if (ptrItem->m_ptrNext != nullptr)
+				ptrItem->m_ptrNext->m_oKey.print();
+			else
+				std::cout << "<>";
+
+			std::cout << "]";
+			std::cout << "->";// << std::endl;
+
+			ptrItem = ptrItem->m_ptrNext;
+
+		} while (ptrItem != nullptr);
+		std::cout << "." << std::endl;
+	}
 private:
 	inline void moveToFront(std::shared_ptr<Item> ptrItem)
 	{
@@ -568,8 +626,10 @@ private:
 
 		vtItems.clear();
 #else
+		printlru();
 		while (m_mpObject.size() >= m_nCapacity)
 		{
+			
 			int i = 0;
 			std::shared_ptr<Item> _temp = m_ptrTail->m_ptrPrev;
 			while (_temp->m_ptrPrev != nullptr)
@@ -577,24 +637,29 @@ private:
 				i++;
 				if (m_ptrTail->m_oKey == _temp->m_oKeyParent)
 				{
-					std::shared_ptr<Item> _tail = m_ptrTail;
-					std::shared_ptr<Item> _trgt = _temp;
+					//printlru();
 
-					std::shared_ptr<Item> _trgt_prv = _trgt->m_ptrPrev;
-					std::shared_ptr<Item> _trgt_nxt = _trgt->m_ptrNext;
+					std::cout << "before: " << getlrucount() << std::endl;
+					interchangeWithTail(_temp);
+					std::cout << "after: " << getlrucount() << std::endl;
 
-					_trgt->m_ptrPrev = _tail->m_ptrPrev;
-					_tail->m_ptrPrev->m_ptrNext = _tail;
-					_trgt->m_ptrNext = nullptr;
-					m_ptrTail = _trgt;
+					//std::shared_ptr<Item> _tail_prv = m_ptrTail->m_ptrPrev;
 
-					_trgt_prv->m_ptrNext = _tail;
-					_trgt_nxt->m_ptrPrev = _tail;
+					//std::shared_ptr<Item> _trgt_prv = _temp->m_ptrPrev;
+					//std::shared_ptr<Item> _trgt_nxt = _temp->m_ptrNext;
 
-					_tail->m_ptrNext = _trgt_nxt;
-					_tail->m_ptrPrev = _trgt_prv;
+					//m_ptrTail->m_ptrPrev = _trgt_prv;
+					//m_ptrTail->m_ptrNext = _trgt_nxt;
 
+					//_trgt_prv->m_ptrNext = m_ptrTail;
+					//_trgt_nxt->m_ptrPrev = m_ptrTail;
 
+					//m_ptrTail = _temp;
+					//m_ptrTail->m_ptrNext = nullptr;
+					//m_ptrTail->m_ptrPrev = _tail_prv;
+					//_tail_prv->m_ptrNext = m_ptrTail;
+
+					//printlru();
 					i = 0;
 					_temp = m_ptrTail->m_ptrPrev;
 					continue;
@@ -606,7 +671,12 @@ private:
 			}
 
 #ifdef __POSITION_AWARE_ITEMS__
+			if (m_ptrTail->m_oKeyParent == std::nullopt)
+			{
+				printlru();
+		}
 			m_ptrStorage->addObject(m_ptrTail->m_oKey, m_ptrTail->m_ptrValue, m_ptrTail->m_oKeyParent);
+		
 #else
 			m_ptrStorage->addObject(m_ptrTail->m_oKey, m_ptrTail->m_ptrValue);
 #endif __POSITION_AWARE_ITEMS__
@@ -623,8 +693,67 @@ private:
 				m_ptrHead = nullptr;
 			}
 		}
+		printlru();
 #endif __CONCURRENT__
 	}
+
+	void moveToTail(std::shared_ptr<Item> tail, std::shared_ptr<Item> nodeToMove) {
+		if (tail == nullptr || nodeToMove == nullptr)
+			return; // Invalid input
+
+		// Detach the node from its current position
+		if (nodeToMove->m_ptrPrev != nullptr)
+			nodeToMove->m_ptrPrev->m_ptrNext = nodeToMove->m_ptrNext;
+		else
+			tail = nodeToMove->m_ptrNext;
+
+		if (nodeToMove->m_ptrNext != nullptr)
+			nodeToMove->m_ptrNext->m_ptrPrev = nodeToMove->m_ptrPrev;
+
+		// Attach the node to the tail
+		if (tail != nullptr) {
+			tail->m_ptrNext = nodeToMove;
+			nodeToMove->m_ptrPrev = tail;
+			nodeToMove->m_ptrNext = nullptr;
+			tail = nodeToMove;
+		}
+		else {
+			// If the list is empty, set both head and tail to the node
+			tail = nodeToMove;
+		}
+	}
+
+	void interchangeWithTail(std::shared_ptr<Item> currentNode) {
+		if (currentNode == nullptr || currentNode == m_ptrTail) {
+			// Node is already the tail or is null
+			return;
+		}
+
+		// Adjust prev and next pointers of adjacent nodes
+		if (currentNode->m_ptrPrev) {
+			currentNode->m_ptrPrev->m_ptrNext = currentNode->m_ptrNext;
+	}
+		else {
+			// If currentNode is the head, update head
+			m_ptrHead = currentNode->m_ptrNext;
+		}
+
+		if (currentNode->m_ptrNext) {
+			currentNode->m_ptrNext->m_ptrPrev = currentNode->m_ptrPrev;
+		}
+
+		// Update prev and next pointers of the currentNode
+		currentNode->m_ptrPrev = m_ptrTail;
+		currentNode->m_ptrNext = nullptr;
+
+		// Update tail's next pointer to the currentNode
+		m_ptrTail->m_ptrNext = currentNode;
+
+		// Update tail to be the currentNode
+		m_ptrTail = currentNode;
+	}
+
+	
 
 #ifdef __CONCURRENT__
 	static void handlerCacheFlush(SelfType* ptrSelf)

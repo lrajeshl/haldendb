@@ -251,6 +251,8 @@ public:
             vtNodes.pop_back();
         }
 
+        //m_ptrCache->printlru();
+
         return ErrorCode::Success;
         void* current = m_ptrCache->gethead();
         std::cout << "*** ";
