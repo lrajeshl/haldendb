@@ -496,9 +496,24 @@ public:
 			ptrCache->updateParentUID(*it, parentuid);
 			it++;
 		}
+
 		return ErrorCode::Error;
 	}
 public:
+
+	void printkeys()
+	{
+		std::cout << "[I](";
+		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtPivots.size(); nIndex++)
+		{
+			std::cout << m_ptrData->m_vtPivots[nIndex];
+			if (nIndex < m_ptrData->m_vtPivots.size() - 1)
+				std::cout << ",";
+
+		}
+		std::cout << ")";
+	}
+
 	template <typename CacheType, typename CacheValueType, typename DataNodeType>
 	void print(CacheType ptrCache, size_t nLevel)
 	{

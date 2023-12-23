@@ -308,6 +308,18 @@ public:
 	}
 
 public:
+	void printkeys()
+	{
+		std::cout << "[D](";
+		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtKeys.size(); nIndex++)
+		{
+			std::cout << m_ptrData->m_vtKeys[nIndex];
+			if(nIndex < m_ptrData->m_vtKeys.size() - 1)
+				std::cout << ",";
+		}
+		std::cout << ")";
+	}
+
 	void print(size_t nLevel)
 	{
 		std::cout << std::string(nLevel, '.').c_str() << " **LEVEL**:[" << nLevel << "] BEGIN" << std::endl;

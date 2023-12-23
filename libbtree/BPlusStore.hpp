@@ -86,7 +86,17 @@ public:
         do
         {
 #ifdef __POSITION_AWARE_ITEMS__
+            uidCurrentNodeParent = ckLastNode;
             m_ptrCache->getObject(ckCurrentNode, ptrCurrentNode, uidCurrentNodeParent);    //TODO: lock
+            if (ptrLastNode!=nullptr &&!uidCurrentNodeParent) 
+            {
+                throw new std::exception("should not occur!");   // TODO: critical log.
+            }
+            if (ptrLastNode != nullptr &&uidCurrentNodeParent != ckLastNode)
+            {
+                throw new std::exception("should not occur!");   // TODO: critical log.
+        }
+
 #else
             m_ptrCache->getObject(ckCurrentNode, ptrCurrentNode);    //TODO: lock
 #endif __POSITION_AWARE_ITEMS__
@@ -241,6 +251,38 @@ public:
             vtNodes.pop_back();
         }
 
+        return ErrorCode::Success;
+        void* current = m_ptrCache->gethead();
+        std::cout << "*** ";
+        while (current != NULL)
+        {
+            ObjectUIDType _t = m_ptrCache->getuid_(current);
+
+            std::optional< ObjectUIDType> pk;
+            ObjectTypePtr ptrObject = nullptr;
+            m_ptrCache->getObject_(_t, ptrObject, pk);
+
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrObject->data))
+            {
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrObject->data);
+
+                ptrIndexNode->printkeys();
+                //ckCurrentNode = ptrIndexNode->getChild(key);
+            }
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrObject->data))
+            {
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrObject->data);
+
+                ptrDataNode->printkeys();
+                //errCode = ptrDataNode->getValue(key, value);
+
+                //break;
+            }
+            current = m_ptrCache->getnext(current);
+            if (current != NULL)
+                std::cout << " -> ";
+        }
+        std::cout << " ...." << std::endl;
         return ErrorCode::Success;
     }
 
@@ -556,7 +598,7 @@ public:
             throw new std::exception("should not occur!");   // TODO: critical log.
         }
 
-        std::cout << "Type at the 1st index: " << typeid(INodeType).name() << std::endl;
+        //std::cout << "Type at the 1st index: " << typeid(INodeType).name() << std::endl;
 
         if (std::holds_alternative<std::shared_ptr<INodeType>>(*ptrObject->data))
         {

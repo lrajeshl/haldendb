@@ -426,6 +426,34 @@ public:
 		{
 			m_mpObject[child]->m_oKeyParent = parent;
 		}
+		else
+		{
+			//throw new std::exception("should not occur!"); node could be on file.
+
+		}
+	}
+
+	void* gethead()
+	{
+		if (m_ptrHead== nullptr)
+			return NULL;
+
+		return reinterpret_cast<void*>(m_ptrHead.get());
+	}
+
+	void* getnext(void* ptr)
+	{
+		Item* cur = reinterpret_cast<Item*>(ptr);
+
+		if (cur->m_ptrNext == nullptr)
+			return NULL;
+
+		return reinterpret_cast<void*>(cur->m_ptrNext.get());
+	}
+
+	ObjectUIDType getuid_(void* ptr)
+	{
+		return reinterpret_cast<Item*>(ptr)->m_oKey;
 	}
 
 private:
@@ -542,6 +570,41 @@ private:
 #else
 		while (m_mpObject.size() >= m_nCapacity)
 		{
+			int i = 0;
+			std::shared_ptr<Item> _temp = m_ptrTail->m_ptrPrev;
+			while (_temp->m_ptrPrev != nullptr)
+			{
+				i++;
+				if (m_ptrTail->m_oKey == _temp->m_oKeyParent)
+				{
+					std::shared_ptr<Item> _tail = m_ptrTail;
+					std::shared_ptr<Item> _trgt = _temp;
+
+					std::shared_ptr<Item> _trgt_prv = _trgt->m_ptrPrev;
+					std::shared_ptr<Item> _trgt_nxt = _trgt->m_ptrNext;
+
+					_trgt->m_ptrPrev = _tail->m_ptrPrev;
+					_tail->m_ptrPrev->m_ptrNext = _tail;
+					_trgt->m_ptrNext = nullptr;
+					m_ptrTail = _trgt;
+
+					_trgt_prv->m_ptrNext = _tail;
+					_trgt_nxt->m_ptrPrev = _tail;
+
+					_tail->m_ptrNext = _trgt_nxt;
+					_tail->m_ptrPrev = _trgt_prv;
+
+
+					i = 0;
+					_temp = m_ptrTail->m_ptrPrev;
+					continue;
+					//_temp->m_ptrPrev
+
+					//throw new std::exception("should not occur!");   // TODO: critical log.
+				}
+				_temp = _temp->m_ptrPrev;
+			}
+
 #ifdef __POSITION_AWARE_ITEMS__
 			m_ptrStorage->addObject(m_ptrTail->m_oKey, m_ptrTail->m_ptrValue, m_ptrTail->m_oKeyParent);
 #else
