@@ -15,7 +15,7 @@
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
-#define __CONCURRENT__
+//#define __CONCURRENT__
 
 template <typename ICallback, typename StorageType>
 class LRUCache
@@ -119,7 +119,13 @@ public:
 			return CacheErrorCode::Success;
 		}
 
-		return CacheErrorCode::KeyDoesNotExist;
+		CacheErrorCode errCode = m_ptrStorage->remove(key);
+		if (errCode != CacheErrorCode::Success)
+		{
+			throw new std::exception("should not occur!");
+		}
+
+		return CacheErrorCode::Success;
 	}
 
 	CacheErrorCode getObject(ObjectUIDType key, ObjectTypePtr& ptrObject)
@@ -170,6 +176,7 @@ public:
 			}
 
 			ptrObject = ptrValue;
+			flushItemsToStorage();
 			return CacheErrorCode::Success;
 		}
 		
@@ -243,6 +250,8 @@ public:
 				ptrObject = std::get<Type>(*ptrValue->data);
 				return CacheErrorCode::Success;
 			}
+
+			flushItemsToStorage();
 
 			return CacheErrorCode::Error;
 		}
@@ -323,7 +332,27 @@ private:
 
 	inline void removeFromLRU(std::shared_ptr<Item> ptrItem)
 	{
-		if (ptrItem == m_ptrHead)
+		if (ptrItem->m_ptrPrev != nullptr) {
+			ptrItem->m_ptrPrev->m_ptrNext = ptrItem->m_ptrNext;
+		}
+		else {
+			// If the node to be removed is the head
+			m_ptrHead = ptrItem->m_ptrNext;
+			m_ptrHead->m_ptrPrev = nullptr;
+
+		}
+
+		if (ptrItem->m_ptrNext != nullptr) {
+			ptrItem->m_ptrNext->m_ptrPrev = ptrItem->m_ptrPrev;
+		}
+		else {
+			// If the node to be removed is the tail
+			m_ptrTail = ptrItem->m_ptrPrev;
+				m_ptrTail->m_ptrNext = nullptr;
+		}
+
+
+		/*if (ptrItem == m_ptrHead)
 		{
 			m_ptrHead = ptrItem->m_ptrNext;
 			m_ptrHead->m_ptrPrev = nullptr;
@@ -342,7 +371,7 @@ private:
 		}
 
 		ptrItem->m_ptrPrev = nullptr;
-		ptrItem->m_ptrNext = nullptr;
+		ptrItem->m_ptrNext = nullptr;*/
 	}
 
 	inline void flushItemsToStorage()

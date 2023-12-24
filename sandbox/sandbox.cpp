@@ -161,20 +161,26 @@ template <typename BPlusStoreType, typename IndexNodeType, typename DataNodeType
 void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
+    total_entries = 9990;
     int i = 0;
     while (i++ < 10) {
-        std::cout << i << std::endl;
-        for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
+        //std::cout << i << std::endl;
+        for (int nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
         }
-        for (size_t nCntr = 1; nCntr < total_entries; nCntr = nCntr + 2)
+        for (int nCntr = 1; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
         }
+        
+     /*   std::ofstream out_t("d:\\tree_post_insert.txt");
+        ptrTree->template print<IndexNodeType, DataNodeType>(out_t);
+        out_t.flush();
+        out_t.close();*/
 
-        for (size_t nCntr = 0; nCntr < total_entries; nCntr++)
+
+        for (int nCntr = 0; nCntr < total_entries; nCntr++)
         {
             int nValue = 0;
             ErrorCode code = ptrTree->template search<IndexNodeType, DataNodeType>(nCntr, nValue);
@@ -182,14 +188,31 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
             assert(nValue == nCntr);
         }
 
-        for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ErrorCode code = ptrTree->template remove<IndexNodeType, DataNodeType>(nCntr);
+            assert(code == ErrorCode::Success);
+
+            /*std::string _filename = "d:\\tree_dump\\tree_post_delete";
+            _filename.append(to_string(nCntr));
+            std::ofstream out_d1(_filename);
+            ptrTree->template print<IndexNodeType, DataNodeType>(out_d1);
+            out_d1.flush();
+            out_d1.close();*/
+
         }
-        for (size_t nCntr = 1; nCntr < total_entries; nCntr = nCntr + 2)
+
+
+        for (int nCntr = 1; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ErrorCode code = ptrTree->template remove<IndexNodeType, DataNodeType>(nCntr);
+            assert(code == ErrorCode::Success);
         }
+
+        std::ofstream out_d2("d:\\tree_post_delete2.txt");
+        ptrTree->template print<IndexNodeType, DataNodeType>(out_d2);
+        out_d2.flush();
+        out_d2.close();
 
         for (int nCntr = 0; nCntr < total_entries; nCntr++)
         {
@@ -349,7 +372,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            //int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
         }
         {
             typedef int KeyType;
@@ -362,7 +385,7 @@ void test_for_ints()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 100000000);
+            BPlusStoreType ptrTree(idx, 50, 100000000);
             ptrTree.template init<DataNodeType>();
 
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);

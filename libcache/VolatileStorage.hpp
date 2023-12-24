@@ -45,6 +45,18 @@ public:
 		return nullptr;
 	}
 
+	CacheErrorCode remove(ObjectUIDType ptrKey)
+	{
+		auto it = m_mpObject.find(ptrKey);
+		if (it != m_mpObject.end())
+		{
+			m_mpObject.erase((*it).first);
+			return CacheErrorCode::Success;
+		}
+
+		return CacheErrorCode::KeyDoesNotExist;
+	}
+
 	CacheErrorCode addObject(ObjectUIDType ptrKey, std::shared_ptr<ObjectType> ptrValue)
 	{
 		if (m_mpObject.size() >= m_nPoolSize)

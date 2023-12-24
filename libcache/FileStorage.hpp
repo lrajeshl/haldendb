@@ -91,6 +91,13 @@ public:
 		return nullptr;
 	}
 
+	CacheErrorCode remove(ObjectUIDType ptrKey)
+	{
+		
+
+		return CacheErrorCode::KeyDoesNotExist;
+	}
+
 	CacheErrorCode addObject(ObjectUIDType ptrKey, std::shared_ptr<ObjectType> ptrValue)
 	{
 		std::tuple<uint8_t, const std::byte*, size_t> tpSerializedData = ptrValue->serialize();

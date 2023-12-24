@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <memory>
 #include <vector>
 #include <string>
@@ -8,6 +8,9 @@
 #include <iostream>
 #include <cmath>
 #include <optional>
+
+#include <iostream>
+#include <fstream>
 
 #include "ErrorCodes.h"
 
@@ -123,10 +126,16 @@ public:
 		{
 			ptrLHSNode->mergeNodes(ptrChild, m_ptrData->m_vtPivots[nChildIdx - 1]);
 
+			cktNodeToDelete = m_ptrData->m_vtChildren[nChildIdx];
+			if (cktNodeToDelete != cktChild)
+			{
+				throw new std::exception("should not occur!");
+			}
+
 			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx - 1);
 			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx);
 
-			cktNodeToDelete = cktChild;
+			//cktNodeToDelete = cktChild;
 
 			return ErrorCode::Success;
 		}
@@ -186,11 +195,16 @@ public:
 			ptrLHSNode->mergeNode(ptrChild);
 
 			//ptrCache->remove(ptrChildptr);
+			cktNodeToDelete = m_ptrData->m_vtChildren[nChildIdx];
+			if (cktNodeToDelete != cktChild)
+			{
+				throw new std::exception("should not occur!");
+			}
 
 			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx - 1);
 			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx);
 
-			cktNodeToDelete = cktChild;
+			//cktNodeToDelete = cktChild;
 
 			return ErrorCode::Success;
 		}
@@ -327,34 +341,41 @@ public:
 
 public:
 	template <typename CacheType, typename CacheValueType, typename DataNodeType>
-	void print(CacheType ptrCache, size_t nLevel)
+	void print(std::ofstream& out, CacheType ptrCache, size_t nLevel, string prefix)
 	{
-		std::cout << std::string(nLevel, '.').c_str() << " **LEVEL**:[" << nLevel << "] BEGIN" << std::endl;
+		int nSpace = 7;
 
+		prefix.append(std::string(nSpace- 1, ' '));
+		prefix.append("|");
 		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtChildren.size(); nIndex++)
 		{
-			if (nIndex < m_ptrData->m_vtPivots.size()) 
+			out << " " << prefix << std::endl;
+			out << " " << prefix << std::string(nSpace, '-').c_str();// << std::endl;
+
+			if (nIndex < m_ptrData->m_vtPivots.size())
 			{
-				std::cout << std::string(nLevel, '.').c_str() << " ==> pivot: " << m_ptrData->m_vtPivots[nIndex] << std::endl;
+				out << " < (" << m_ptrData->m_vtPivots[nIndex] << ")";// << std::endl;
+			}
+			else {
+				out << " >= (" << m_ptrData->m_vtPivots[nIndex - 1] << ")";// << std::endl;
 			}
 
-			std::cout << std::string(nLevel, '.').c_str() << " ==> child: " << std::endl;
+
+			out << std::endl;
 
 			CacheValueType ptrNode = nullptr;
-			ptrCache->getObjectOfType(m_ptrData->m_vtChildren[nIndex], ptrNode);
+			ptrCache->getObject(m_ptrData->m_vtChildren[nIndex], ptrNode);
 			if (std::holds_alternative<shared_ptr<SelfType>>(*ptrNode->data))
 			{
 				shared_ptr<SelfType> ptrIndexNode = std::get<shared_ptr<SelfType>>(*ptrNode->data);
-				ptrIndexNode->template print<CacheType, CacheValueType, DataNodeType>(ptrCache, nLevel + 1);
+				ptrIndexNode->template print<CacheType, CacheValueType, DataNodeType>(out, ptrCache, nLevel + 1, prefix);
 			}
 			else if (std::holds_alternative<shared_ptr<DataNodeType>>(*ptrNode->data))
 			{
 				shared_ptr<DataNodeType> ptrDataNode = std::get<shared_ptr<DataNodeType>>(*ptrNode->data);
-				ptrDataNode->print(nLevel + 1);
+				ptrDataNode->print(out, nLevel + 1, prefix);
 			}
 		}
-
-		std::cout << std::string(nLevel, '.').c_str() << " **LEVEL**:[" << nLevel << "] END" << std::endl;
 	}
 
 	void wieHiestDu() {

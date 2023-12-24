@@ -6,6 +6,9 @@
 #include <cmath>
 #include <optional>
 
+#include <iostream>
+#include <fstream>
+
 #include "ErrorCodes.h"
 
 template <typename KeyType, typename ValueType, typename ObjectUIDType, uint8_t TYPE_UID>
@@ -201,16 +204,17 @@ public:
 	}
 
 public:
-	void print(size_t nLevel)
+	void print(std::ofstream& out, size_t nLevel, std::string prefix)
 	{
-		std::cout << std::string(nLevel, '.').c_str() << " **LEVEL**:[" << nLevel << "] BEGIN" << std::endl;
+		int nSpace = 7;
+
+		prefix.append(std::string(nSpace - 1, ' '));
+		prefix.append("|");
 
 		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtKeys.size(); nIndex++)
 		{
-			std::cout << std::string(nLevel, '.').c_str() << " ==> key: " << m_ptrData->m_vtKeys[nIndex] << ", value: " << m_ptrData->m_vtValues[nIndex] << std::endl;
+			out << " " << prefix << std::string(nSpace, '-').c_str() << "(K: " << m_ptrData->m_vtKeys[nIndex] << ", V: " << m_ptrData->m_vtValues[nIndex] << ")" << std::endl;
 		}
-
-		std::cout << std::string(nLevel, '.').c_str() << " **LEVEL**:[" << nLevel << "] END" << std::endl;
 	}
 
 	void wieHiestDu() {

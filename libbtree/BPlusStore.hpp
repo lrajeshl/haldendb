@@ -13,7 +13,10 @@
 #include "CacheErrorCodes.h"
 #include "ErrorCodes.h"
 
-#define __CONCURRENT__
+#include <iostream>
+#include <fstream>
+
+//#define __CONCURRENT__
 
 template <typename ICallback, typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore : public ICallback
@@ -279,7 +282,10 @@ public:
             {
                 std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
 
-                ptrDataNode->remove(key);
+                if( ptrDataNode->remove(key) == ErrorCode::KeyDoesNotExist)
+                {
+                    throw new std::exception("should not occur!");
+                }
 
                 if (ptrDataNode->requireMerge(m_nDegree))
                 {
@@ -312,6 +318,27 @@ public:
                     throw new std::exception("should not occur!");
                 }
 
+                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data))
+                {
+                    std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data);
+
+                    if (ptrChildIndexNode->getKeysCount() == 0)
+                    {
+                        m_cktRootNodeKey = ptrChildIndexNode->getChildAt(0);
+                    }
+                    else
+                    {
+                        int i = 0;
+                    }
+
+                }
+                else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrChildNode->data))
+                {
+                    m_cktRootNodeKey = ckChildNode; 
+                    //throw new std::exception("should not occur!");
+                }
+
+                
                 break;
             }
 
@@ -353,7 +380,9 @@ public:
 
                         if (ptrParentIndexNode->getKeysCount() == 0)
                         {
-                            m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
+                            //continue;
+                            //m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
+                            //m_ptrCache->remove(prNodeDetails.first);
                             //throw new exception("should not occur!");
                         }
                     }
@@ -389,7 +418,9 @@ public:
 
                     if (ptrParentIndexNode->getKeysCount() == 0)
                     {
-                        m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
+                        //continue;
+                        //m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
+                        //m_ptrCache->remove(prNodeDetails.first);
                         //throw new exception("should not occur!");
                     }
                 }
@@ -405,22 +436,30 @@ public:
     }
 
     template <typename IndexNodeType, typename DataNodeType>
-    void print()
+    void print(std::ofstream& out)
     {
+        int nSpace = 7;
+
+        std::string prefix;
+
+        out << prefix << "|" << std::endl;
+        out << prefix << "|" << std::string(nSpace, '-').c_str() << "(root)"  << std::endl;
+        //prefix.append(std::string(nSpace, ' '));       
+
         ObjectTypePtr ptrRootNode = nullptr;
-        m_ptrCache->getObjectOfType(m_cktRootNodeKey.value(), ptrRootNode);
+        m_ptrCache->getObject(m_cktRootNodeKey.value(), ptrRootNode);
 
         if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrRootNode->data))
         {
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrRootNode->data);
 
-            ptrIndexNode->template print<std::shared_ptr<CacheType>, ObjectTypePtr, DataNodeType>(m_ptrCache, 0);
+            ptrIndexNode->template print<std::shared_ptr<CacheType>, ObjectTypePtr, DataNodeType>(out, m_ptrCache, 0, prefix);
         }
         else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrRootNode->data))
         {
             std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrRootNode->data);
 
-            ptrDataNode->print(0);
+            ptrDataNode->print(out, 0, prefix);
         }
     }
 
