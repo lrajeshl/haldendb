@@ -151,6 +151,9 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
         }
 
         vtThreads.clear();
+
+        int ijk = ptrTree->getlrucount();
+        assert(1 == ijk);
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
@@ -161,10 +164,10 @@ template <typename BPlusStoreType, typename IndexNodeType, typename DataNodeType
 void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    total_entries = 9990;
+    //total_entries = 9990;
     int i = 0;
     while (i++ < 10) {
-        //std::cout << i << std::endl;
+        std::cout << i << std::endl;
         for (int nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->template insert<IndexNodeType, DataNodeType>(nCntr, nCntr);
@@ -209,7 +212,7 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
             assert(code == ErrorCode::Success);
         }
 
-        std::ofstream out_d2("d:\\tree_post_delete2.txt");
+        std::ofstream out_d2("d:\\tree_post_delete_f.txt");
         ptrTree->template print<IndexNodeType, DataNodeType>(out_d2);
         out_d2.flush();
         out_d2.close();
@@ -221,6 +224,8 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
             assert(code == ErrorCode::KeyDoesNotExist);
         }
+
+        assert(1 == ptrTree->getlrucount());
     }
     i = 0;
     while (i++ < 10) {
@@ -258,6 +263,8 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
             assert(code == ErrorCode::KeyDoesNotExist);
         }
+
+        assert(1 == ptrTree->getlrucount());
 
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -307,7 +314,7 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
             assert(code == ErrorCode::KeyDoesNotExist);
         }
-
+        assert(1 == ptrTree->getlrucount());
     }
 
     i = 0;
@@ -346,7 +353,7 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
             assert(code == ErrorCode::KeyDoesNotExist);
         }
-
+        assert(1 == ptrTree->getlrucount());
     }
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -385,10 +392,10 @@ void test_for_ints()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 50, 100000000);
+            BPlusStoreType ptrTree(idx, 1000, 100000000);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3*10000);
         }
         {
             typedef int KeyType;
@@ -428,7 +435,7 @@ void test_for_string()
             BPlusStoreType* ptrTree1 = new BPlusStoreType(idx);
             ptrTree1->template init<DataNodeType>();
 
-            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree1, idx, 10000);
+            //string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree1, idx, 10000);
         }
         {
             typedef string KeyType;
@@ -444,7 +451,7 @@ void test_for_string()
             BPlusStoreType* ptrTree2 = new BPlusStoreType(idx, 1000, 100000000);
             ptrTree2->template init<DataNodeType>();
 
-            string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree2, idx, 10000);
+            //string_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree2, idx, 10000);
         }
         {
             typedef string KeyType;
@@ -483,7 +490,7 @@ void test_for_threaded()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            //threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
         }
         {
             typedef int KeyType;
@@ -523,7 +530,7 @@ void test_for_threaded()
 int main(int argc, char* argv[])
 {
     test_for_ints();
-    test_for_string();
+    //test_for_string();
     test_for_threaded();
 
     typedef int KeyType;

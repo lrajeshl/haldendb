@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 
-//#define __CONCURRENT__
+#define __CONCURRENT__
 
 template <typename ICallback, typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore : public ICallback
@@ -318,6 +318,23 @@ public:
                     throw new std::exception("should not occur!");
                 }
 
+                ObjectTypePtr _k;
+                m_ptrCache->getObject(*m_cktRootNodeKey, _k);
+                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*_k->data))
+                {
+                    std::shared_ptr<IndexNodeType> _kk = std::get<std::shared_ptr<IndexNodeType>>(*_k->data);
+                    if (_kk->getKeysCount() == 0) {
+                        m_ptrCache->remove(*m_cktRootNodeKey);
+                    }
+                }
+                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*_k->data))
+                {
+                    std::shared_ptr<DataNodeType> _kk = std::get<std::shared_ptr<DataNodeType>>(*_k->data);
+                    if (_kk->getKeysCount() == 0) {
+                        m_ptrCache->remove(*m_cktRootNodeKey);
+                    }
+                }
+
                 if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data))
                 {
                     std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data);
@@ -380,11 +397,17 @@ public:
 
                         if (ptrParentIndexNode->getKeysCount() == 0)
                         {
+                            int k = 0;
                             //continue;
                             //m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
                             //m_ptrCache->remove(prNodeDetails.first);
                             //throw new exception("should not occur!");
                         }
+                    }
+
+                    if (ptrChildIndexNode->m_ptrData->m_vtPivots.size() == 0)
+                    {
+                        int k = 0;
                     }
                 }
                 else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrChildNode->data))
@@ -418,6 +441,7 @@ public:
 
                     if (ptrParentIndexNode->getKeysCount() == 0)
                     {
+                        int k = 0;
                         //continue;
                         //m_cktRootNodeKey = ptrParentIndexNode->getChildAt(0);
                         //m_ptrCache->remove(prNodeDetails.first);
@@ -464,6 +488,11 @@ public:
     }
 
 public:
+    int getlrucount()
+    {
+        return m_ptrCache->getlrucount();
+    }
+
     CacheErrorCode keyUpdate(ObjectUIDType uidObject)
     {
         return CacheErrorCode::Success;

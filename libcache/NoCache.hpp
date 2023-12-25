@@ -70,4 +70,9 @@ public:
 
 		return reinterpret_cast<ObjectUIDType>(ptrValue);
 	}
+
+	int getlrucount()
+	{
+		return 0;
+	}
 };

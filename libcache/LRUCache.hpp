@@ -15,7 +15,7 @@
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
-//#define __CONCURRENT__
+#define __CONCURRENT__
 
 template <typename ICallback, typename StorageType>
 class LRUCache
@@ -176,7 +176,9 @@ public:
 			}
 
 			ptrObject = ptrValue;
+#ifndef __CONCURRENT__
 			flushItemsToStorage();
+#endif __CONCURRENT__
 			return CacheErrorCode::Success;
 		}
 		
@@ -304,6 +306,18 @@ public:
 		return key;
 	}
 
+	int getlrucount()
+	{
+		int cnt = 0;
+		std::shared_ptr<Item> _ptrItem = m_ptrHead;
+		do
+		{
+			cnt++;
+			_ptrItem = _ptrItem->m_ptrNext;
+
+		} while (_ptrItem != nullptr);
+		return cnt;
+	}
 private:
 	inline void moveToFront(std::shared_ptr<Item> ptrItem)
 	{
@@ -338,6 +352,7 @@ private:
 		else {
 			// If the node to be removed is the head
 			m_ptrHead = ptrItem->m_ptrNext;
+			if (m_ptrHead != nullptr)
 			m_ptrHead->m_ptrPrev = nullptr;
 
 		}
@@ -348,6 +363,8 @@ private:
 		else {
 			// If the node to be removed is the tail
 			m_ptrTail = ptrItem->m_ptrPrev;
+			if (m_ptrTail != nullptr)
+
 				m_ptrTail->m_ptrNext = nullptr;
 		}
 

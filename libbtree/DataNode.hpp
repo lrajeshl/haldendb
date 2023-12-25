@@ -160,6 +160,11 @@ public:
 		ptrLHSSibling->m_ptrData->m_vtKeys.pop_back();
 		ptrLHSSibling->m_ptrData->m_vtValues.pop_back();
 
+		if (ptrLHSSibling->m_ptrData->m_vtKeys.size() == 0)
+		{
+			throw new std::exception("should not occur!");
+		}
+
 		m_ptrData->m_vtKeys.insert(m_ptrData->m_vtKeys.begin(), key);
 		m_ptrData->m_vtValues.insert(m_ptrData->m_vtValues.begin(), value);
 
@@ -173,6 +178,12 @@ public:
 
 		ptrRHSSibling->m_ptrData->m_vtKeys.erase(ptrRHSSibling->m_ptrData->m_vtKeys.begin());
 		ptrRHSSibling->m_ptrData->m_vtValues.erase(ptrRHSSibling->m_ptrData->m_vtValues.begin());
+
+		if (ptrRHSSibling->m_ptrData->m_vtKeys.size() == 0)
+		{
+			throw new std::exception("should not occur!");
+		}
+
 
 		m_ptrData->m_vtKeys.push_back(key);
 		m_ptrData->m_vtValues.push_back(value);

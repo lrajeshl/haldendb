@@ -29,13 +29,14 @@ private:
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ObjectUIDType>::const_iterator CacheKeyTypeIterator;
 
+public:
 	struct INDEXNODESTRUCT
 	{
 		std::vector<KeyType> m_vtPivots;
 		std::vector<ObjectUIDType> m_vtChildren;
 	};
 
-private:
+public:
 	std::shared_ptr<INDEXNODESTRUCT> m_ptrData;
 
 public:
@@ -260,12 +261,20 @@ public:
 
 	inline bool canTriggerMerge(size_t nDegree)
 	{
-		return m_ptrData->m_vtPivots.size() - 1 <= std::ceil(nDegree / 2.0f);	// TODO: macro!
+		if (m_ptrData->m_vtPivots.size() == 0)
+		{
+			std::cout << m_ptrData->m_vtPivots.size() - 1;
+		}
+		return m_ptrData->m_vtPivots.size() <= std::ceil(nDegree / 2.0f) + 1;	// TODO: macro!
 
 	}
 
 	inline bool requireMerge(size_t nDegree)
 	{
+		if (m_ptrData->m_vtPivots.size() == 0)
+		{
+			//std::cout << (m_ptrData->m_vtPivots.size() <= std::ceil(nDegree / 2.0f));
+		}
 		return m_ptrData->m_vtPivots.size() <= std::ceil(nDegree / 2.0f);
 	}
 
@@ -299,6 +308,11 @@ public:
 		ptrLHSSibling->m_ptrData->m_vtPivots.pop_back();
 		ptrLHSSibling->m_ptrData->m_vtChildren.pop_back();
 
+		if (ptrLHSSibling->m_ptrData->m_vtPivots.size() == 0)
+		{
+			throw new std::exception("should not occur!");
+		}
+
 		m_ptrData->m_vtPivots.insert(m_ptrData->m_vtPivots.begin(), keytoassign);
 		m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.begin(), value);
 
@@ -313,6 +327,11 @@ public:
 		ptrRHSSibling->m_ptrData->m_vtPivots.erase(ptrRHSSibling->m_ptrData->m_vtPivots.begin());
 		ptrRHSSibling->m_ptrData->m_vtChildren.erase(ptrRHSSibling->m_ptrData->m_vtChildren.begin());
 
+		if (ptrRHSSibling->m_ptrData->m_vtPivots.size() == 0)
+		{
+			throw new std::exception("should not occur!");
+
+		}
 		m_ptrData->m_vtPivots.push_back(keytoassign);
 		m_ptrData->m_vtChildren.push_back(value);
 
