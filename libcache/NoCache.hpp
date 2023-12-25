@@ -73,6 +73,6 @@ public:
 
 	int getlrucount()
 	{
-		return 0;
+		return 1;
 	}
 };

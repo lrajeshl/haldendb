@@ -89,7 +89,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int i = 0;
-    while (i++ < 100) {
+    while (i++ < 20) {
         std::cout << i << std::endl;
 
         for (int nIdx = 0; nIdx < thread_count; nIdx++)
@@ -215,10 +215,10 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
             assert(code == ErrorCode::Success);
         }
 
-        std::ofstream out_d2("d:\\tree_post_delete_f.txt");
+      /*  std::ofstream out_d2("d:\\tree_post_delete_f.txt");
         ptrTree->template print<IndexNodeType, DataNodeType>(out_d2);
         out_d2.flush();
-        out_d2.close();
+        out_d2.close();*/
 
         for (int nCntr = 0; nCntr < total_entries; nCntr++)
         {
@@ -382,7 +382,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            //int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
         }
         {
             typedef int KeyType;
@@ -532,7 +532,7 @@ void test_for_threaded()
 
 int main(int argc, char* argv[])
 {
-    //test_for_ints();
+    test_for_ints();
     //test_for_string();
     test_for_threaded();
 

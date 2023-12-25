@@ -318,43 +318,48 @@ public:
                     throw new std::exception("should not occur!");
                 }
 
+                if (*m_cktRootNodeKey != ckChildNode)
+                {
+                    throw new std::exception("should not occur!");
+                }
+
+                //ObjectUIDType _newroot;
+                //if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data))
+                //{
+                //    std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data);
+
+                //    if (ptrChildIndexNode->getKeysCount() == 0)
+                //    {
+                //        _newroot = ptrChildIndexNode->getChildAt(0);
+                //    }
+                //}
+                //else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrChildNode->data))
+                //{
+                //    _newroot = ckChildNode;
+                //    //throw new std::exception("should not occur!");
+                //}
+
+
                 ObjectTypePtr _k;
                 m_ptrCache->getObject(*m_cktRootNodeKey, _k);
                 if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*_k->data))
                 {
                     std::shared_ptr<IndexNodeType> _kk = std::get<std::shared_ptr<IndexNodeType>>(*_k->data);
                     if (_kk->getKeysCount() == 0) {
+                        ObjectUIDType _tmp = _kk->getChildAt(0);
                         m_ptrCache->remove(*m_cktRootNodeKey);
+                        m_cktRootNodeKey = _tmp;
                     }
                 }
                 else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*_k->data))
                 {
                     std::shared_ptr<DataNodeType> _kk = std::get<std::shared_ptr<DataNodeType>>(*_k->data);
                     if (_kk->getKeysCount() == 0) {
-                        m_ptrCache->remove(*m_cktRootNodeKey);
+                        //m_ptrCache->remove(*m_cktRootNodeKey);
                     }
                 }
 
-                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data))
-                {
-                    std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data);
-
-                    if (ptrChildIndexNode->getKeysCount() == 0)
-                    {
-                        m_cktRootNodeKey = ptrChildIndexNode->getChildAt(0);
-                    }
-                    else
-                    {
-                        int i = 0;
-                    }
-
-                }
-                else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrChildNode->data))
-                {
-                    m_cktRootNodeKey = ckChildNode; 
-                    //throw new std::exception("should not occur!");
-                }
-
+               
                 
                 break;
             }
