@@ -143,8 +143,8 @@ public:
 		}
 
 #ifdef __CONCURRENT__
-		lock_cache.unlock();
 		std::shared_lock<std::shared_mutex> lock_storage(m_mtxStorage); // TODO: requesting the same key?
+		lock_cache.unlock();
 #endif __CONCURRENT__
 
 		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(key);
@@ -160,6 +160,14 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 #endif __CONCURRENT__
+
+			if (m_mpObject.find(key) != m_mpObject.end())
+			{
+				std::shared_ptr<Item> ptrItem = m_mpObject[key];
+				moveToFront(ptrItem);
+				ptrObject = ptrItem->m_ptrValue;
+				return CacheErrorCode::Success;
+			}
 
 			m_mpObject[key] = ptrItem;
 
@@ -211,8 +219,8 @@ public:
 		}
 
 #ifdef __CONCURRENT__
-		lock_cache.unlock();
 		std::shared_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+		lock_cache.unlock();
 #endif __CONCURRENT__
 
 		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(key);
@@ -228,6 +236,25 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 #endif __CONCURRENT__
+
+
+			if (m_mpObject.find(key) != m_mpObject.end())
+			{
+				std::shared_ptr<Item> ptrItem = m_mpObject[key];
+				moveToFront(ptrItem);
+
+				if (std::holds_alternative<Type>(*ptrItem->m_ptrValue->data))
+				{
+					ptrObject = std::get<Type>(*ptrItem->m_ptrValue->data);
+					return CacheErrorCode::Success;
+				}
+
+				return CacheErrorCode::Error;
+			}
+
+
+
+
 
 			m_mpObject[key] = ptrItem;
 
@@ -253,8 +280,9 @@ public:
 				return CacheErrorCode::Success;
 			}
 
+#ifndef __CONCURRENT__
 			flushItemsToStorage();
-
+#endif __CONCURRENT__
 			return CacheErrorCode::Error;
 		}
 
@@ -323,24 +351,28 @@ private:
 	{
 		if (ptrItem == m_ptrHead)
 		{
-			m_ptrHead->m_ptrPrev = nullptr;
+			//m_ptrHead->m_ptrPrev = nullptr;
 			return;
 		}
 
-		if (ptrItem == m_ptrTail)
-		{
-			m_ptrTail = ptrItem->m_ptrPrev;
-			m_ptrTail->m_ptrNext = nullptr;
-		}
-		else
-		{
+		if (ptrItem->m_ptrPrev) {
 			ptrItem->m_ptrPrev->m_ptrNext = ptrItem->m_ptrNext;
+		}
+
+		if (ptrItem->m_ptrNext) {
 			ptrItem->m_ptrNext->m_ptrPrev = ptrItem->m_ptrPrev;
+		}
+
+		if (ptrItem == m_ptrTail) {
+			m_ptrTail = ptrItem->m_ptrPrev;
 		}
 
 		ptrItem->m_ptrPrev = nullptr;
 		ptrItem->m_ptrNext = m_ptrHead;
-		m_ptrHead->m_ptrPrev = ptrItem;
+
+		if (m_ptrHead) {
+			m_ptrHead->m_ptrPrev = ptrItem;
+		}
 		m_ptrHead = ptrItem;
 	}
 

@@ -89,7 +89,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int i = 0;
-    while (i++ < 10) {
+    while (i++ < 100) {
         std::cout << i << std::endl;
 
         for (int nIdx = 0; nIdx < thread_count; nIdx++)
@@ -153,7 +153,10 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
         vtThreads.clear();
 
         int ijk = ptrTree->getlrucount();
-        assert(1 == ijk);
+        if (ijk != 1)
+        {
+            assert(1 == ijk);
+        }
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
@@ -474,7 +477,7 @@ void test_for_string()
 
 void test_for_threaded()
 {
-    for (int idx = 3; idx < 20; idx++) {
+    for (int idx = 3; idx < 50; idx++) {
         std::cout << "iteration.." << idx << std::endl;
         {
             typedef int KeyType;
@@ -529,7 +532,7 @@ void test_for_threaded()
 
 int main(int argc, char* argv[])
 {
-    test_for_ints();
+    //test_for_ints();
     //test_for_string();
     test_for_threaded();
 
