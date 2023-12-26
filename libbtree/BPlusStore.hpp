@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 
-#define __CONCURRENT__
+//#define __CONCURRENT__
 
 template <typename ICallback, typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore : public ICallback

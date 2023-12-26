@@ -15,7 +15,7 @@
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
-#define __CONCURRENT__
+//#define __CONCURRENT__
 
 template <typename ICallback, typename StorageType>
 class LRUCache
