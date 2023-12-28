@@ -19,7 +19,7 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
-//#define __CONCURRENT__
+#define __CONCURRENT__
 #define __POSITION_AWARE_ITEMS__
 
 #ifdef __POSITION_AWARE_ITEMS__
@@ -668,7 +668,7 @@ public:
         return CacheErrorCode::Success;
     }
 
-    CacheErrorCode updateChildUID(std::vector<std::pair<ObjectUIDType, std::pair<ObjectUIDType, ObjectUIDType>>> vtUpdatedUIDs)
+    CacheErrorCode updateChildUID(std::vector<std::pair<ObjectUIDType, std::pair<ObjectUIDType, std::optional<ObjectUIDType>>>>& vtUpdatedUIDs)
     {
         throw new std::exception("no implementation!");
     }

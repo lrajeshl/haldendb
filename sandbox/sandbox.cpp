@@ -158,7 +158,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
         vtThreads.clear();
 
         size_t lru, map;
-        ptrTree->getstate(lru, map);
+        ptrTree->getCacheState(lru, map);
         assert(lru == 1 && map == 1);
 
     }
@@ -175,7 +175,7 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int i = 0;
-    while (i++ < 10) {
+    while (i++ < 2) {
         std::cout << i << ",";
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
@@ -237,7 +237,7 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
         assert(lru == 1 && map == 1);
     }
     i = 0;
-    while (i++ < 10) {
+    while (i++ < 3) {
         std::cout << "rev:" << i << ",";
         for (int nCntr = total_entries; nCntr >= 0; nCntr = nCntr - 2)
         {
@@ -425,7 +425,7 @@ void test_for_ints()
             typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree = new BPlusStoreType(3, 500, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 500, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
             ptrTree->init<DataNodeType>(); 
             
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 10000);
@@ -556,8 +556,8 @@ void test_for_threaded()
 int main(int argc, char* argv[])
 {
     test_for_ints();
-    test_for_string();
-    test_for_threaded();
+    //test_for_string();
+    //test_for_threaded();
 
     typedef int KeyType;
     typedef int ValueType;
@@ -568,7 +568,7 @@ int main(int argc, char* argv[])
     typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+    BPlusStoreType* ptrTree = new BPlusStoreType(16, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
     ptrTree->init<DataNodeType>();
 #else //__POSITION_AWARE_ITEMS__
     typedef uintptr_t ObjectUIDType;
@@ -587,7 +587,23 @@ int main(int argc, char* argv[])
     //ptrTree->init<DataNodeType>();
 #endif __POSITION_AWARE_ITEMS__
 
-    ptrTree->template init<DataNodeType>();
+    //ptrTree->template init<DataNodeType>();
+
+   /* int total = 199999;
+    for (int nCntr = total; nCntr >= 0; nCntr--)
+    {
+        ptrTree->insert(nCntr, nCntr);
+    }
+
+    for (size_t nCntr = total; nCntr <= total; nCntr++)
+    {
+        int nValue = 0;
+        ErrorCode code = ptrTree->search(nCntr, nValue);
+
+        assert(nValue == nCntr);
+    }*/
+
+
 
     for (size_t nCntr = 0; nCntr < 10000; nCntr++)
     {

@@ -29,15 +29,10 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         typedef int KeyType;
         typedef int ValueType;
         typedef ObjectFatUID ObjectUIDType;
-
         typedef IFlushCallback<ObjectUIDType> ICallback;
-
-        typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT > DataNodeType;
-        typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT > InternalNodeType;
-
-        typedef IFlushCallback<ObjectUIDType> ICallback;
-
-        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, InternalNodeType>>> BPlusStoreType;
+        typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+        typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 
         BPlusStoreType* m_ptrTree;
 
@@ -298,9 +293,9 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
             std::make_tuple(6, 0, 99999, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb"),
             std::make_tuple(7, 0, 99999, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb"),
             std::make_tuple(8, 0, 99999, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb"),
-            std::make_tuple(15, 0, 199999, 100, 1024, 1024* 1024 * 1024, "D:\\filestore.hdb"),
+            std::make_tuple(15, 0, 199999, 100, 2048, 1024* 1024 * 1024, "D:\\filestore.hdb"),
             std::make_tuple(16, 0, 199999, 100, 1024, 1024* 1024 * 1024, "D:\\filestore.hdb"),
-            std::make_tuple(32, 0, 199999, 100, 1024, 1024* 1024 * 1024, "D:\\filestore.hdb"),
+            std::make_tuple(32, 0, 199999, 100, 2048, 1024* 1024 * 1024, "D:\\filestore.hdb"),
             std::make_tuple(64, 0, 199999, 100, 2048, 1024* 1024 * 1024, "D:\\filestore.hdb")
         ));    
 }
