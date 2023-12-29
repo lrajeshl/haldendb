@@ -539,6 +539,16 @@ public:
 		*/
 	}
 
+	inline size_t getSize()
+	{
+		return 
+			sizeof(uint8_t)
+			+ sizeof(size_t)
+			+ sizeof(size_t)
+			+ (m_ptrData->m_vtPivots.size() * sizeof(KeyType))
+			+ (m_ptrData->m_vtChildren.size() * sizeof(ObjectUIDType::NodeUID));
+	}
+
 	void updateChildUID(const ObjectUIDType& uidOld, const ObjectUIDType& uidNew)
 	{
 		auto it = m_ptrData->m_vtChildren.begin();

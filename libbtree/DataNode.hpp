@@ -229,6 +229,17 @@ public:
 	}
 
 public:
+
+	inline size_t getSize()
+	{
+		return
+			sizeof(uint8_t)
+			+ sizeof(size_t)
+			+ sizeof(size_t)
+			+ (m_ptrData->m_vtKeys.size() * sizeof(KeyType))
+			+ (m_ptrData->m_vtValues.size() * sizeof(ObjectUIDType::NodeUID));
+	}
+
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
 		static_assert(

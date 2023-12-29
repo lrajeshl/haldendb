@@ -83,11 +83,6 @@ private:
 		}
 	};
 
-	struct _b {
-		std::optional<ObjectUIDType> uidUpdated;
-		std::optional<ObjectUIDType> uidParent;
-		std::vector<std::pair<ObjectUIDType, ObjectUIDType>> vtChildUpdates;
-	};
 
 
 #ifdef __POSITION_AWARE_ITEMS__
@@ -104,7 +99,7 @@ private:
 
 	std::mutex mutexForEvent;
 	std::condition_variable_any cv;
-	std::unordered_map<ObjectUIDType, std::shared_ptr<_b>> m_mpBoardingDetails;
+	std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>> m_mpBoardingDetails;
 
 #ifdef __CONCURRENT__
 	bool m_bStop;
@@ -209,16 +204,19 @@ public:
 		lock_cache.unlock();
 #endif __CONCURRENT__
 
-		std::shared_ptr<ObjectType> _ptrObject = m_ptrStorage->getObject(uidObject);
-
-		ObjectUIDType uidUpdateUID = uidObject;
+		ObjectUIDType _uidUpdateUID = uidObject;
 		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
 		{
 			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
-			uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
 		}
 
+		//newuid = _uidUpdateUID;
 		// use uidUpdateUID onwards!
+		// set new uid..
+
+		std::shared_ptr<ObjectType> _ptrObject = m_ptrStorage->getObject(_uidUpdateUID);
+
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
@@ -226,14 +224,14 @@ public:
 
 		if (_ptrObject != nullptr)
 		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(uidObject, _ptrObject, uidParent);
+			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(_uidUpdateUID, _ptrObject, uidParent);
 
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(uidObject) != m_mpObjects.end())
+			if (m_mpObjects.find(_uidUpdateUID) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdateUID];
 				moveToFront(ptrItem);
 				ptrObject = ptrItem->m_ptrObject;
 				uidParent = ptrItem->m_uidParent;
@@ -241,7 +239,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[uidObject] = ptrItem;
+			m_mpObjects[_uidUpdateUID] = ptrItem;
 
 			if (!m_ptrHead) 
 			{
@@ -292,7 +290,16 @@ public:
 		lock_cache.unlock();
 #endif __CONCURRENT__
 
-		std::shared_ptr<ObjectType> _ptrObject = m_ptrStorage->getObject(uidObject);
+		ObjectUIDType _uidUpdateUID = uidObject;
+		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		{
+			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
+			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+		}
+
+		//newuid = _uidUpdateUID;
+
+		std::shared_ptr<ObjectType> _ptrObject = m_ptrStorage->getObject(_uidUpdateUID);
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
@@ -300,21 +307,21 @@ public:
 
 		if (_ptrObject != nullptr)
 		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(uidObject, _ptrObject);
+			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(_uidUpdateUID, _ptrObject);
 
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(uidObject) != m_mpObjects.end())
+			if (m_mpObjects.find(_uidUpdateUID) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdateUID];
 				moveToFront(ptrItem);
 				ptrObject = ptrItem->m_ptrObject;
 				return CacheErrorCode::Success;
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[uidObject] = ptrItem;
+			m_mpObjects[_uidUpdateUID] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -342,15 +349,15 @@ public:
 
 #ifdef __POSITION_AWARE_ITEMS__
 	template <typename Type>
-	CacheErrorCode getObjectOfType(const ObjectUIDType key, Type& ptrObject, std::optional<ObjectUIDType>& uidParent)
+	CacheErrorCode getObjectOfType(const ObjectUIDType uidObject, Type& ptrObject, std::optional<ObjectUIDType>& uidParent)
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(key) != m_mpObjects.end())
+		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[key];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
 			ptrItem->m_ptrObject->dirty = true;
 			moveToFront(ptrItem);
 
@@ -373,7 +380,17 @@ public:
 		lock_cache.unlock();
 #endif __CONCURRENT__
 
-		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(key);
+		ObjectUIDType _uidUpdateUID = uidObject;
+		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		{
+			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
+			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+		}
+
+		//newuid = _uidUpdateUID;
+
+
+		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(_uidUpdateUID);
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
@@ -381,14 +398,14 @@ public:
 
 		if (ptrValue != nullptr)
 		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(key, ptrValue, uidParent);
+			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(_uidUpdateUID, ptrValue, uidParent);
 
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(key) != m_mpObjects.end())
+			if (m_mpObjects.find(_uidUpdateUID) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[key];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdateUID];
 				moveToFront(ptrItem);
 
 				if (std::holds_alternative<Type>(*ptrItem->m_ptrObject->data))
@@ -403,7 +420,7 @@ public:
 
 #endif __CONCURRENT__
 
-			m_mpObjects[key] = ptrItem;
+			m_mpObjects[_uidUpdateUID] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -439,15 +456,15 @@ public:
 #endif __POSITION_AWARE_ITEMS__
 
 	template <typename Type>
-	CacheErrorCode getObjectOfType(const ObjectUIDType key, Type& ptrObject)
+	CacheErrorCode getObjectOfType(const ObjectUIDType uidObject, Type& ptrObject)
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(key) != m_mpObjects.end())
+		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[key];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
 
 #ifdef __POSITION_AWARE_ITEMS__
 			ptrItem->m_ptrObject->dirty = true;
@@ -473,7 +490,17 @@ public:
 		lock_cache.unlock();
 #endif __CONCURRENT__
 
-		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(key);
+		ObjectUIDType _uidUpdateUID = uidObject;
+		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		{
+			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
+			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+		}
+
+		//newuid = _uidUpdateUID;
+
+
+		std::shared_ptr<ObjectType> ptrValue = m_ptrStorage->getObject(_uidUpdateUID);
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
@@ -481,14 +508,14 @@ public:
 
 		if (ptrValue != nullptr)
 		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(key, ptrValue);
+			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(_uidUpdateUID, ptrValue);
 
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(key) != m_mpObjects.end())
+			if (m_mpObjects.find(_uidUpdateUID) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[key];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdateUID];
 				moveToFront(ptrItem);
 
 				if (std::holds_alternative<Type>(*ptrItem->m_ptrObject->data))
@@ -501,7 +528,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[key] = ptrItem;
+			m_mpObjects[_uidUpdateUID] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -610,6 +637,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
+			//TODO: what if the same address is allocated to new object!! fix!! have an extra counter for such a case!
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrObject;
 			moveToFront(ptrItem);
@@ -807,7 +835,7 @@ private:
 	{
 #ifdef __CONCURRENT__
 
-		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtItems;
+		std::vector<ObjectFlushRequest<ObjectType>> vtItems;
 			
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
@@ -824,11 +852,36 @@ private:
 			}
 			m_ptrTail->m_ptrObject->mutex.unlock();
 
+			if (m_ptrTail->m_uidParent == std::nullopt)
+			{
+				break;
+			}
+
+			std::shared_ptr<Item> _ptrPrev = m_ptrTail->m_ptrPrev;
+			while (_ptrPrev->m_ptrPrev != nullptr)
+			{
+				if (m_ptrTail->m_uidSelf == _ptrPrev->m_uidParent)
+				{
+					int pre = getLRUListCount();
+					interchangeWithTail(_ptrPrev);
+					int post = getLRUListCount();
+					assert(pre == post);
+
+					_ptrPrev = m_ptrTail->m_ptrPrev;
+					continue;
+				}
+				_ptrPrev = _ptrPrev->m_ptrPrev;
+			}
+
+			if (m_ptrTail->m_ptrObject->dirty)
+			{
+				ObjectFlushRequest<ObjectType> data(m_ptrTail->m_uidSelf, m_ptrTail->m_uidParent, m_ptrTail->m_ptrObject);
+				vtItems.push_back(data);
+				//m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, m_ptrTail->m_uidParent);
+			}
+
 			// todo look for relation as well!
-
 			std::shared_ptr<Item> ptrTemp = m_ptrTail;
-
-			vtItems.push_back(std::make_pair(ptrTemp->m_uidSelf, std::make_pair(ptrTemp->m_uidParent, ptrTemp->m_ptrObject)));
 
 			m_mpObjects.erase(ptrTemp->m_uidSelf);
 
@@ -846,32 +899,67 @@ private:
 				m_ptrHead = nullptr;
 			}
 		}
-
+		
 		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
 		isEventSignaled = false;
 
 		lock_cache.unlock();
 
 		auto it = vtItems.begin();
+		int _i = 0;
 		while (it != vtItems.end())
 		{
-			if ((*it).second.second.use_count() != 2)
+			_i++;
+			if ((*it).ptrObject.use_count() != 1)
 			{
 				throw new std::exception("should not occur!");
 			}
 
-			std::shared_ptr<_b> ptrUpdateEntry = std::make_shared<_b>();
-			ptrUpdateEntry->uidUpdated = (*it).first;
-			ptrUpdateEntry->uidParent = std::nullopt;
+			if (m_mpBoardingDetails.find((*it).uidDetails.uidObject) != m_mpBoardingDetails.end())
+			{
+				m_mpBoardingDetails[(*it).uidDetails.uidObject]->uidParent = (*it).uidDetails.uidParent;
+			}
+			else
+			{
+				std::shared_ptr<UIDUpdate> ptrUpdateEntry = std::make_shared<UIDUpdate>();
+				ptrUpdateEntry->uidUpdated = std::nullopt;
+				ptrUpdateEntry->uidParent = (*it).uidDetails.uidParent;
+				m_mpBoardingDetails[(*it).uidDetails.uidObject] = ptrUpdateEntry;
+			}
 
-			m_mpBoardingDetails[(*it).first] = ptrUpdateEntry;
-			//m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, m_ptrTail->m_uidParent);
-			//m_ptrStorage->addObject((*it).first, (*it).second.second, (*it).second.first);
+			if (m_mpBoardingDetails.find(*(*it).uidDetails.uidParent) != m_mpBoardingDetails.end())
+			{
+				m_mpBoardingDetails[*(*it).uidDetails.uidParent]->vtChildUpdates.push_back(std::make_pair( (*it).uidDetails.uidObject, std::nullopt));
+			}
+			else
+			{
+				std::shared_ptr<UIDUpdate> ptrUpdateEntryParent = std::make_shared<UIDUpdate>();
+				ptrUpdateEntryParent->uidUpdated = std::nullopt;
+				ptrUpdateEntryParent->uidParent = std::nullopt;
+
+				m_mpBoardingDetails[*(*it).uidDetails.uidParent] = ptrUpdateEntryParent;
+			}
 
 			it++;
 		}
 
-		m_ptrStorage->addObjects(vtItems);
+
+		size_t nOffset = m_ptrStorage->getWritePos();
+		size_t nNewOffset = nOffset;
+		m_ptrCallback->prepareFlush(vtItems, nNewOffset, m_ptrStorage->getBlockSize(), m_mpBoardingDetails);
+
+		lock_storage.unlock();
+
+		m_ptrStorage->addObjects(vtItems, nNewOffset);
+
+		//m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, m_ptrTail->m_uidParent);
+		//m_ptrStorage->addObject((*it).first, (*it).second.second, (*it).second.first);
+		//m_ptrStorage->addObjects(vtItems);
+
+		
+
+
+
 
 
 		//auto it = vtItems.begin();
@@ -957,34 +1045,34 @@ public:
 		return CacheErrorCode::Success;
 	}
 
-	CacheErrorCode updateChildUID(std::vector<std::pair<ObjectUIDType, std::pair<ObjectUIDType, std::optional<ObjectUIDType>>>>& vtUpdatedUIDs)
+	CacheErrorCode updateChildUID(std::vector<UIDUpdateRequest>& vtUIDUpdates)
 	{
-		std::unique_lock<std::shared_mutex> lock(m_mtxStorage);
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
 
-		auto it = vtUpdatedUIDs.begin();
-		while (it != vtUpdatedUIDs.end())
+		auto it = vtUIDUpdates.begin();
+		while (it != vtUIDUpdates.end())
 		{
-			if (m_mpBoardingDetails.find((*it).first) != m_mpBoardingDetails.end())
+			if (m_mpBoardingDetails.find((*it).uidObject) != m_mpBoardingDetails.end()) // should not look for entry directly!
 			{
-				std::shared_ptr<_b> ptrEntry = m_mpBoardingDetails[(*it).first];
+				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpBoardingDetails[(*it).uidObject];
 
-				ptrEntry->uidUpdated = (*it).second.first;
-				ptrEntry->uidParent = (*it).second.second;
+				ptrUIDUpdate->uidUpdated = (*it).uidObject_Updated;
+				ptrUIDUpdate->uidParent = (*it).uidParent;
 			}
 			else
 			{
 				throw new std::exception("should not occur!"); // for the time being!
 			}
 
-			if (m_mpBoardingDetails.find((*it).second.first) != m_mpBoardingDetails.end())
+			if (m_mpBoardingDetails.find(*(*it).uidParent) != m_mpBoardingDetails.end())
 			{
-				std::shared_ptr<_b> ptrEntry = m_mpBoardingDetails[(*it).first];
+				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpBoardingDetails[*(*it).uidParent];
 
-				// don't set. 1st case is for this..
-				//ptrEntry->uidUpdated = std::nullopt;
-				//ptrEntry->uidParent = std::nullopt;
-
-				ptrEntry->vtChildUpdates.push_back(std::make_pair((*it).first, (*it).second.first));
+				ptrUIDUpdate->vtChildUpdates.push_back(std::make_pair((*it).uidObject, (*it).uidObject_Updated));
+			}
+			else
+			{
+				throw new std::exception("should not occur!"); // for the time being!
 			}
 
 			it++;
@@ -994,9 +1082,18 @@ public:
 
 		cv.notify_all();
 
-		m_ptrCallback->updateChildUID(vtUpdatedUIDs);
+		lock_storage.unlock();
+
+		m_ptrCallback->updateChildUID(vtUIDUpdates);
 
 		return CacheErrorCode::Success;
 	}
+
+	void prepareFlush(
+		std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
+		size_t& nOffset,
+		size_t nBlockSize,
+		std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
+	{}
 #endif __POSITION_AWARE_ITEMS__
 };

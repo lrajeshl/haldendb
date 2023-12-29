@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <optional>
+#include <vector>
 
 class ObjectFatUID
 {
@@ -137,4 +139,49 @@ namespace std {
 		}
 	};
 }
+
+
+struct UIDUpdate {
+	std::optional<ObjectFatUID> uidUpdated;
+	std::optional<ObjectFatUID> uidParent;
+	std::vector<std::pair<ObjectFatUID, std::optional<ObjectFatUID>>> vtChildUpdates;
+
+};
+
+struct UIDUpdateRequest
+{
+public:
+	ObjectFatUID uidObject;
+	std::optional<ObjectFatUID> uidParent;
+	std::optional<ObjectFatUID> uidObject_Updated;
+
+	UIDUpdateRequest()
+		: uidParent(std::nullopt)
+		, uidObject_Updated(std::nullopt)
+	{
+	}
+
+	UIDUpdateRequest(const ObjectFatUID& uidObject, const std::optional<ObjectFatUID>& uidParent)
+		: uidObject_Updated(std::nullopt)
+	{
+		this->uidObject = uidObject;
+		this->uidParent = uidParent;
+	}
+};
+
+template< typename ObjectType>
+struct ObjectFlushRequest
+{
+public:
+	UIDUpdateRequest uidDetails;
+	std::shared_ptr<ObjectType> ptrObject;
+
+	ObjectFlushRequest(const ObjectFatUID& uidObject, const std::optional<ObjectFatUID>& uidParent, std::shared_ptr<ObjectType> ptrObject)
+	{
+		uidDetails.uidObject = uidObject;
+		uidDetails.uidParent = uidParent;
+		this->ptrObject = ptrObject;
+	}
+};
+
 

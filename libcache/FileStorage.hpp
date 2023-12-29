@@ -47,7 +47,9 @@ private:
 
 	mutable std::shared_mutex m_mtxCache;
 
-	std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> m_vtObjects;
+	mutable std::shared_mutex m_mtxFile;
+
+	std::vector<ObjectFlushRequest<ObjectType>> m_vtObjects;
 #endif __CONCURRENT__
 
 public:
@@ -109,18 +111,21 @@ public:
 //		lock_file_storage.unlock();
 //#endif __CONCURRENT__
 
+		std::unique_lock<std::shared_mutex> lock_file(m_mtxFile);
+
 		m_fsStorage.seekg(uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 
-		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1]; //2
-		//memset(szBuffer, '\0', uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
-		//m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
+		char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1]; //2
+		memset(szBuffer, '\0', uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
+		m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
 
+		lock_file.unlock();
 
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage); //1
-		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer); //2
+		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage); //1
+		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer); //2
 		ptrObject->dirty = false;
 
-		//delete[] szBuffer; //2
+		delete[] szBuffer; //2
 
 		return ptrObject;
 	}
@@ -132,11 +137,13 @@ public:
 
 #ifdef __POSITION_AWARE_ITEMS__ 
 #ifdef __CONCURRENT__
-	CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects)
+	CacheErrorCode addObjects(std::vector<ObjectFlushRequest<ObjectType>>& vtObjects, size_t nNewOffset)
 	{
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxCache);
 
 		m_vtObjects.insert(m_vtObjects.end(), std::make_move_iterator(vtObjects.begin()), std::make_move_iterator(vtObjects.end()));
+
+		m_nNextBlock = nNewOffset;
 
 		//if (m_vtObjects.find(uidObject) != m_vtObjects.end())
 		//{
@@ -206,9 +213,12 @@ public:
 #ifdef __CONCURRENT__
 	void performBatchFlush()
 	{
-		std::vector<std::pair<ObjectUIDType, std::pair<ObjectUIDType, std::optional<ObjectUIDType>>>> vtUpdatedUIDs;
+		std::vector<char*> vtBuffer;
 
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxCache);
+		if (m_vtObjects.size() == 0)
+			return;
+
 
 		auto it = m_vtObjects.begin();
 		while (it != m_vtObjects.end())
@@ -217,27 +227,61 @@ public:
 			uint8_t uidObjectType = 0;
 
 			char* szBuffer = NULL; //2
-			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize); //2
+			(*it).ptrObject->serialize(szBuffer, uidObjectType, nBufferSize); //2
 
-			m_fsStorage.seekp(m_nNextBlock * m_nBlockSize);
-			m_fsStorage.write(szBuffer, nBufferSize); //2
+			//m_fsStorage.seekp(m_nNextBlock * m_nBlockSize);
+			//m_fsStorage.write(szBuffer, nBufferSize); //2
 
-			delete[] szBuffer; //2			//? use the same buffer? 1MB size?
+			//lock_file.unlock();
 
-			size_t nRequiredBlocks = std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);
+			//vtBuffer.push_back(std::make_pair(m_nNextBlock * m_nBlockSize, szBuffer));
+			//delete[] szBuffer; //2			//? use the same buffer? 1MB size?
 
-			ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromFileOffset(m_nNextBlock * m_nBlockSize, nBufferSize + sizeof(uint8_t));
+			//size_t nRequiredBlocks = std::ceil(nBufferSize / (float)m_nBlockSize);
 
-			for (int idx = 0; idx < nRequiredBlocks; idx++)
+			//ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromFileOffset(m_nNextBlock * m_nBlockSize, nBufferSize + sizeof(uint8_t));
+
+			vtBuffer.push_back(szBuffer);
+			//(*it).uidDetails.uidObject_Updated = uidUpdated;
+
+			//for (int idx = 0; idx < nRequiredBlocks; idx++)
 			{
-				m_vtAllocationTable[m_nNextBlock++] = true;
+			//	m_vtAllocationTable[m_nNextBlock++] = true;
 			}
-
-			vtUpdatedUIDs.push_back(std::make_pair((*it).first, std::make_pair(uidUpdated, (*it).second.first)));
+			it++;
 		}
-		m_fsStorage.flush();
 
-		m_ptrCallback->updateChildUID(vtUpdatedUIDs);
+		std::unique_lock<std::shared_mutex> lock_file(m_mtxFile);
+
+		std::vector<UIDUpdateRequest> vtUIDUpdates;
+
+		for (int idx = 0; idx < m_vtObjects.size(); idx++)
+		{
+			m_fsStorage.seekp((*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+			m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
+		
+			vtUIDUpdates.push_back(std::move(m_vtObjects[idx].uidDetails));
+
+			delete[] vtBuffer[idx];
+		}
+
+		m_fsStorage.flush();
+		m_vtObjects.clear();
+
+		lock_file.unlock();
+		lock_file_storage.unlock();
+
+		m_ptrCallback->updateChildUID(vtUIDUpdates);
+	}
+
+	inline size_t getWritePos()
+	{
+		return m_nNextBlock;
+	}
+
+	inline size_t getBlockSize()
+	{
+		return m_nBlockSize;
 	}
 
 	static void handlerBatchFlush(SelfType* ptrSelf)

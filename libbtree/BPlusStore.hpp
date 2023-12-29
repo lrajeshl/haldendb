@@ -15,7 +15,7 @@
 #include "ErrorCodes.h"
 #include "VariadicNthType.h"
 #include <tuple>
-
+#include "ObjectFatUID.h"
 #include <iostream>
 #include <fstream>
 #include <assert.h>
@@ -30,6 +30,9 @@ template <typename KeyType, typename ValueType, typename CacheType>
 class BPlusStore
 #endif __POSITION_AWARE_ITEMS__
 {
+    typedef BPlusStore<ICallback, KeyType, ValueType, CacheType> SelfType;
+
+
     typedef CacheType::ObjectUIDType ObjectUIDType;
     typedef CacheType::ObjectType ObjectType;
     typedef CacheType::ObjectTypePtr ObjectTypePtr;
@@ -57,6 +60,9 @@ public:
         , m_uidRootNode(std::nullopt)
     {    
         m_ptrCache = std::make_shared<CacheType>(args...);
+
+        this->m_tdProcessUIDUpdates = std::thread(processUIDUpdates, this);
+
     }
 
     template <typename DefaultNodeType>
@@ -70,6 +76,7 @@ public:
 #else
         m_ptrCache->template createObjectOfType<DefaultNodeType>(m_uidRootNode);
 #endif __POSITION_AWARE_ITEMS__
+
     }
 
     ErrorCode insert(const KeyType& key, const ValueType& value)
@@ -650,8 +657,13 @@ public:
 
         if (ptrObject == nullptr)
         {
+            return CacheErrorCode::Success;
             throw new std::exception("should not occur!");   // TODO: critical log.
         }
+
+#ifdef __CONCURRENT__
+        std::unique_lock<std::shared_mutex> lock_node(ptrObject->mutex);
+#endif __CONCURRENT__
 
         if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrObject->data))
         {
@@ -668,9 +680,129 @@ public:
         return CacheErrorCode::Success;
     }
 
-    CacheErrorCode updateChildUID(std::vector<std::pair<ObjectUIDType, std::pair<ObjectUIDType, std::optional<ObjectUIDType>>>>& vtUpdatedUIDs)
+    CacheErrorCode updateChildUID(std::vector<UIDUpdateRequest>& vtUIDUpdates)
     {
-        throw new std::exception("no implementation!");
+        std::unique_lock<std::shared_mutex> lock_updates(this->m_mtxUIDUpdates);
+
+        this->m_vtUIDUpdates.insert(this->m_vtUIDUpdates.end(), std::make_move_iterator(vtUIDUpdates.begin()), std::make_move_iterator(vtUIDUpdates.end()));
+
+        return CacheErrorCode::Success;
     }
+
+    void prepareFlush(
+        std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
+        size_t& nOffset,
+        size_t nBlockSize,
+        std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
+    {
+        auto it = vtObjects.begin();
+        while (it != vtObjects.end())
+        {
+            if (mpUIDUpdates.find((*it).uidDetails.uidObject) != mpUIDUpdates.end())
+            {
+                std::shared_ptr<UIDUpdate> ptrUIDUpdate = mpUIDUpdates[(*it).uidDetails.uidObject];
+
+                assert(ptrUIDUpdate->uidUpdated == std::nullopt);
+
+                if (ptrUIDUpdate->vtChildUpdates.size() > 0)
+                {
+                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(*it).ptrObject->data))
+                    {
+                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*(*it).ptrObject->data);
+
+                        auto it_child = ptrUIDUpdate->vtChildUpdates.begin();
+                        while (it_child != ptrUIDUpdate->vtChildUpdates.end())
+                        {
+                            if ((*it).uidDetails.uidObject_Updated != std::nullopt)
+                            {
+                                ptrIndexNode->updateChildUID((*it).uidDetails.uidObject, *(*it).uidDetails.uidObject_Updated);
+                            }
+                            it_child++;
+                        }
+                    }
+                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrObject->data))
+                    {
+                        throw new std::exception("should not occur!");   // TODO: critical log.
+                    }
+                }
+            }
+            it++;
+        }
+
+        it = vtObjects.begin();
+        while (it != vtObjects.end())
+        {
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(*it).ptrObject->data))
+            {
+                std::shared_ptr<IndexNodeType> ptrObject = std::get<std::shared_ptr<IndexNodeType>>(*(*it).ptrObject->data);
+                size_t nSize = ptrObject->getSize();
+
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromFileOffset(nOffset * nBlockSize, nSize);
+                (*it).uidDetails.uidObject_Updated = uidUpdated;
+
+                nOffset += std::ceil(nSize / (float)nBlockSize);
+            }
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*(*it).ptrObject->data))
+            {
+                std::shared_ptr<DataNodeType> ptrObject = std::get<std::shared_ptr<DataNodeType>>(*(*it).ptrObject->data);
+                size_t nSize = ptrObject->getSize();
+
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromFileOffset(nOffset *  nBlockSize, nSize);
+                (*it).uidDetails.uidObject_Updated = uidUpdated;
+
+                nOffset += std::ceil(nSize / (float)nBlockSize);
+            }
+            it++;
+        }
+        
+        for (int idx = 0; idx < vtObjects.size() - 1; idx++)
+        {
+            for (int jdx = idx + 1; jdx < vtObjects.size(); jdx++)
+            {
+                if (vtObjects[idx].uidDetails.uidParent == vtObjects[jdx].uidDetails.uidObject)
+                {
+                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(vtObjects[jdx].ptrObject->data)))
+                    {
+                        std::shared_ptr<IndexNodeType> ptrObject = std::get<std::shared_ptr<IndexNodeType>>(*(vtObjects[jdx].ptrObject->data));
+                        ptrObject->updateChildUID(vtObjects[idx].uidDetails.uidObject, *vtObjects[idx].uidDetails.uidObject_Updated);
+                    }
+                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtItems[jdx].second.second))
+                    {
+                        throw new std::exception("should not occur!");   // TODO: critical log.
+                        //std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(vtItems[jdx].second.second);
+                    }
+                }
+            }
+        }
+    }
+
 #endif __POSITION_AWARE_ITEMS__
+
+    void applyUIDUpdates()
+    {
+        std::unique_lock<std::shared_mutex> lock_updates(this->m_mtxUIDUpdates);
+        
+        std::vector<UIDUpdateRequest> vtUIDUpdates(std::move(this->m_vtUIDUpdates));
+
+        lock_updates.unlock();
+
+        auto it = vtUIDUpdates.begin();
+        while (it != vtUIDUpdates.end())
+        {
+            updateChildUID(*(*it).uidParent, (*it).uidObject, *(*it).uidObject_Updated); 
+            // todo: take lock internally!
+            // todo: bulk update for same node!
+        }
+    }
+
+    static void processUIDUpdates(SelfType* ptrSelf)
+    {
+        do
+        {
+            ptrSelf->applyUIDUpdates();
+
+            std::this_thread::sleep_for(100ms);
+
+        } while (!ptrSelf->m_bStopProcessUIDUpdates);
+    }
 };
