@@ -549,7 +549,7 @@ public:
 			+ (m_ptrData->m_vtChildren.size() * sizeof(ObjectUIDType::NodeUID));
 	}
 
-	void updateChildUID(const ObjectUIDType& uidOld, const ObjectUIDType& uidNew)
+	bool updateChildUID(const ObjectUIDType& uidOld, const ObjectUIDType& uidNew/*, bool force = true*/)
 	{
 		auto it = m_ptrData->m_vtChildren.begin();
 		while (it != m_ptrData->m_vtChildren.end())
@@ -557,11 +557,13 @@ public:
 			if (*it == uidOld)
 			{
 				*it = uidNew;
-				return;
+				return true;
 			}
 			it++;
 		}
-		throw new std::exception("should not occur!");
+
+		//throw new std::exception("should not occur!"); // what if split at internal node happend with the child was on flight?
+		return false;
 	}
 
 	template <typename Cache>
@@ -610,7 +612,8 @@ public:
 
 			if (uidCurrentNodeParent != uidParent)
 			{
-				throw new std::exception("should not occur!");   // TODO: critical log.
+				uidCurrentNodeParent = uidParent;
+				//throw new std::exception("should not occur!");   // TODO: critical log.
 			}
 
 			if (uidCurrentNodeParent)

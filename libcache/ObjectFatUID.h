@@ -144,8 +144,9 @@ namespace std {
 struct UIDUpdate {
 	std::optional<ObjectFatUID> uidUpdated;
 	std::optional<ObjectFatUID> uidParent;
-	std::vector<std::pair<ObjectFatUID, std::optional<ObjectFatUID>>> vtChildUpdates;
-
+	//std::vector<std::pair<ObjectFatUID, std::optional<ObjectFatUID>>> vtChildUpdates;
+	std::vector<ObjectFatUID> vtChildUpdates;
+	bool updateapplied = false;
 };
 
 struct UIDUpdateRequest
@@ -154,6 +155,7 @@ public:
 	ObjectFatUID uidObject;
 	std::optional<ObjectFatUID> uidParent;
 	std::optional<ObjectFatUID> uidObject_Updated;
+	bool updateapplied = false;
 
 	UIDUpdateRequest()
 		: uidParent(std::nullopt)

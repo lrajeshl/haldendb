@@ -97,9 +97,13 @@ private:
 	size_t m_nCacheCapacity;
 	std::unordered_map<ObjectUIDType, std::shared_ptr<Item>> m_mpObjects;
 
+	//std::mutex m_mtxUIDUpdates;
+	//std::condition_variable_any cv;
+
+
 	std::mutex mutexForEvent;
 	std::condition_variable_any cv;
-	std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>> m_mpBoardingDetails;
+	std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>> m_mpDepartureQueue;
 
 #ifdef __CONCURRENT__
 	bool m_bStop;
@@ -205,10 +209,13 @@ public:
 #endif __CONCURRENT__
 
 		ObjectUIDType _uidUpdateUID = uidObject;
-		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		if (m_mpDepartureQueue.find(uidObject) != m_mpDepartureQueue.end())
 		{
-			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
-			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+			while (m_mpDepartureQueue[uidObject]->uidUpdated == std::nullopt)
+			{
+				cv.wait(lock_storage, [] { return isEventSignaled; });
+			}
+			_uidUpdateUID = *m_mpDepartureQueue[uidObject]->uidUpdated;
 		}
 
 		//newuid = _uidUpdateUID;
@@ -291,10 +298,10 @@ public:
 #endif __CONCURRENT__
 
 		ObjectUIDType _uidUpdateUID = uidObject;
-		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		if (m_mpDepartureQueue.find(uidObject) != m_mpDepartureQueue.end())
 		{
 			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
-			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+			_uidUpdateUID = *m_mpDepartureQueue[uidObject]->uidUpdated;
 		}
 
 		//newuid = _uidUpdateUID;
@@ -381,10 +388,10 @@ public:
 #endif __CONCURRENT__
 
 		ObjectUIDType _uidUpdateUID = uidObject;
-		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		if (m_mpDepartureQueue.find(uidObject) != m_mpDepartureQueue.end())
 		{
 			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
-			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+			_uidUpdateUID = *m_mpDepartureQueue[uidObject]->uidUpdated;
 		}
 
 		//newuid = _uidUpdateUID;
@@ -491,10 +498,10 @@ public:
 #endif __CONCURRENT__
 
 		ObjectUIDType _uidUpdateUID = uidObject;
-		if (m_mpBoardingDetails.find(uidObject) != m_mpBoardingDetails.end())
+		if (m_mpDepartureQueue.find(uidObject) != m_mpDepartureQueue.end())
 		{
 			cv.wait(m_mtxStorage, [] { return isEventSignaled; });
-			_uidUpdateUID = *m_mpBoardingDetails[uidObject]->uidUpdated;
+			_uidUpdateUID = *m_mpDepartureQueue[uidObject]->uidUpdated;
 		}
 
 		//newuid = _uidUpdateUID;
@@ -670,12 +677,53 @@ public:
 #ifdef __POSITION_AWARE_ITEMS__
 	CacheErrorCode tryUpdateParentUID(const ObjectUIDType& uidChild, const std::optional<ObjectUIDType>& uidParent)
 	{
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+
 		if (m_mpObjects.find(uidChild) != m_mpObjects.end())
 		{
 			m_mpObjects[uidChild]->m_uidParent = uidParent;
 			m_mpObjects[uidChild]->m_ptrObject->dirty = true;
 			return CacheErrorCode::Success;
 		}
+
+		std::shared_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+		lock_cache.unlock();
+
+		if (m_mpDepartureQueue.find(uidChild) != m_mpDepartureQueue.end())
+		{
+			bool found = false;
+			std::shared_ptr<UIDUpdate> ptrUpdateEntryParent = m_mpDepartureQueue[*uidParent];
+			auto it = ptrUpdateEntryParent->vtChildUpdates.begin();
+			while (it != ptrUpdateEntryParent->vtChildUpdates.end())
+			{
+				if ((*it).first == uidChild) {
+					found = true;
+					ptrUpdateEntryParent->vtChildUpdates.erase(it);
+					break;
+				}
+			}
+
+			assert(found == true);
+
+			// update parent first..
+			if (m_mpDepartureQueue.find(*uidParent) != m_mpDepartureQueue.end())
+			{
+				m_mpDepartureQueue[*uidParent]->vtChildUpdates.push_back(std::make_pair(uidChild, m_mpDepartureQueue[uidChild]->uidUpdated));
+			}
+			else
+			{
+				std::shared_ptr<UIDUpdate> ptrUpdateEntryParent = std::make_shared<UIDUpdate>();
+				ptrUpdateEntryParent->uidUpdated = std::nullopt;
+				ptrUpdateEntryParent->uidParent = std::nullopt;
+				ptrUpdateEntryParent->vtChildUpdates.push_back(std::make_pair(uidChild, m_mpDepartureQueue[uidChild]->uidUpdated));
+
+				m_mpDepartureQueue[*uidParent] = ptrUpdateEntryParent;
+			}
+
+
+			m_mpDepartureQueue[uidChild]->uidParent = uidParent;
+		}
+
 		return CacheErrorCode::Error;
 	}
 #endif __POSITION_AWARE_ITEMS__
@@ -834,18 +882,17 @@ private:
 	inline void flushItemsToStorage()
 	{
 #ifdef __CONCURRENT__
-
 		std::vector<ObjectFlushRequest<ObjectType>> vtItems;
 			
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
-		if (m_mpObjects.size() < m_nCacheCapacity)
+		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
 
 		size_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
 		for (size_t idx = 0; idx < nFlushCount; idx++)
 		{
-			if (!m_ptrTail->m_ptrObject->mutex.try_lock())
+			if (!m_ptrTail->m_ptrObject->mutex.try_lock() || m_ptrTail->m_ptrObject.use_count() > 4)
 			{
 				// in use.. TODO: proceed with the next one.
 				break;
@@ -905,6 +952,8 @@ private:
 
 		lock_cache.unlock();
 
+		m_ptrCallback->applyExistingUpdates(vtItems, m_mpDepartureQueue);
+
 		auto it = vtItems.begin();
 		int _i = 0;
 		while (it != vtItems.end())
@@ -915,29 +964,32 @@ private:
 				throw new std::exception("should not occur!");
 			}
 
-			if (m_mpBoardingDetails.find((*it).uidDetails.uidObject) != m_mpBoardingDetails.end())
+			if (m_mpDepartureQueue.find((*it).uidDetails.uidObject) != m_mpDepartureQueue.end())
 			{
-				m_mpBoardingDetails[(*it).uidDetails.uidObject]->uidParent = (*it).uidDetails.uidParent;
+				// was added as parent!
+				assert(m_mpDepartureQueue[(*it).uidDetails.uidObject]->uidParent == std::nullopt);
+				m_mpDepartureQueue[(*it).uidDetails.uidObject]->uidParent = (*it).uidDetails.uidParent;
 			}
 			else
 			{
 				std::shared_ptr<UIDUpdate> ptrUpdateEntry = std::make_shared<UIDUpdate>();
 				ptrUpdateEntry->uidUpdated = std::nullopt;
 				ptrUpdateEntry->uidParent = (*it).uidDetails.uidParent;
-				m_mpBoardingDetails[(*it).uidDetails.uidObject] = ptrUpdateEntry;
+				m_mpDepartureQueue[(*it).uidDetails.uidObject] = ptrUpdateEntry;
 			}
 
-			if (m_mpBoardingDetails.find(*(*it).uidDetails.uidParent) != m_mpBoardingDetails.end())
+			if (m_mpDepartureQueue.find(*(*it).uidDetails.uidParent) != m_mpDepartureQueue.end())
 			{
-				m_mpBoardingDetails[*(*it).uidDetails.uidParent]->vtChildUpdates.push_back(std::make_pair( (*it).uidDetails.uidObject, std::nullopt));
+				m_mpDepartureQueue[*(*it).uidDetails.uidParent]->vtChildUpdates.push_back((*it).uidDetails.uidObject);
 			}
 			else
 			{
 				std::shared_ptr<UIDUpdate> ptrUpdateEntryParent = std::make_shared<UIDUpdate>();
 				ptrUpdateEntryParent->uidUpdated = std::nullopt;
 				ptrUpdateEntryParent->uidParent = std::nullopt;
+				ptrUpdateEntryParent->vtChildUpdates.push_back((*it).uidDetails.uidObject);
 
-				m_mpBoardingDetails[*(*it).uidDetails.uidParent] = ptrUpdateEntryParent;
+				m_mpDepartureQueue[*(*it).uidDetails.uidParent] = ptrUpdateEntryParent;
 			}
 
 			it++;
@@ -945,18 +997,23 @@ private:
 
 
 		size_t nOffset = m_ptrStorage->getWritePos();
-		size_t nNewOffset = nOffset;
-		m_ptrCallback->prepareFlush(vtItems, nNewOffset, m_ptrStorage->getBlockSize(), m_mpBoardingDetails);
 
 		lock_storage.unlock();
 
-		m_ptrStorage->addObjects(vtItems, nNewOffset);
+		size_t nNewOffset = nOffset;
+		m_ptrCallback->prepareFlush(vtItems, nNewOffset, m_ptrStorage->getBlockSize(), m_mpDepartureQueue);
 
+		m_ptrStorage->addObjects(vtItems, nNewOffset);
+		//vtItems.clear();
 		//m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, m_ptrTail->m_uidParent);
 		//m_ptrStorage->addObject((*it).first, (*it).second.second, (*it).second.first);
 		//m_ptrStorage->addObjects(vtItems);
 
 		
+		std::shared_lock<std::shared_mutex> re_lock_storage(m_mtxStorage);
+		cv.wait(re_lock_storage, [] { return isEventSignaled; });
+		//re_lock_storage.unlock();
+		//std::cout << "cv set... LRUCache.";
 
 
 
@@ -1052,23 +1109,40 @@ public:
 		auto it = vtUIDUpdates.begin();
 		while (it != vtUIDUpdates.end())
 		{
-			if (m_mpBoardingDetails.find((*it).uidObject) != m_mpBoardingDetails.end()) // should not look for entry directly!
+
+
+			if (m_mpDepartureQueue.find((*it).uidObject) != m_mpDepartureQueue.end()) // should not look for entry directly!
 			{
-				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpBoardingDetails[(*it).uidObject];
+				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpDepartureQueue[(*it).uidObject];
+
+				assert(ptrUIDUpdate->uidUpdated == std::nullopt);
 
 				ptrUIDUpdate->uidUpdated = (*it).uidObject_Updated;
-				ptrUIDUpdate->uidParent = (*it).uidParent;
+				assert(ptrUIDUpdate->uidParent == (*it).uidParent);
 			}
 			else
 			{
 				throw new std::exception("should not occur!"); // for the time being!
 			}
 
-			if (m_mpBoardingDetails.find(*(*it).uidParent) != m_mpBoardingDetails.end())
+			if (m_mpDepartureQueue.find(*(*it).uidParent) != m_mpDepartureQueue.end())
 			{
-				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpBoardingDetails[*(*it).uidParent];
+				std::shared_ptr<UIDUpdate> ptrUIDUpdate = m_mpDepartureQueue[*(*it).uidParent];
 
-				ptrUIDUpdate->vtChildUpdates.push_back(std::make_pair((*it).uidObject, (*it).uidObject_Updated));
+				bool _updated = false;
+				auto it_child = ptrUIDUpdate->vtChildUpdates.begin();
+				while (it_child != ptrUIDUpdate->vtChildUpdates.end())
+				{
+					if ((*it_child).first == (*it).uidObject)   // must not be null..
+					{
+						(*it_child).second = (*it).uidObject_Updated;
+						_updated = true;
+						break;
+					}
+					it_child++;
+				}
+				assert(_updated == true);
+				//ptrUIDUpdate->vtChildUpdates.push_back(std::make_pair((*it).uidObject, (*it).uidObject_Updated));
 			}
 			else
 			{
@@ -1080,13 +1154,50 @@ public:
 
 		isEventSignaled = true;
 
+		m_ptrCallback->updateChildUID(vtUIDUpdates);
 		cv.notify_all();
 
 		lock_storage.unlock();
 
-		m_ptrCallback->updateChildUID(vtUIDUpdates);
+		
 
 		return CacheErrorCode::Success;
+	}
+
+	void removeUpdates(std::vector<UIDUpdateRequest>& vtUIDUpdates)
+	{
+		return;
+		//std::unique_lock<std::shared_mutex> _lock(m_mtxCache);
+		//auto itt = m_mpDepartureQueue.begin();
+		//while (itt != m_mpDepartureQueue.end())
+		//{
+		//	if (m_mpObjects.find((*itt).first) != m_mpObjects.end())
+		//	{
+		//		throw new std::exception("should not occur!"); // for the time being!
+		//	}
+		//	itt++;
+		//}
+		//_lock.unlock();
+
+
+
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+
+		auto it = vtUIDUpdates.begin();
+		while (it != vtUIDUpdates.end())
+		{
+			if (m_mpDepartureQueue.find((*it).uidObject) != m_mpDepartureQueue.end()) // should not look for entry directly!
+			{
+				m_mpDepartureQueue.erase((*it).uidObject);
+			}
+			else
+			{
+				throw new std::exception("should not occur!"); // for the time being!
+			}
+			it++;
+		}
+
+		vtUIDUpdates.clear();
 	}
 
 	void prepareFlush(
@@ -1095,5 +1206,11 @@ public:
 		size_t nBlockSize,
 		std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
 	{}
+
+	void applyExistingUpdates(
+		std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
+		std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
+	{}
+
 #endif __POSITION_AWARE_ITEMS__
 };

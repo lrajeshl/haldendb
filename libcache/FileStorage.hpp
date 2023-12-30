@@ -50,6 +50,7 @@ private:
 	mutable std::shared_mutex m_mtxFile;
 
 	std::vector<ObjectFlushRequest<ObjectType>> m_vtObjects;
+	std::vector<ObjectFlushRequest<ObjectType>> m_vtflushed;
 #endif __CONCURRENT__
 
 public:
@@ -219,7 +220,7 @@ public:
 		if (m_vtObjects.size() == 0)
 			return;
 
-
+		/*
 		auto it = m_vtObjects.begin();
 		while (it != m_vtObjects.end())
 		{
@@ -250,7 +251,7 @@ public:
 			}
 			it++;
 		}
-
+		*/
 		std::unique_lock<std::shared_mutex> lock_file(m_mtxFile);
 
 		std::vector<UIDUpdateRequest> vtUIDUpdates;
@@ -258,14 +259,23 @@ public:
 		for (int idx = 0; idx < m_vtObjects.size(); idx++)
 		{
 			m_fsStorage.seekp((*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nOffset);
-			m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
+			//m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
 		
+			size_t nBufferSize = 0;
+			uint8_t uidObjectType = 0;
+
+			m_vtObjects[idx].ptrObject->serialize(m_fsStorage, uidObjectType, nBufferSize);
+
 			vtUIDUpdates.push_back(std::move(m_vtObjects[idx].uidDetails));
 
-			delete[] vtBuffer[idx];
+			//delete[] vtBuffer[idx];
 		}
 
 		m_fsStorage.flush();
+
+		m_vtflushed.insert(m_vtflushed.end(), std::make_move_iterator(m_vtObjects.begin()), std::make_move_iterator(m_vtObjects.end()));
+
+
 		m_vtObjects.clear();
 
 		lock_file.unlock();

@@ -18,6 +18,10 @@ public:
 	virtual CacheErrorCode updateChildUID(const std::optional<ObjectUIDType>& uidObject, const ObjectUIDType& uidChildOld, const ObjectUIDType& uidChildNew) = 0;
 	virtual CacheErrorCode updateChildUID(std::vector<UIDUpdateRequest>& vtUIDUpdates) = 0;
 
+	virtual void applyExistingUpdates(
+		std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
+		std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates) = 0;
+
 	virtual void prepareFlush(
 		std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
 		size_t& nOffset,

@@ -113,7 +113,8 @@ public:
             }
             if (ptrLastNode != nullptr && uidCurrentNodeParent != uidLastNode)
             {
-                throw new std::exception("should not occur!");   // TODO: critical log.
+                uidCurrentNodeParent = uidLastNode;
+                //throw new std::exception("should not occur!");   // TODO: critical log.
             }
 #else
             m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);    //TODO: lock
@@ -323,7 +324,9 @@ public:
 
             if (uidLastNode != uidCurrentNodeParent)
             {
-                throw new std::exception("should not occur!");   // TODO: critical log.
+                uidCurrentNodeParent = uidLastNode; // give priority to the cache. TODO: concurent case?
+
+                //throw new std::exception("should not occur!");   // TODO: critical log.
             }
 #else __POSITION_AWARE_ITEMS__
             m_ptrCache->getObject(uidCurrentNode, prNodeDetails);    //TODO: lock
@@ -657,7 +660,7 @@ public:
 
         if (ptrObject == nullptr)
         {
-            return CacheErrorCode::Success;
+            return CacheErrorCode::Success; // object should in flight!!!
             throw new std::exception("should not occur!");   // TODO: critical log.
         }
 
@@ -669,7 +672,10 @@ public:
         {
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrObject->data);
 
-            ptrIndexNode->updateChildUID(uidChildOld, uidChildNew);
+            bool b = ptrIndexNode->updateChildUID(uidChildOld, uidChildNew);
+            if (!b)
+                return CacheErrorCode::Error;
+
             ptrObject->dirty = true;
         }
         else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrObject->data))
@@ -689,10 +695,8 @@ public:
         return CacheErrorCode::Success;
     }
 
-    void prepareFlush(
+    void applyExistingUpdates(
         std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
-        size_t& nOffset,
-        size_t nBlockSize,
         std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
     {
         auto it = vtObjects.begin();
@@ -702,6 +706,7 @@ public:
             {
                 std::shared_ptr<UIDUpdate> ptrUIDUpdate = mpUIDUpdates[(*it).uidDetails.uidObject];
 
+                // others add it and it has nwo update for them
                 assert(ptrUIDUpdate->uidUpdated == std::nullopt);
 
                 if (ptrUIDUpdate->vtChildUpdates.size() > 0)
@@ -713,9 +718,13 @@ public:
                         auto it_child = ptrUIDUpdate->vtChildUpdates.begin();
                         while (it_child != ptrUIDUpdate->vtChildUpdates.end())
                         {
-                            if ((*it).uidDetails.uidObject_Updated != std::nullopt)
+                            std::optional<ObjectFatUID> _new = mpUIDUpdates[(*it_child).first].uidUpdated;
+
+                            //if ((*it_child).second != std::nullopt)   // must not be null.. ? could be null if flush performed twice before updating the previous one!
+                            if(_new != std::nullopt)    //strange! should be updated in the prevoius batch.. as currently I do one batch at a time..lets c..
                             {
-                                ptrIndexNode->updateChildUID((*it).uidDetails.uidObject, *(*it).uidDetails.uidObject_Updated);
+                                ptrIndexNode->updateChildUID((*it_child).first, *(*it_child).second);
+                                //mpUIDUpdates[(*it_child).first].updateapplied = true; // update later when data is written!!
                             }
                             it_child++;
                         }
@@ -728,8 +737,16 @@ public:
             }
             it++;
         }
+    }
 
-        it = vtObjects.begin();
+
+    void prepareFlush(
+        std::vector<ObjectFlushRequest<ObjectType>>& vtObjects,
+        size_t& nOffset,
+        size_t nBlockSize,
+        std::unordered_map<ObjectUIDType, std::shared_ptr<UIDUpdate>>& mpUIDUpdates)
+    {
+        auto it = vtObjects.begin();
         while (it != vtObjects.end())
         {
             if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(*it).ptrObject->data))
@@ -755,10 +772,13 @@ public:
             it++;
         }
         
-        for (int idx = 0; idx < vtObjects.size() - 1; idx++)
+        for (int idx = 0; idx < vtObjects.size(); idx++)
         {
-            for (int jdx = idx + 1; jdx < vtObjects.size(); jdx++)
+            for (int jdx = 0; jdx < vtObjects.size(); jdx++)
             {
+                if (idx == jdx)
+                    continue;
+
                 if (vtObjects[idx].uidDetails.uidParent == vtObjects[jdx].uidDetails.uidObject)
                 {
                     if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(vtObjects[jdx].ptrObject->data)))
@@ -782,6 +802,9 @@ public:
     {
         std::unique_lock<std::shared_mutex> lock_updates(this->m_mtxUIDUpdates);
         
+        if (this->m_vtUIDUpdates.size() == 0)
+            return;
+
         std::vector<UIDUpdateRequest> vtUIDUpdates(std::move(this->m_vtUIDUpdates));
 
         lock_updates.unlock();
@@ -789,10 +812,13 @@ public:
         auto it = vtUIDUpdates.begin();
         while (it != vtUIDUpdates.end())
         {
-            updateChildUID(*(*it).uidParent, (*it).uidObject, *(*it).uidObject_Updated); 
+            bool b = updateChildUID(*(*it).uidParent, (*it).uidObject, *(*it).uidObject_Updated); 
             // todo: take lock internally!
             // todo: bulk update for same node!
+            it++;
         }
+
+        m_ptrCache->removeUpdates(vtUIDUpdates);
     }
 
     static void processUIDUpdates(SelfType* ptrSelf)
