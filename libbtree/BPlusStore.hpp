@@ -19,6 +19,8 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
+
+
 #define __CONCURRENT__
 #define __TREE_AWARE_CACHE__
 
@@ -720,6 +722,8 @@ public:
                     ObjectUIDType uidTemp = *it_children;
                     *it_children = *(mpUpdatedUIDs[*it_children].first);
                     mpUpdatedUIDs.erase(uidTemp);  // Update applied!
+
+                    ptrObject->dirty = true;
                 }
                 it_children++;
             }
@@ -736,6 +740,13 @@ public:
         auto it = vtObjects.begin();
         while (it != vtObjects.end())
         {
+            if (!(*it).second.second->dirty) // dont proceed.. assumption.. nodes are always in the order.. related leaf nodes and then parent nodes..
+            {
+                (*it).second.first = std::nullopt;
+                (*it).second.second = nullptr;
+                continue;
+            }
+
             if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(*it).second.second->data))
             {
                 std::shared_ptr<IndexNodeType> ptrObject = std::get<std::shared_ptr<IndexNodeType>>(*(*it).second.second->data);
@@ -768,8 +779,8 @@ public:
 
         for (int idx = 0; idx < vtObjects.size(); idx++)
         {
-            //if (!vtObjects[idx].second.second->dirty) //make solution better... ids are already generated in this case..
-            //    continue;
+            if (vtObjects[idx].second.second == nullptr) //make solution better... ids are already generated in this case..
+             continue;
 
             if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(vtObjects[idx].second.second->data)))
             {
@@ -780,6 +791,9 @@ public:
                 {
                     for (int jdx = 0; jdx < vtObjects.size(); jdx++)
                     {
+                        if (vtObjects[jdx].second.second == nullptr) //make solution better... ids are already generated in this case..
+                            continue;
+
                         if (idx == jdx || vtApplied[jdx])
                             continue;
 

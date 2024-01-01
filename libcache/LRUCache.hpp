@@ -617,7 +617,7 @@ private:
 
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
-		if (m_mpObjects.size() < m_nCacheCapacity)
+		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
 
 		size_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
@@ -648,6 +648,8 @@ private:
 				vtItems.push_back(std::make_pair(ptrTemp->m_uidSelf, std::make_pair(std::nullopt, ptrTemp->m_ptrObject)));
 			}
 
+			// can we have back to back updates here!!!!
+
 			m_mpObjects.erase(ptrTemp->m_uidSelf);
 
 			m_ptrTail = ptrTemp->m_ptrPrev;
@@ -674,10 +676,24 @@ private:
 			m_ptrCallback->applyExistingUpdates(vtItems, m_mpUpdatedUIDs);
 		}
 		
+		size_t nOffset = m_ptrStorage->getWritePos();
+
+		lock_storage.unlock();
+
+		size_t nNewOffset = nOffset;
+
+		m_ptrCallback->prepareFlush(vtItems, nNewOffset, m_ptrStorage->getBlockSize());
+
 		auto it = vtItems.begin();
 		int _i = 0;
 		while (it != vtItems.end())
 		{
+			if ((*it).second.second == nullptr) // dont proceed.. assumption.. nodes are always in the order.. related leaf nodes and then parent nodes..
+			{
+				it++;
+				continue;
+			}
+
 			_i++;
 			if ((*it).second.second.use_count() != 1)
 			{
@@ -697,14 +713,14 @@ private:
 		}
 
 		
-		size_t nOffset = m_ptrStorage->getWritePos();
+		for (int ijk = 0; ijk < vtItems.size(); ijk++)
+		{
+			if (vtItems[ijk].second.second == nullptr)
+			{
+				vtItems.erase(vtItems.begin() + ijk);
+			}
+		}
 
-		lock_storage.unlock();
-
-		size_t nNewOffset = nOffset;
-		
-		m_ptrCallback->prepareFlush(vtItems, nNewOffset, m_ptrStorage->getBlockSize());
-		
 		m_ptrStorage->addObjects(vtItems, nNewOffset);
 
 		it = vtItems.begin();
@@ -748,13 +764,13 @@ private:
 				break;
 			}
 
+			if (m_mpUpdatedUIDs.size() > 0)
+			{
+				m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUpdatedUIDs);
+			}
+
 			if (m_ptrTail->m_ptrObject->dirty)
 			{
-				if (m_mpUpdatedUIDs.size() > 0)
-				{
-					m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUpdatedUIDs);
-				}
-
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
