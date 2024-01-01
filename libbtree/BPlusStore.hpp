@@ -789,7 +789,7 @@ public:
                 auto it = ptrIndexNode->m_ptrData->m_vtChildren.begin();
                 while (it != ptrIndexNode->m_ptrData->m_vtChildren.end())
                 {
-                    for (int jdx = 0; jdx < vtObjects.size(); jdx++)
+                    for (int jdx = 0; jdx < idx; jdx++)
                     {
                         if (vtObjects[jdx].second.second == nullptr) //make solution better... ids are already generated in this case..
                             continue;
