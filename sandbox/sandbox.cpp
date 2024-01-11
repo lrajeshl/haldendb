@@ -28,7 +28,7 @@
 #include "ObjectUID.h"
 #include "NVMRODataNode.hpp"
 #include "NVMROIndexNode.hpp"
-
+#include "PMemStorage.hpp"
 
 #ifdef __CONCURRENT__
 
@@ -393,8 +393,8 @@ void test_for_ints()
             typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
+            BPlusStoreType ptrTree(idx, 1000, 1024, (size_t)10 * 1024 * 1024 * 1024, "/mnt/tmpfs/pool0");
             ptrTree.template init<NVMRODataNodeType>();
 
             int_test<BPlusStoreType, NVMROIndexNodeType, NVMRODataNodeType>(&ptrTree, idx, 5000);
@@ -412,8 +412,8 @@ void test_for_ints()
             typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+            BPlusStoreType ptrTree(idx, 1000, 1024, (size_t)10 * 1024 * 1024 * 1024, "/mnt/tmpfs/pool0");
             ptrTree.template init<DataNodeType>();
 
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 5000);
@@ -595,7 +595,7 @@ void test_for_threaded()
 
 int main(int argc, char* argv[])
 {
-    //test_for_ints();
+    test_for_ints();
     //test_for_string();
     //test_for_threaded();
 
@@ -641,7 +641,7 @@ int main(int argc, char* argv[])
 
 #endif __TREE_AWARE_CACHE__
 
-    for (size_t nCntr = 0; nCntr < 1000000; nCntr++)
+    for (size_t nCntr = 0; nCntr < 10000; nCntr++)
     {
         ptrTree->insert(nCntr, nCntr);
     }

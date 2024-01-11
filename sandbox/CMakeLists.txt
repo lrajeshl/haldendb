@@ -17,7 +17,7 @@ target_compile_features(haldendb_compiler_flags  INTERFACE cxx_std_20)
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
 
 ##add_compile_definitions(__CONCURRENT__)
-add_compile_definitions(__TREE_AWARE_CACHE__)
+#add_compile_definitions(__TREE_AWARE_CACHE__)
 
 add_subdirectory(../libcache ${PROJECT_BINARY_DIR}/libcache)
 add_subdirectory(../libbtree ${PROJECT_BINARY_DIR}/libbtree)
@@ -39,11 +39,11 @@ set_target_properties(sandbox PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
-target_compile_options(sandbox PRIVATE
-    -ggdb3
-    -O0
-    -g3
-    -Wall)
+#target_compile_options(sandbox PRIVATE
+#    -ggdb3
+#    -O0
+#    -g3
+#    -Wall)
 
 target_link_libraries(sandbox PUBLIC libcache haldendb_compiler_flags)
 target_link_libraries(sandbox PUBLIC libbtree haldendb_compiler_flags)

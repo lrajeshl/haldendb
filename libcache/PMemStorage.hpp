@@ -124,22 +124,26 @@ public:
 		, m_nBlockSize(nBlockSize)
 		, m_stFilename(stFilename)
 		, m_nNextBlock(0)
+		, nMappedLen(0)
 		, hMemory (nullptr)
 		, m_ptrCallback(NULL)
 	{
+		std::cout << stFilename.c_str() << std::endl;
 		if( !openMMapFile(hMemory, stFilename.c_str(), nMappedLen, nIsPMem))
 		{
-			if( !createMMapFile(hMemory, szFilePath, nFileSize, nMappedLen, nIsPMem))
+			if( !createMMapFile(hMemory, stFilename.c_str(), nStorageSize, nMappedLen, nIsPMem))
 			{
 				throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
 			}
+		} else {
+		//std::cout << "file opened" << std::endl;
 		}
-
 		if (hMemory == nullptr)
 		{
 			throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
 		}
 
+		//std::cout << "2" << nMappedLen << "," << m_nStorageSize << std::endl;
 		if (nMappedLen != nStorageSize)
 		{
 			throw new std::logic_error("Size mismatch!"); // TODO: critical log.
