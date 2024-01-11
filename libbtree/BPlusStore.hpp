@@ -38,8 +38,8 @@ class BPlusStore
     typedef CacheType::ObjectType ObjectType;
     typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
-    using DataNodeType = typename std::tuple_element<0, typename ObjectType::ObjectCoreTypes>::type;
-    using IndexNodeType = typename std::tuple_element<1, typename ObjectType::ObjectCoreTypes>::type;
+    using DataNodeType = typename std::tuple_element<0, typename CacheType::ObjectCoreTypes>::type;
+    using IndexNodeType = typename std::tuple_element<1, typename CacheType::ObjectCoreTypes>::type;
 
 private:
     uint32_t m_nDegree;
@@ -146,11 +146,9 @@ public:
 
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
+            if (uidCurrentNode.m_nType == IndexNodeType::UID)
             {
-                //if (print) { std::cout << "2." << std::endl;}
-
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
+                IndexNodeType* ptrIndexNode = reinterpret_cast<IndexNodeType*>(ptrCurrentNode);
 
                 if (ptrIndexNode->canTriggerSplit(m_nDegree))
                 {
@@ -169,10 +167,10 @@ public:
 
                 uidCurrentNode = ptrIndexNode->getChild(key);
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
+            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
             {
                 //if (print) { std::cout << "3." << std::endl;}
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
+                DataNodeType* ptrDataNode = reinterpret_cast<DataNodeType*>(ptrCurrentNode);
 
 #ifdef __TREE_AWARE_CACHE__
                 ptrCurrentNode->dirty = true;
@@ -242,9 +240,9 @@ public:
                 break;
             }
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data))
+            if (prNodeDetails.first.m_nType == IndexNodeType::UID)
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data);
+                IndexNodeType* ptrIndexNode = reinterpret_cast<IndexNodeType*>(prNodeDetails.second);
 
                 int idx = 0;
                 auto it_a = vtAccessedNodes.begin();
@@ -284,9 +282,11 @@ public:
 
                 }
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data))
+            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data))
             {
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data);
+                DataNodeType* ptrDataNode = reinterpret_cast<DataNodeType*>(prNodeDetails.second);
+
+                //std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data);
 
                 ErrorCode errCode = ptrDataNode->template split<std::shared_ptr<CacheType>, ObjectUIDType>(m_ptrCache, uidRHSNode, pivotKey);
 
@@ -311,7 +311,7 @@ public:
 
         return ErrorCode::Success;
     }
-
+    
     ErrorCode search(const KeyType& key, ValueType& value)
     {
         ErrorCode errCode = ErrorCode::Error;
@@ -375,15 +375,19 @@ public:
 
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, prNodeDetails));
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data))
+            if (uidCurrentNode.m_nType == IndexNodeType::UID)
+            //if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
+                IndexNodeType* ptrIndexNode = reinterpret_cast<IndexNodeType*>(prNodeDetails);
+
+                //std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
 
                 uidCurrentNode = ptrIndexNode->getChild(key);
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
+            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
             {
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails->data);
+                DataNodeType* ptrDataNode = reinterpret_cast<DataNodeType*>(prNodeDetails);
+                //std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails->data);
 
                 errCode = ptrDataNode->getValue(key, value);
 
@@ -398,7 +402,7 @@ public:
 
         return errCode;
     }
-
+    /*
     ErrorCode remove(const KeyType& key)
     {   
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtAccessedNodes;
@@ -566,10 +570,6 @@ public:
                 else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentRoot->data))
                 {
                     int i = 0;
-                    /*std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentRoot->data);
-                    if (ptrDataNode->getKeysCount() == 0) {
-                        m_ptrCache->remove(*m_uidRootNode);
-                    }*/
                 }
 
                 break;
@@ -664,7 +664,7 @@ public:
 
         return ErrorCode::Success;
     }
-
+*/
     void print(std::ofstream & out)
     {
         int nSpace = 7;

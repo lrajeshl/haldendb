@@ -154,6 +154,7 @@
     <ClInclude Include="ErrorCodes.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="IndexNode.hpp" />
+    <ClInclude Include="INodeMetaData.h" />
     <ClInclude Include="NVMRODataNode.hpp" />
     <ClInclude Include="NVMROIndexNode.hpp" />
     <ClInclude Include="pch.h" />

@@ -10,13 +10,14 @@
 #include "CacheErrorCodes.h"
 #include "IFlushCallback.h"
 
-template<typename KeyType, template <typename...> typename ValueType, typename... ValueCoreTypes>
+//template<typename KeyType, template <typename...> typename ValueType, typename... ValueCoreTypes>
+template<typename KeyType, typename... ValueCoreTypes>
 class NoCache
 {
 public:
 	typedef KeyType ObjectUIDType;
-	typedef ValueType<ValueCoreTypes...> ObjectType;
-	typedef ValueType<ValueCoreTypes...>* ObjectTypePtr;
+	typedef void ObjectType;
+	typedef void* ObjectTypePtr;
 	typedef std::tuple<ValueCoreTypes...> ObjectCoreTypes;
 
 public:
@@ -36,7 +37,7 @@ public:
 
 	CacheErrorCode remove(ObjectUIDType objKey)
 	{
-		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
+		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey.m_ptrVolatile);
 		delete ptrValue;
 
 		return CacheErrorCode::KeyDoesNotExist;
@@ -44,20 +45,14 @@ public:
 
 	CacheErrorCode getObject(ObjectUIDType objKey, ObjectTypePtr& ptrObject)
 	{
-		ptrObject = reinterpret_cast<ObjectTypePtr>(objKey);
+		ptrObject = reinterpret_cast<ObjectTypePtr>(objKey.m_ptrVolatile);
 		return CacheErrorCode::Success;
 	}
 
 	template <typename Type>
 	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject)
 	{
-		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
-
-		if (std::holds_alternative<Type>(*ptrValue->data))
-		{
-			ptrObject = std::get<Type>(*ptrValue->data);
-			return CacheErrorCode::Success;
-		}
+		ptrObject = reinterpret_cast<Type*>(objKey.m_ptrVolatile);
 
 		return CacheErrorCode::Error;
 	}
@@ -67,9 +62,9 @@ public:
 	{
 		//ObjectTypePtr ptrValue = new std::variant<ValueCoreTypes...>(std::make_shared<Type>(args...));
 		
-		ValueType<ValueCoreTypes...>* ptrValue = ValueType<ValueCoreTypes...>::template createObjectOfType<Type>(args...);
+		ObjectTypePtr ptrValue = new Type(args...);
 
-		key = reinterpret_cast<ObjectUIDType>(ptrValue);
+		key = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrValue));
 		return CacheErrorCode::Success;
 	}
 
