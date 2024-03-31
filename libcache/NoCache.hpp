@@ -43,14 +43,14 @@ public:
 		return CacheErrorCode::KeyDoesNotExist;
 	}
 
-	CacheErrorCode getObject(ObjectUIDType objKey, ObjectTypePtr& ptrObject)
+	CacheErrorCode getObject(const ObjectUIDType& objKey, ObjectTypePtr& ptrObject)
 	{
 		ptrObject = reinterpret_cast<ObjectTypePtr>(objKey.m_ptrVolatile);
 		return CacheErrorCode::Success;
 	}
 
 	template <typename Type>
-	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject)
+	inline CacheErrorCode getObjectOfType(const ObjectUIDType& objKey, Type*& ptrObject)
 	{
 		ptrObject = reinterpret_cast<Type*>(objKey.m_ptrVolatile);
 

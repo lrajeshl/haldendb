@@ -593,13 +593,43 @@
 //#endif __CONCURRENT__
 //}
 
+struct bit16int 
+{
+    uint64_t _a;
+    uint64_t _b;
+
+
+    bool operator==(const bit16int& rhs) const
+    {
+        if (_a == rhs._a && _b == rhs._b)
+            return true;
+        return false;
+    }
+
+    bool operator <(const bit16int& rhs) const
+    {
+        if (_a < rhs._a && _b < rhs._b)
+            return true;
+        return false;
+
+    }
+
+    bool operator >=(const bit16int& rhs) const
+    {
+        if (_a >= rhs._a && _b >= rhs._b)
+            return true;
+        return false;
+
+    }
+};
+
 int main(int argc, char* argv[])
 {
     //test_for_ints();
     //test_for_string();
     //test_for_threaded();
 
-    typedef int KeyType;
+    typedef bit16int KeyType;
     typedef int ValueType;
 
 #ifdef __TREE_AWARE_CACHE__
@@ -628,7 +658,7 @@ int main(int argc, char* argv[])
     ptrTree->init<NVMRODataNodeType>();
 
 #else //__TREE_AWARE_CACHE__
-    typedef int KeyType;
+    typedef bit16int KeyType;
     typedef int ValueType;
     typedef ObjectUID ObjectUIDType;
 
@@ -636,23 +666,40 @@ int main(int argc, char* argv[])
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
     typedef BPlusStore<KeyType, ValueType, NoCache<ObjectUIDType, DataNodeType, IndexNodeType>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(3);
+    BPlusStoreType* ptrTree = new BPlusStoreType(5000);
     ptrTree->template init<DataNodeType>();
 
 #endif __TREE_AWARE_CACHE__
 
-    for (size_t nCntr = 0; nCntr < 10000; nCntr++)
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    for (size_t nCntr = 0; nCntr < 10000; nCntr = nCntr+2)
     {
-        ptrTree->insert(nCntr, nCntr);
+        ptrTree->insert(bit16int{ nCntr, nCntr }, nCntr);
     }
+
+    for (size_t nCntr = 1; nCntr < 10000; nCntr=nCntr+2)
+    {
+        ptrTree->insert(bit16int{ nCntr, nCntr }, nCntr);
+    }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[�s]" << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+
+    begin = std::chrono::steady_clock::now();
 
     for (size_t nCntr = 0; nCntr < 10000; nCntr++)
     {
         int nValue = 0;
-        ErrorCode code = ptrTree->search(nCntr, nValue);
+        ErrorCode code = ptrTree->search(bit16int{ nCntr,nCntr }, nValue);
 
         assert(nValue == nCntr);
     }
+
+    end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[�s]" << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
 
     for (size_t nCntr = 0; nCntr < 10000; nCntr++)
     {

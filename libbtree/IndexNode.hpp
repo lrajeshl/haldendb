@@ -155,6 +155,12 @@ public:
 
 	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling)
 	{
+		//auto it = std::lower_bound(m_ptrData->m_vtPivots.begin(), m_ptrData->m_vtPivots.end(), pivotKey);
+		//int i = std::distance(m_ptrData->m_vtPivots.begin(), it);
+		//m_ptrData->m_vtPivots.insert(m_ptrData->m_vtPivots.begin() + i, pivotKey);
+		//m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.begin() + i + 1, uidSibling);
+
+
 		size_t nChildIdx = m_ptrData->m_vtPivots.size();
 		for (int nIdx = 0; nIdx < m_ptrData->m_vtPivots.size(); ++nIdx)
 		{
@@ -371,6 +377,9 @@ public:
 		}
 
 		return nChildIdx;
+
+		//auto it = std::upper_bound(m_ptrData->m_vtPivots.begin(), m_ptrData->m_vtPivots.end(), key);
+		//return std::distance(m_ptrData->m_vtPivots.begin(), it);
 	}
 
 	inline ObjectUIDType getChildAt(size_t nIdx) const 
@@ -378,7 +387,7 @@ public:
 		return m_ptrData->m_vtChildren[nIdx];
 	}
 
-	inline ObjectUIDType getChild(const KeyType& key) const
+	inline const ObjectUIDType& getChild(const KeyType& key) const
 	{
 		return m_ptrData->m_vtChildren[getChildNodeIdx(key)];
 	}
@@ -410,8 +419,8 @@ public:
 		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling,
-			m_ptrData->m_vtPivots.begin() + nMid + 1, m_ptrData->m_vtPivots.end(),
-			m_ptrData->m_vtChildren.begin() + nMid + 1, m_ptrData->m_vtChildren.end());
+			m_ptrData->m_vtPivots.cbegin() + nMid + 1, m_ptrData->m_vtPivots.cend(),
+			m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend());
 
 		if (!uidSibling)
 		{
@@ -420,8 +429,8 @@ public:
 
 		pivotKeyForParent = m_ptrData->m_vtPivots[nMid];
 
-		m_ptrData->m_vtPivots.resize(nMid);
-		m_ptrData->m_vtChildren.resize(nMid + 1);
+		m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.cbegin() + nMid, m_ptrData->m_vtPivots.cend());
+		m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend());
 
 		return ErrorCode::Success;
 	}

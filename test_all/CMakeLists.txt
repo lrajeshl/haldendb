@@ -21,10 +21,10 @@ add_subdirectory(../libcache ${PROJECT_BINARY_DIR}/libcache)
 add_subdirectory(../libbtree ${PROJECT_BINARY_DIR}/libbtree)
 
 add_executable(test_all 
-               BPlusTree_DRAMLRU_Suite_1.cpp 
-               BPlusTree_DRAMLRU_Suite_2.cpp 
-               BPlusTree_NoCache_Suite_1.cpp 
-               BPlusTree_NVRAMLRU_Suite_1.cpp
+               BPlusStore_DRAMLRU_Suite_1.cpp 
+               BPlusStore_DRAMLRU_Suite_2.cpp 
+               BPlusStore_NoCache_Suite_1.cpp 
+               BPlusStore_NVRAMLRU_Suite_1.cpp
                main.cpp 
 )
 

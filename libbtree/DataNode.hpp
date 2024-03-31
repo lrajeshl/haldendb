@@ -226,8 +226,8 @@ public:
 		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling,
-			m_ptrData->m_vtKeys.begin() + nMid, m_ptrData->m_vtKeys.end(),
-			m_ptrData->m_vtValues.begin() + nMid, m_ptrData->m_vtValues.end());
+			m_ptrData->m_vtKeys.cbegin() + nMid, m_ptrData->m_vtKeys.cend(),
+			m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend());
 
 		if (!uidSibling)
 		{
@@ -236,8 +236,8 @@ public:
 
 		pivotKeyForParent = m_ptrData->m_vtKeys[nMid];
 
-		m_ptrData->m_vtKeys.resize(nMid);
-		m_ptrData->m_vtValues.resize(nMid);
+		m_ptrData->m_vtKeys.erase(m_ptrData->m_vtKeys.cbegin() + nMid, m_ptrData->m_vtKeys.cend());
+		m_ptrData->m_vtValues.erase(m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend());
 
 		return ErrorCode::Success;
 	}

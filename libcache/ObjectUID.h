@@ -8,7 +8,7 @@ public:
 	uint8_t m_nType;
 	uintptr_t m_ptrVolatile;
 
-	static ObjectUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr)
+	inline static ObjectUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr)
 	{
 		ObjectUID key;
 		key.m_nType = nType;
