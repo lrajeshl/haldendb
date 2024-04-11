@@ -5,11 +5,13 @@
 class ObjectUID
 {
 public:
+	uint8_t m_nType;
 	uintptr_t m_ptrVolatile;
 
-	static ObjectUID createAddressFromVolatilePointer(uintptr_t ptr)
+	static ObjectUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr)
 	{
 		ObjectUID key;
+		key.m_nType = nType;
 		key.m_ptrVolatile = ptr;
 
 		return key;
