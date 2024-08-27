@@ -133,7 +133,7 @@ public:
 		m_ptrData->m_vtChildren.resize(nValueCount);
 
 		is.read(reinterpret_cast<char*>(m_ptrData->m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-		is.read(reinterpret_cast<char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
+		is.read(reinterpret_cast<char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType));
 	}
 
 	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren)
@@ -376,7 +376,7 @@ public:
 		return m_ptrData->m_vtChildren[nIdx];
 	}
 
-	inline ObjectUIDType getChild(const KeyType& key) const
+	inline const ObjectUIDType& getChild(const KeyType& key) const
 	{
 		return m_ptrData->m_vtChildren[getChildNodeIdx(key)];
 	}
@@ -408,8 +408,8 @@ public:
 		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling,
-			m_ptrData->m_vtPivots.begin() + nMid + 1, m_ptrData->m_vtPivots.end(),
-			m_ptrData->m_vtChildren.begin() + nMid + 1, m_ptrData->m_vtChildren.end());
+			m_ptrData->m_vtPivots.cbegin() + nMid + 1, m_ptrData->m_vtPivots.cend(),
+			m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend());
 
 		if (!uidSibling)
 		{
@@ -420,6 +420,9 @@ public:
 
 		m_ptrData->m_vtPivots.resize(nMid);
 		m_ptrData->m_vtChildren.resize(nMid + 1);
+
+		//m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.cbegin() + nMid, m_ptrData->m_vtPivots.cend());
+		//m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend());
 
 		return ErrorCode::Success;
 	}
@@ -485,13 +488,13 @@ public:
 	}
 
 public:
-	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, size_t& nDataSize) const
+	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, size_t& nDataSize)
 	{
 		static_assert(
 			std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
-			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
-			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value,
+			//std::is_trivial<ObjectUIDType>::value &&
+			std::is_standard_layout<ObjectUIDType>::value,
 			"Can only deserialize POD types with this function");
 
 		uidObjectType = SelfType::UID;
@@ -499,13 +502,13 @@ public:
 		size_t nKeyCount = m_ptrData->m_vtPivots.size();
 		size_t nValueCount = m_ptrData->m_vtChildren.size();
 
-		nDataSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(typename ObjectUIDType::NodeUID)) + sizeof(size_t) + sizeof(size_t);
+		nDataSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ObjectUIDType)) + sizeof(size_t) + sizeof(size_t);
 
 		os.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
 		os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(size_t));
 		os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(size_t));
 		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType));	// fix it!
 
 
 		auto it = m_ptrData->m_vtChildren.begin();
@@ -533,8 +536,8 @@ public:
 		static_assert(
 			std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
-			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
-			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value,
+			//std::is_trivial<ObjectUIDType>::value &&
+			std::is_standard_layout<ObjectUIDType>::value,
 			"Can only deserialize POD types with this function");
 
 		uidObjectType = UID;
@@ -542,7 +545,7 @@ public:
 		size_t nKeyCount = m_ptrData->m_vtPivots.size();
 		size_t nValueCount = m_ptrData->m_vtChildren.size();
 
-		nBufferSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(typename ObjectUIDType::NodeUID)) + sizeof(size_t) + sizeof(size_t);
+		nBufferSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ObjectUIDType)) + sizeof(size_t) + sizeof(size_t);
 
 		szBuffer = new char[nBufferSize + 1];
 		memset(szBuffer, 0, nBufferSize + 1);
@@ -561,7 +564,7 @@ public:
 		memcpy(szBuffer + nOffset, m_ptrData->m_vtPivots.data(), nKeysSize);
 		nOffset += nKeysSize;
 
-		size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+		size_t nValuesSize = nValueCount * sizeof(ObjectUIDType);
 		memcpy(szBuffer + nOffset, m_ptrData->m_vtChildren.data(), nValuesSize);
 		nOffset += nValuesSize;
 

@@ -100,6 +100,7 @@ public:
 		, m_ptrHead(nullptr)
 		, m_ptrTail(nullptr)
 	{
+		m_mpObjects.reserve(m_nCacheCapacity + 100000);
 		m_ptrStorage = std::make_unique<StorageType>(args...);
 		
 #ifdef __CONCURRENT__
@@ -385,7 +386,7 @@ public:
 	{
 		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(std::make_shared<Type>(args...));
 
-		uidObject = ObjectUIDType::createAddressFromVolatilePointer(reinterpret_cast<uintptr_t>(ptrObject.get()));
+		uidObject = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrObject.get()));
 
 		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidObject, ptrObject);
 
@@ -431,7 +432,7 @@ public:
 
 		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(ptrCoreObject);
 
-		uidObject = ObjectUIDType::createAddressFromVolatilePointer(reinterpret_cast<uintptr_t>(ptrObject.get()));
+		uidObject = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrObject.get()));
 
 		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidObject, ptrObject);
 

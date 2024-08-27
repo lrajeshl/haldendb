@@ -814,7 +814,7 @@ public:
 
                 size_t nNodeSize = ptrIndexNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, nPos, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nPos, nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
@@ -832,7 +832,7 @@ public:
 
                 size_t nNodeSize = ptrDataNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, nPos, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nPos, nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 

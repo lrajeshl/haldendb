@@ -35,6 +35,7 @@ public:
 		} FATPOINTER;
 	};
 
+	uint8_t m_nType;
 	NodeUID m_uid;
 
 	template <typename... Args>
@@ -61,9 +62,10 @@ public:
 		throw new std::logic_error("should not occur!");
 	}
 
-	static ObjectFatUID createAddressFromFileOffset(uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
+		key.m_nType = nType;
 		key.m_uid.m_nMediaType = File;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nSize= nSize;
@@ -71,18 +73,20 @@ public:
 		return key;
 	}
 
-	static ObjectFatUID createAddressFromVolatilePointer(uintptr_t ptr, ...)
+	static ObjectFatUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr, ...)
 	{
 		ObjectFatUID key;
+		key.m_nType = nType;
 		key.m_uid.m_nMediaType = Volatile;
 		key.m_uid.FATPOINTER.m_ptrVolatile = ptr;
 
 		return key;
 	}
 
-	static ObjectFatUID createAddressFromDRAMCacheCounter(uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
+		key.m_nType = nType;
 		key.m_uid.m_nMediaType = DRAM;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
