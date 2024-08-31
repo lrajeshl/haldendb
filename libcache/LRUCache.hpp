@@ -15,8 +15,8 @@
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
-#define FLUSH_COUNT 100
-
+#define FLUSH_COUNT 1000
+#define __CONCURRENT__
 
 using namespace std::chrono_literals;
 
@@ -35,7 +35,7 @@ private:
 	struct Item
 	{
 	public:
-		ObjectUIDType m_uidSelf;
+		ObjectUIDType m_uidSelf; //move insdie the object and overload method for mp as it is used as key ... or???
 		ObjectTypePtr m_ptrObject;
 		std::shared_ptr<Item> m_ptrPrev;
 		std::shared_ptr<Item> m_ptrNext;
@@ -240,6 +240,26 @@ public:
 		return CacheErrorCode::Error;
 	}
 
+	CacheErrorCode tryGetObjectFromCacheOnly(const ObjectUIDType uidObject, ObjectTypePtr& ptrObject, std::optional<ObjectUIDType>& uidUpdated)
+	{
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache); // std::unique_lock due to LRU's linked-list update! is there any better way?
+#endif __CONCURRENT__
+
+		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
+		{
+			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
+			//moveToFront(ptrItem);
+			ptrObject = ptrItem->m_ptrObject;
+
+			//std::cout << std::endl;
+			return CacheErrorCode::Success;
+		}
+
+		ptrObject = nullptr;
+		return CacheErrorCode::Error;
+	}
+
 	CacheErrorCode reorder(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vt, bool ensure = true)
 	{
 #ifdef __CONCURRENT__
@@ -409,6 +429,50 @@ public:
 				m_ptrTail = ptrItem;
 			}
 			else 
+			{
+				ptrItem->m_ptrNext = m_ptrHead;
+				m_ptrHead->m_ptrPrev = ptrItem;
+				m_ptrHead = ptrItem;
+			}
+		}
+
+#ifdef __CONCURRENT__
+		//..
+#else
+		flushItemsToStorage();
+#endif __CONCURRENT__
+
+		return CacheErrorCode::Success;
+	}
+
+	template<class Type, typename... ArgsType>
+	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& uidObject, std::shared_ptr<ObjectType>& ptrObject, const ArgsType... args)
+	{
+		ptrObject = std::make_shared<ObjectType>(std::make_shared<Type>(args...));
+
+		uidObject = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrObject.get()));
+
+		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidObject, ptrObject);
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
+
+		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
+		{
+			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
+			ptrItem->m_ptrObject = ptrObject;
+			moveToFront(ptrItem);
+		}
+		else
+		{
+			m_mpObjects[*uidObject] = ptrItem;
+			if (!m_ptrHead)
+			{
+				m_ptrHead = ptrItem;
+				m_ptrTail = ptrItem;
+			}
+			else
 			{
 				ptrItem->m_ptrNext = m_ptrHead;
 				m_ptrHead->m_ptrPrev = ptrItem;
@@ -619,23 +683,26 @@ private:
 	inline void flushItemsToStorage()
 	{
 #ifdef __CONCURRENT__
+		std::unordered_map<ObjectUIDType, ObjectTypePtr> vtObjectsHelper;
 		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
 
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 //std::cout << m_mpObjects.size() << " , ";
-		if (m_mpObjects.size() < m_nCacheCapacity)
+		while (m_mpObjects.size() < m_nCacheCapacity)
 			return;
+
+		//std::cout << m_mpObjects.size() << std::endl;
 
 		size_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
 
-		if (nFlushCount > FLUSH_COUNT)	//todo: should push all the outstanding orders all together?
-			nFlushCount = FLUSH_COUNT;
+		//if (nFlushCount > FLUSH_COUNT)	//todo: should push all the outstanding orders all together?
+		//	nFlushCount = FLUSH_COUNT;
 
 		for (size_t idx = 0; idx < nFlushCount; idx++)
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
-				/* Info: 
+				/* Info:
 				 * Should proceed with the preceeding one?
 				 * But since each operation reorders the items at the end, therefore, the prceeding items would be in use as well!
 				 */
@@ -660,6 +727,7 @@ private:
 
 			std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
 
+			vtObjectsHelper[ptrItemToFlush->m_uidSelf] = ptrItemToFlush->m_ptrObject;
 			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
 
 			m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
@@ -691,12 +759,12 @@ private:
 		// Important: Ensure that no other thread should write to the stroage as the nPos is use to generate the addresses.
 		size_t nPos = m_ptrStorage->getWritePos();
 
-		m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+		m_ptrCallback->prepareFlush(vtObjects, vtObjectsHelper, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
 
 		auto it = vtObjects.begin();
 		while (it != vtObjects.end())
 		{
-			if ((*it).second.second.use_count() != 1)
+			if ((*it).second.second.use_count() != 2)
 			{
 				throw new std::logic_error("should not occur!");
 			}
@@ -735,11 +803,13 @@ private:
 		cv.notify_all();
 
 		vtObjects.clear();
-#else
+		vtObjectsHelper.clear();
+	#else
 		while (m_mpObjects.size() > m_nCacheCapacity)
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
+				std::cout << m_mpObjects.size() << std::endl;
 				/* Info:
 				 * Should proceed with the preceeding one?
 				 * But since each operation reorders the items at the end, therefore, the prceeding items would be in use as well!
@@ -860,7 +930,7 @@ private:
 		{
 			ptrSelf->flushItemsToStorage();
 
-			std::this_thread::sleep_for(100ms);
+			std::this_thread::sleep_for(1ms);
 
 		} while (!ptrSelf->m_bStop);
 	}
@@ -881,6 +951,7 @@ public:
 	}
 
 	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects
+		, std::unordered_map<ObjectUIDType, ObjectTypePtr>& vtObjectsHelper
 		, size_t& nOffset, size_t nPointerSize, ObjectUIDType::Media nMediaType)
 	{
 

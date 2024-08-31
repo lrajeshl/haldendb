@@ -612,7 +612,7 @@ int main(int argc, char* argv[])
     typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(3, 1000, 512, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+    BPlusStoreType* ptrTree = new BPlusStoreType(3, 100000, 512, 1024 * 1024 * 1024, "C:\\filestore.hdb");
     ptrTree->init<DataNodeType>();
 
 
@@ -657,12 +657,17 @@ int main(int argc, char* argv[])
 #endif __TREE_WITH_CACHE__
 
 
-    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr <= 999999; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
 
-    for (size_t nCntr = 0 + 1; nCntr <= 99999; nCntr = nCntr + 2)
+    //std::ofstream out_1("d:\\tree_post_insert_0.txt");
+    //ptrTree->print(out_1);
+    //out_1.flush();
+    //out_1.close();
+
+    for (size_t nCntr = 0 + 1; nCntr <= 999999; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
@@ -672,7 +677,7 @@ int main(int argc, char* argv[])
     //{
     //    ptrTree->insert(nCntr, nCntr);
     //}
-
+    return 0;
 #ifdef __TREE_WITH_CACHE__    
     ptrTree->flush();
 #endif __TREE_WITH_CACHE__

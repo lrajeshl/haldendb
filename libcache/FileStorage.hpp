@@ -11,6 +11,8 @@
 #include "ErrorCodes.h"
 #include "IFlushCallback.h"
 
+#define __CONCURRENT__
+
 template<
 	typename ICallback,
 	typename ObjectUIDType_, 
@@ -154,7 +156,7 @@ public:
 
 		//delete[] szBuffer; //2
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_nType, m_nNextBlock, m_nBlockSize, nBufferSize + sizeof(uint8_t));
+		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, m_nNextBlock, m_nBlockSize, nBufferSize + sizeof(uint8_t));
 
 		for (int idx = 0; idx < nRequiredBlocks; idx++)
 		{

@@ -30,6 +30,7 @@ private:
 	};
 
 public:
+	std::optional<ObjectUIDType> uidParent;
 	std::shared_ptr<DATANODESTRUCT> m_ptrData;
 
 public:
@@ -41,11 +42,13 @@ public:
 
 	DataNode()
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(std::nullopt)
 	{
 	}
 
 	DataNode(const DataNode& source)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(source.uidParent)
 	{
 		for (const auto& obj : source.m_ptrData->m_vtKeys)
 		{
@@ -60,6 +63,7 @@ public:
 
 	DataNode(const char* szData)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(std::nullopt)
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -90,6 +94,7 @@ public:
 
 	DataNode(const char* szData, bool readonly)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(std::nullopt)
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -124,6 +129,7 @@ public:
 
 	DataNode(std::fstream& is)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(std::nullopt)
 	{
 		size_t keyCount, valueCount;
 
@@ -137,8 +143,9 @@ public:
 		is.read(reinterpret_cast<char*>(m_ptrData->m_vtValues.data()), valueCount * sizeof(ValueType));
 	}
 
-	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
+	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, std::optional<ObjectUIDType> uidParent)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
+		, uidParent(uidParent)
 	{
 		m_ptrData->m_vtKeys.assign(itBeginKeys, itEndKeys);
 		m_ptrData->m_vtValues.assign(itBeginValues, itEndValues);
@@ -220,14 +227,14 @@ public:
 		return ErrorCode::KeyDoesNotExist;
 	}
 
-	template <typename Cache, typename CacheKeyType>
-	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename Cache, typename CacheKeyType, typename CacheObjectTypePtr>
+	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
 		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
 
-		ptrCache->template createObjectOfType<SelfType>(uidSibling,
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_ptrData->m_vtKeys.cbegin() + nMid, m_ptrData->m_vtKeys.cend(),
-			m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend());
+			m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend(), uidParent);
 
 		if (!uidSibling)
 		{
@@ -236,11 +243,8 @@ public:
 
 		pivotKeyForParent = m_ptrData->m_vtKeys[nMid];
 
-		m_ptrData->m_vtKeys.resize(nMid);
-		m_ptrData->m_vtValues.resize(nMid);
-
-		//m_ptrData->m_vtKeys.erase(m_ptrData->m_vtKeys.cbegin() + nMid, m_ptrData->m_vtKeys.cend());
-		//m_ptrData->m_vtValues.erase(m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend());
+		m_ptrData->m_vtKeys.erase(m_ptrData->m_vtKeys.cbegin() + nMid, m_ptrData->m_vtKeys.cend());
+		m_ptrData->m_vtValues.erase(m_ptrData->m_vtValues.cbegin() + nMid, m_ptrData->m_vtValues.cend());
 
 		return ErrorCode::Success;
 	}
@@ -302,6 +306,21 @@ public:
 	{
 		m_ptrData->m_vtKeys.insert(m_ptrData->m_vtKeys.end(), ptrSibling->m_ptrData->m_vtKeys.begin(), ptrSibling->m_ptrData->m_vtKeys.end());
 		m_ptrData->m_vtValues.insert(m_ptrData->m_vtValues.end(), ptrSibling->m_ptrData->m_vtValues.begin(), ptrSibling->m_ptrData->m_vtValues.end());
+	}
+
+	inline void updateParentUID(const ObjectUIDType& uid)
+	{
+		this->uidParent = uid;
+	}
+
+	inline const std::optional<ObjectUIDType>& getParentUID()
+	{
+		return uidParent;
+	}
+
+	inline void setParentUID(const ObjectUIDType& uid)
+	{
+		uidParent = uid;
 	}
 
 public:

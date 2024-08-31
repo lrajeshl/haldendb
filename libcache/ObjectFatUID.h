@@ -27,6 +27,7 @@ public:
 
 	struct NodeUID
 	{
+		uint8_t m_nType;
 		uint8_t m_nMediaType;
 		union
 		{
@@ -35,7 +36,6 @@ public:
 		} FATPOINTER;
 	};
 
-	uint8_t m_nType;
 	NodeUID m_uid;
 
 	template <typename... Args>
@@ -65,7 +65,7 @@ public:
 	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
-		key.m_nType = nType;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = File;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nSize= nSize;
@@ -76,7 +76,7 @@ public:
 	static ObjectFatUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr, ...)
 	{
 		ObjectFatUID key;
-		key.m_nType = nType;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = Volatile;
 		key.m_uid.FATPOINTER.m_ptrVolatile = ptr;
 
@@ -86,7 +86,7 @@ public:
 	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
-		key.m_nType = nType;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = DRAM;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;

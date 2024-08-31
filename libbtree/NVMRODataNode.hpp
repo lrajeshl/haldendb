@@ -65,7 +65,7 @@ public:
 			{
 				m_ptrDRAMDataNode = std::make_shared<DRAMDataNode>(
 					m_ptrNVMDataNode->m_ptrData->m_vtKeys.begin(), m_ptrNVMDataNode->m_ptrData->m_vtKeys.end(),
-					m_ptrNVMDataNode->m_ptrData->m_vtValues.begin(), m_ptrNVMDataNode->m_ptrData->m_vtValues.end());
+					m_ptrNVMDataNode->m_ptrData->m_vtValues.begin(), m_ptrNVMDataNode->m_ptrData->m_vtValues.end(), std::nullopt);
 
 				m_ptrNVMDataNode.reset();
 			}
@@ -119,10 +119,10 @@ public:
 		return m_ptrDRAMDataNode->getValue(key, value);
 	}
 
-	template <typename Cache, typename CacheKeyType>
-	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename Cache, typename CacheKeyType, typename CacheObjectTypePtr>
+	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, CacheObjectTypePtr ptrSibling, KeyType& pivotKeyForParent)
 	{
-		std::shared_ptr<SelfType> ptrSibling = nullptr;
+		//std::shared_ptr<SelfType> ptrSibling = nullptr;
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);
 
 		if (!uidSibling)
@@ -133,7 +133,9 @@ public:
 
 		moveDataToDRAM();
 
-		return m_ptrDRAMDataNode->split(ptrSibling->m_ptrDRAMDataNode, pivotKeyForParent);
+		std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(*ptrSibling->data);
+
+		return m_ptrDRAMDataNode->split(ptrDataNode->m_ptrDRAMDataNode, pivotKeyForParent);
 	}
 
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)
@@ -158,6 +160,21 @@ public:
 		ptrSibling->moveDataToDRAM();
 
 		return m_ptrDRAMDataNode->mergeNode(ptrSibling->m_ptrDRAMDataNode);
+	}
+
+	inline void updateParentUID(const ObjectUIDType& uid)
+	{
+		this->m_ptrDRAMDataNode->updateParentUID(uid);
+	}
+
+	inline const std::optional<ObjectUIDType>& getParentUID()
+	{
+		return m_ptrDRAMDataNode->getParentUID();
+	}
+
+	inline void setParentUID(const ObjectUIDType& uid)
+	{
+		m_ptrDRAMDataNode->setParentUID(uid);
 	}
 
 public:

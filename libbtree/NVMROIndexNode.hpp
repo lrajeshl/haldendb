@@ -172,10 +172,10 @@ public:
 		return m_ptrDRAMIndexNode->requireMerge(nDegree);
 	}
 
-	template <typename Cache>
-	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename Cache, typename CacheObjectTypePtr>
+	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr ptrSibling, KeyType& pivotKeyForParent)
 	{
-		std::shared_ptr<SelfType> ptrSibling = nullptr;
+		//std::shared_ptr<SelfType> ptrSibling = nullptr;
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);
 
 		if (!uidSibling)
@@ -186,7 +186,9 @@ public:
 
 		moveDataToDRAM();
 
-		return m_ptrDRAMIndexNode->split(ptrSibling->m_ptrDRAMIndexNode, pivotKeyForParent);
+		std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(*ptrSibling->data);
+
+		return m_ptrDRAMIndexNode->split(ptrDataNode->m_ptrDRAMIndexNode, pivotKeyForParent);
 	}
 
 	inline void moveAnEntityFromLHSSibling(shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
@@ -255,6 +257,58 @@ public:
 	{
 		moveDataToDRAM();
 		return m_ptrDRAMIndexNode->getChildrenEndIterator();
+	}
+
+	inline void updateParentUID(const ObjectUIDType& uid)
+	{
+		this->m_ptrDRAMIndexNode->updateParentUID(uid);
+	}
+
+	template <typename Cache, typename CacheObjectTypePtr, typename IndexNodeType, typename DataNodeType>
+	void updateChildrenParentUID(Cache ptrCache, const ObjectUIDType& uid)
+	{
+		m_ptrDRAMIndexNode->template updateChildrenParentUID<Cache, CacheObjectTypePtr, IndexNodeType, DataNodeType>(ptrCache, uid);
+		// lock ptrCache->template
+
+		//auto it = m_ptrData->m_vtChildren.begin();
+		//while (it != m_ptrData->m_vtChildren.end())
+		//{
+		//	CacheObjectTypePtr ptrNode = nullptr;
+		//	std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+		//	ptrCache->tryGetObjectFromCacheOnly(*it, ptrNode, uidUpdated);	//lockless variant..
+
+		//	if (ptrNode != nullptr)
+		//	{
+		//		if (std::holds_alternative<std::shared_ptr<SelfType>>(*ptrNode->data))
+		//		{
+		//			std::shared_ptr<SelfType> ptrIndexNode = std::get<std::shared_ptr<SelfType>>(*ptrNode->data);
+		//			ptrIndexNode->updateParentUID(uid);
+		//		}
+		//		else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrNode->data))
+		//		{
+		//			std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrNode->data);
+		//			ptrDataNode->updateParentUID(uid);
+		//		}
+		//	}
+
+		//	it++;
+		//}
+
+		// unlock ptrCache->template
+
+
+
+		throw new std::logic_error("should not occur!");
+	}
+
+	inline const std::optional<ObjectUIDType>& getParentUID()
+	{
+		return m_ptrDRAMIndexNode->getParentUID();
+	}
+
+	inline void setParentUID(const ObjectUIDType& uid)
+	{
+		m_ptrDRAMIndexNode->setParentUID(uid);
 	}
 
 public:
