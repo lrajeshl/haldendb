@@ -93,7 +93,7 @@ public:
         KeyType pivotKey;
         std::optional<ObjectUIDType> uidRHSNode;
         ObjectTypePtr ptrRHSNode = nullptr;
-        ObjectUIDType uidLHSNode;
+        ObjectUIDType uidLHSNode;   //make this optional as well.. for root at leat...
         ObjectTypePtr ptrLHSNode = nullptr;
 
 //if (print) { std::cout << "++++++++++++" << key << "+++++++++";}
@@ -321,7 +321,7 @@ public:
                         std::shared_ptr<IndexNodeType> tmp = std::get<std::shared_ptr<IndexNodeType>>(*ptrRHSNode->data);
                         tmp ->template updateChildrenParentUID<std::shared_ptr<CacheType>, ObjectTypePtr, IndexNodeType, DataNodeType>(m_ptrCache, *uidRHSNode);
                     }
-                    //else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrLHSNode.second->data))
+                    //else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrRHSNode->data))
                     {
                         //std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrRHSNode->data);
                         //ptrDataNode->updateParentUID(*m_uidRootNode);

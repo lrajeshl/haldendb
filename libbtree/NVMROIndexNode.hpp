@@ -30,6 +30,7 @@ private:
 	typedef std::vector<ObjectUIDType>::const_iterator CacheKeyTypeIterator;
 
 private:
+	std::optional<ObjectUIDType> uidParent;
 	std::shared_ptr<DRAMIndexNode> m_ptrDRAMIndexNode;
 	std::shared_ptr<const NVMIndexNode> m_ptrNVMIndexNode;
 
@@ -40,6 +41,14 @@ public:
 
 	NVMROIndexNode()
 		: m_ptrNVMIndexNode(nullptr)
+		, uidParent(std::nullopt)
+	{
+		m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>();
+	}
+
+	NVMROIndexNode(std::optional<ObjectUIDType> uid)
+		: m_ptrNVMIndexNode(nullptr)
+		, uidParent(uid)
 	{
 		m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>();
 	}
@@ -47,24 +56,28 @@ public:
 	NVMROIndexNode(const NVMROIndexNode& source)
 		: m_ptrNVMIndexNode(nullptr)
 		, m_ptrDRAMIndexNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		throw new std::logic_error("implement the logic!");
 	}
 
 	NVMROIndexNode(const char* szData)
 		: m_ptrDRAMIndexNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		m_ptrNVMIndexNode = std::make_shared<NVMIndexNode>(szData, true);
 	}
 
 	NVMROIndexNode(std::fstream& is)
 		: m_ptrDRAMIndexNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		m_ptrNVMIndexNode = std::make_shared<NVMIndexNode>(is);
 	}
 
 	NVMROIndexNode(const KeyType& pivotKey, const ObjectUIDType& ptrLHSNode, const ObjectUIDType& ptrRHSNode)
 		: m_ptrNVMIndexNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>(pivotKey, ptrLHSNode, ptrRHSNode);
 	}
@@ -86,6 +99,9 @@ public:
 			else {
 				m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>();
 			}
+
+			if (this->uidParent != nullopt)
+			m_ptrDRAMIndexNode->updateParentUID(*this->uidParent);
 		}
 	}
 
@@ -174,10 +190,10 @@ public:
 	}
 
 	template <typename Cache, typename CacheObjectTypePtr>
-	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr ptrSibling, KeyType& pivotKeyForParent)
+	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
 		//std::shared_ptr<SelfType> ptrSibling = nullptr;
-		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling, uidParent);
 
 		if (!uidSibling)
 		{
@@ -260,15 +276,13 @@ public:
 		return m_ptrDRAMIndexNode->getChildrenEndIterator();
 	}
 
-	inline void updateParentUID(const ObjectUIDType& uid)
-	{
-		this->m_ptrDRAMIndexNode->updateParentUID(uid);
-	}
-
 	template <typename Cache, typename CacheObjectTypePtr, typename IndexNodeType, typename DataNodeType>
 	void updateChildrenParentUID(Cache ptrCache, const ObjectUIDType& uid)
 	{
-		m_ptrDRAMIndexNode->template updateChildrenParentUID<Cache, CacheObjectTypePtr, IndexNodeType, DataNodeType>(ptrCache, uid);
+		if (m_ptrDRAMIndexNode != nullptr)
+			m_ptrDRAMIndexNode->template updateChildrenParentUID<Cache, CacheObjectTypePtr, IndexNodeType, DataNodeType>(ptrCache, uid);
+
+		return;
 		// lock ptrCache->template
 
 		//auto it = m_ptrData->m_vtChildren.begin();
@@ -302,14 +316,25 @@ public:
 		throw new std::logic_error("should not occur!");
 	}
 
+	inline void updateParentUID(const ObjectUIDType& uid)
+	{
+		if (m_ptrDRAMIndexNode != nullptr)
+			m_ptrDRAMIndexNode->updateParentUID(uid);
+
+		this->uidParent = uid;
+	}
+
 	inline const std::optional<ObjectUIDType>& getParentUID()
 	{
-		return m_ptrDRAMIndexNode->getParentUID();
+		return uidParent;
 	}
 
 	inline void setParentUID(const ObjectUIDType& uid)
 	{
-		m_ptrDRAMIndexNode->setParentUID(uid);
+		if (m_ptrDRAMIndexNode != nullptr)
+			m_ptrDRAMIndexNode->setParentUID(uid);
+
+		uidParent = uid;
 	}
 
 public:

@@ -24,6 +24,7 @@ private:
 	typedef std::vector<ValueType>::const_iterator ValueTypeIterator;
 
 private:
+	std::optional<ObjectUIDType> uidParent;
 	std::shared_ptr<DRAMDataNode> m_ptrDRAMDataNode;
 	std::shared_ptr<const NVMDataNode> m_ptrNVMDataNode;
 
@@ -34,6 +35,14 @@ public:
 
 	NVMRODataNode()
 		: m_ptrNVMDataNode(nullptr)
+		, uidParent(std::nullopt)
+	{
+		m_ptrDRAMDataNode = std::make_shared<DRAMDataNode>();
+	}
+
+	NVMRODataNode(std::optional<ObjectUIDType> uid)
+		: m_ptrNVMDataNode(nullptr)
+		, uidParent(uid)
 	{
 		m_ptrDRAMDataNode = std::make_shared<DRAMDataNode>();
 	}
@@ -41,18 +50,21 @@ public:
 	NVMRODataNode(const NVMRODataNode& source)
 		: m_ptrNVMDataNode(nullptr)
 		, m_ptrDRAMDataNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		throw new std::logic_error("implement the logic!");
 	}
 
 	NVMRODataNode(const char* szData)
 		: m_ptrDRAMDataNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		m_ptrNVMDataNode = std::make_shared<NVMDataNode>(szData, true);
 	}
 
 	NVMRODataNode(std::fstream& is)
 		: m_ptrDRAMDataNode(nullptr)
+		, uidParent(std::nullopt)
 	{
 		m_ptrNVMDataNode = std::make_shared<NVMDataNode>(is);
 	}
@@ -72,6 +84,10 @@ public:
 			else {
 				m_ptrDRAMDataNode = std::make_shared<DRAMDataNode>();
 			}
+
+			if (this->uidParent != nullopt)
+				m_ptrDRAMDataNode->updateParentUID(*this->uidParent);
+
 		}
 	}
 
@@ -120,10 +136,10 @@ public:
 	}
 
 	template <typename Cache, typename CacheKeyType, typename CacheObjectTypePtr>
-	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, CacheObjectTypePtr ptrSibling, KeyType& pivotKeyForParent)
+	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
 		//std::shared_ptr<SelfType> ptrSibling = nullptr;
-		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling, uidParent);
 
 		if (!uidSibling)
 		{
@@ -164,17 +180,23 @@ public:
 
 	inline void updateParentUID(const ObjectUIDType& uid)
 	{
-		this->m_ptrDRAMDataNode->updateParentUID(uid);
+		if (m_ptrDRAMDataNode != nullptr)
+			m_ptrDRAMDataNode->updateParentUID(uid);
+
+		this->uidParent = uid;
 	}
 
 	inline const std::optional<ObjectUIDType>& getParentUID()
 	{
-		return m_ptrDRAMDataNode->getParentUID();
+		return uidParent;
 	}
 
 	inline void setParentUID(const ObjectUIDType& uid)
 	{
-		m_ptrDRAMDataNode->setParentUID(uid);
+		if (m_ptrDRAMDataNode != nullptr)
+			m_ptrDRAMDataNode->setParentUID(uid);
+
+		uidParent = uid;
 	}
 
 public:
