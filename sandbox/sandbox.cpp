@@ -657,7 +657,7 @@ int main(int argc, char* argv[])
 #endif __TREE_WITH_CACHE__
 
 
-    for (size_t nCntr = 0; nCntr <= 999999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr <= 299999; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
@@ -667,7 +667,7 @@ int main(int argc, char* argv[])
     //out_1.flush();
     //out_1.close();
 
-    for (size_t nCntr = 0 + 1; nCntr <= 999999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0 + 1; nCntr <= 299999; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
@@ -677,18 +677,19 @@ int main(int argc, char* argv[])
     //{
     //    ptrTree->insert(nCntr, nCntr);
     //}
-    return 0;
+    //return 0;
 #ifdef __TREE_WITH_CACHE__    
     ptrTree->flush();
 #endif __TREE_WITH_CACHE__
-    for (size_t nCntr = 0; nCntr < 10000; nCntr++)
+
+    for (size_t nCntr = 0; nCntr < 299999; nCntr++)
     {
         int nValue = 0;
         ErrorCode code = ptrTree->search(nCntr, nValue);
 
         assert(nValue == nCntr);
     }
-
+    return 0;
 #ifdef __TREE_WITH_CACHE__
     ptrTree->flush();
 #endif __TREE_WITH_CACHE__

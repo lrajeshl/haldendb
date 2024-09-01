@@ -385,6 +385,17 @@ public:
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
             m_ptrCache->getObject(uidCurrentNode, prNodeDetails, uidUpdated);    //TODO: lock
 
+            //if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
+            //{
+            //    std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
+            //    ptrIndexNode->setParentUID(uidLastNode);
+            //}
+            //else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
+            //{
+            //    std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
+            //    ptrDataNode->setParentUID(uidLastNode);
+            //}
+
             if (uidUpdated != std::nullopt)
             {
                 ObjectTypePtr ptrLastNode = vtAccessedNodes.size() > 0 ? vtAccessedNodes[vtAccessedNodes.size() - 1].second : nullptr;

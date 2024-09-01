@@ -142,9 +142,9 @@ public:
 		is.read(reinterpret_cast<char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
 	}
 
-	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren)
+	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren, std::optional<ObjectUIDType> uid)
 		: m_ptrData(make_shared<INDEXNODESTRUCT>())
-		, uidParent(std::nullopt)
+		, uidParent(uid)
 	{
 		m_ptrData->m_vtPivots.assign(itBeginPivots, itEndPivots);
 		m_ptrData->m_vtChildren.assign(itBeginChildren, itEndChildren);
@@ -417,7 +417,7 @@ public:
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_ptrData->m_vtPivots.cbegin() + nMid + 1, m_ptrData->m_vtPivots.cend(),
-			m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend());
+			m_ptrData->m_vtChildren.cbegin() + nMid + 1, m_ptrData->m_vtChildren.cend(), uidParent);
 
 		if (!uidSibling)
 		{

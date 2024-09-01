@@ -143,9 +143,9 @@ public:
 		is.read(reinterpret_cast<char*>(m_ptrData->m_vtValues.data()), valueCount * sizeof(ValueType));
 	}
 
-	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, std::optional<ObjectUIDType> uidParent)
+	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, std::optional<ObjectUIDType> uid)
 		: m_ptrData(std::make_shared<DATANODESTRUCT>())
-		, uidParent(uidParent)
+		, uidParent(uid)
 	{
 		m_ptrData->m_vtKeys.assign(itBeginKeys, itEndKeys);
 		m_ptrData->m_vtValues.assign(itBeginValues, itEndValues);

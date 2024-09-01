@@ -78,7 +78,8 @@ public:
 			{
 				m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>(
 					m_ptrNVMIndexNode->m_ptrData->m_vtPivots.begin(), m_ptrNVMIndexNode->m_ptrData->m_vtPivots.end(),
-					m_ptrNVMIndexNode->m_ptrData->m_vtChildren.begin(), m_ptrNVMIndexNode->m_ptrData->m_vtChildren.end());
+					m_ptrNVMIndexNode->m_ptrData->m_vtChildren.begin(), m_ptrNVMIndexNode->m_ptrData->m_vtChildren.end(),
+					nullopt);
 
 				m_ptrNVMIndexNode.reset();
 			}
