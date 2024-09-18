@@ -371,6 +371,9 @@ public:
 
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtAccessedNodes;
 
+        ObjectUIDType uidLastNode;  // TODO: make Optional!
+       // ObjectTypePtr ptrCurrentNode = nullptr;
+
 #ifdef __CONCURRENT__
         std::vector<std::shared_lock<std::shared_mutex>> vtLocks;
         vtLocks.push_back(std::shared_lock<std::shared_mutex>(m_mutex));
@@ -385,17 +388,18 @@ public:
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
             m_ptrCache->getObject(uidCurrentNode, prNodeDetails, uidUpdated);    //TODO: lock
 
-            //if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
-            //{
-            //    std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
-            //    ptrIndexNode->setParentUID(uidLastNode);
-            //}
-            //else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
-            //{
-            //    std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
-            //    ptrDataNode->setParentUID(uidLastNode);
-            //}
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data))
+            {
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
+                ptrIndexNode->setParentUID(uidLastNode);
+            }
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
+            {
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails->data);
+                ptrDataNode->setParentUID(uidLastNode);
+            }
 
+            // do you think the following code is needed?? todo
             if (uidUpdated != std::nullopt)
             {
                 ObjectTypePtr ptrLastNode = vtAccessedNodes.size() > 0 ? vtAccessedNodes[vtAccessedNodes.size() - 1].second : nullptr;
@@ -443,6 +447,8 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
 
+                uidLastNode = uidCurrentNode;
+
                 uidCurrentNode = ptrIndexNode->getChild(key);
             }
             else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
@@ -487,6 +493,17 @@ public:
 #ifdef __TREE_WITH_CACHE__
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
             m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode, uidUpdated);    //TODO: lock
+
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
+            {
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
+                ptrIndexNode->setParentUID(uidLastNode);
+            }
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
+            {
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
+                ptrDataNode->setParentUID(uidLastNode);
+            }
 
             if (uidUpdated != std::nullopt)
             {

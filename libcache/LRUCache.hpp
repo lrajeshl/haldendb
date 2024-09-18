@@ -16,7 +16,7 @@
 #include "VariadicNthType.h"
 
 #define FLUSH_COUNT 1000
-#define __CONCURRENT__
+//#define __CONCURRENT__
 
 using namespace std::chrono_literals;
 

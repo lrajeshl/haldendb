@@ -648,8 +648,10 @@ public:
 		{
 			CacheObjectTypePtr ptrNode= nullptr;
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+#ifdef __TREE_WITH_CACHE__
 			ptrCache->tryGetObjectFromCacheOnly(*it, ptrNode, uidUpdated);	//lockless variant..
-			
+#endif __TREE_WITH_CACHE__
+
 			if (ptrNode != nullptr)
 			{
 				if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrNode->data))

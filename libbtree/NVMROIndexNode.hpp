@@ -236,7 +236,7 @@ public:
 	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, size_t& nDataSize)
 	{
 		if (m_ptrNVMIndexNode != nullptr)
-			return m_ptrNVMIndexNode->writeToStream(os, uidObjectType, nDataSize);
+			throw new std::logic_error("failed to write data!"); // return m_ptrNVMIndexNode->writeToStream(os, uidObjectType, nDataSize);
 
 		return m_ptrDRAMIndexNode->writeToStream(os, uidObjectType, nDataSize);
 	}
@@ -244,7 +244,7 @@ public:
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
 		if (m_ptrNVMIndexNode != nullptr)
-			return m_ptrNVMIndexNode->serialize(szBuffer, uidObjectType, nBufferSize);
+			throw new std::logic_error("failed to write data!"); // return m_ptrNVMIndexNode->serialize(szBuffer, uidObjectType, nBufferSize);
 
 		return m_ptrDRAMIndexNode->serialize(szBuffer, uidObjectType, nBufferSize);
 	}
