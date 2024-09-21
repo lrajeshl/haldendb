@@ -198,10 +198,14 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ErrorCode code = ptrTree->remove(nCntr);
+
+            assert(code == ErrorCode::Success);
         }
         for (size_t nCntr = 1; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ErrorCode code = ptrTree->remove(nCntr);
+
+            assert(code == ErrorCode::Success);
         }
 
         for (int nCntr = 0; nCntr < total_entries; nCntr++)
@@ -376,29 +380,29 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 50000000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 50000);
 #endif __TREE_WITH_CACHE__
         }
         {
 #ifdef __TREE_WITH_CACHE__
-            typedef int KeyType;
-            typedef int ValueType;
-            typedef ObjectFatUID ObjectUIDType;
+            //typedef int KeyType;
+            //typedef int ValueType;
+            //typedef ObjectFatUID ObjectUIDType;
 
-            typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
-            typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+            //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+            //typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
-            typedef NVMRODataNode<KeyType, ValueType, ObjectUIDType, DataNodeType, DataNodeType, TYPE_UID::DATA_NODE_INT_INT> NVMRODataNodeType;
-            typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
+            //typedef NVMRODataNode<KeyType, ValueType, ObjectUIDType, DataNodeType, DataNodeType, TYPE_UID::DATA_NODE_INT_INT> NVMRODataNodeType;
+            //typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
 
-            typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
-            typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
+            //typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
+            //typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
-            ptrTree.template init<NVMRODataNodeType>();
+            //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
+            //BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            //ptrTree.template init<NVMRODataNodeType>();
 
-            int_test<BPlusStoreType, NVMROIndexNodeType, NVMRODataNodeType>(&ptrTree, idx, 5000);
+            //int_test<BPlusStoreType, NVMROIndexNodeType, NVMRODataNodeType>(&ptrTree, idx, 5000);
 #endif __TREE_WITH_CACHE__
         }
         {
@@ -530,25 +534,25 @@ void test_for_threaded()
         }
         {
 #ifdef __TREE_WITH_CACHE__
-            typedef int KeyType;
-            typedef int ValueType;
-            typedef ObjectFatUID ObjectUIDType;
+            //typedef int KeyType;
+            //typedef int ValueType;
+            //typedef ObjectFatUID ObjectUIDType;
 
-            typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
-            typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+            //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+            //typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
-            typedef NVMRODataNode<KeyType, ValueType, ObjectUIDType, DataNodeType, DataNodeType, TYPE_UID::DATA_NODE_INT_INT> NVMRODataNodeType;
-            typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
+            //typedef NVMRODataNode<KeyType, ValueType, ObjectUIDType, DataNodeType, DataNodeType, TYPE_UID::DATA_NODE_INT_INT> NVMRODataNodeType;
+            //typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
 
-            typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
-            typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
+            //typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
+            //typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
 
-            typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
-            ptrTree.template init<NVMRODataNodeType>();
+            //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType>>> BPlusStoreType;
+            //BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            //ptrTree.template init<NVMRODataNodeType>();
 
-            threaded_test<BPlusStoreType, NVMROIndexNodeType, NVMRODataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            //threaded_test<BPlusStoreType, NVMROIndexNodeType, NVMRODataNodeType>(&ptrTree, idx, 3 * 10000, 10);
 #endif __TREE_WITH_CACHE__
         }
         {
@@ -596,9 +600,11 @@ void test_for_threaded()
 
 int main(int argc, char* argv[])
 {
-    //test_for_ints();
-    //test_for_string();
-    //test_for_threaded();
+    for (int i = 0; i < 10; i++) {
+        test_for_ints();
+        test_for_string();
+        test_for_threaded();
+    }
 
     typedef int KeyType;
     typedef int ValueType;

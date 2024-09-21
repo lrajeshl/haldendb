@@ -36,8 +36,8 @@ class BPlusStore
     typedef CacheType::ObjectType ObjectType;
     typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
-    using DataNodeType = typename std::tuple_element<0, typename ObjectType::ObjectCoreTypes>::type;
-    using IndexNodeType = typename std::tuple_element<1, typename ObjectType::ObjectCoreTypes>::type;
+    using DataNodeType = typename std::tuple_element<0, typename ObjectType::ValueCoreTypesTuple>::type;
+    using IndexNodeType = typename std::tuple_element<1, typename ObjectType::ValueCoreTypesTuple>::type;
 
 private:
     uint32_t m_nDegree;
@@ -106,14 +106,14 @@ public:
 
                 if (ptrLastNode != nullptr)
                 {
-                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data))
+                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrLastNode->data))
                     {
                         //if (print) { std::cout << "1.1.1" << std::endl;}
-                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data);
+                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->data);
                         ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
-                        ptrLastNode->dirty = true;
+                        ptrLastNode->setDirtyFlag( true);
                     }
-                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrLastNode->data))
+                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLastNode->data))
                     {
                         //if (print) { std::cout << "1.1.2" << std::endl;}
                         throw new std::logic_error("should not occur!");
@@ -144,11 +144,11 @@ public:
 
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->data))
             {
                 //if (print) { std::cout << "2." << std::endl;}
 
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->data);
 
                 if (ptrIndexNode->canTriggerSplit(m_nDegree))
                 {
@@ -167,13 +167,13 @@ public:
 
                 uidCurrentNode = ptrIndexNode->getChild(key);
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrCurrentNode->data))
             {
                 //if (print) { std::cout << "3." << std::endl;}
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrCurrentNode->data);
 
 #ifdef __TREE_WITH_CACHE__
-                ptrCurrentNode->dirty = true;
+                ptrCurrentNode->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
 
                 if (ptrDataNode->insert(key, value) != ErrorCode::Success)
@@ -240,9 +240,9 @@ public:
                 break;
             }
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(prNodeDetails.second->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(prNodeDetails.second->data);
 
                 int idx = 0;
                 auto it_a = vtAccessedNodes.begin();
@@ -265,7 +265,7 @@ public:
                 }
 
 #ifdef __TREE_WITH_CACHE__
-                prNodeDetails.second->dirty = true;
+                prNodeDetails.second->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
 
                 uidRHSNode = std::nullopt;
@@ -282,9 +282,9 @@ public:
 
                 }
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data))
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(prNodeDetails.second->data))
             {
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails.second->data);
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(prNodeDetails.second->data);
 
                 ErrorCode errCode = ptrDataNode->template split<std::shared_ptr<CacheType>, ObjectUIDType>(m_ptrCache, uidRHSNode, pivotKey);
 
@@ -295,7 +295,7 @@ public:
                 }
 
 #ifdef __TREE_WITH_CACHE__
-                prNodeDetails.second->dirty = true;
+                prNodeDetails.second->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
             }
 
@@ -335,14 +335,14 @@ public:
                 ObjectTypePtr ptrLastNode = vtAccessedNodes.size() > 0 ? vtAccessedNodes[vtAccessedNodes.size() - 1].second : nullptr;
                 if (ptrLastNode != nullptr)
                 {
-                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data))
+                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrLastNode->data))
                     {
-                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data);
+                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->data);
                         ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
 
-                        ptrLastNode->dirty = true;
+                        ptrLastNode->setDirtyFlag( true);
                     }
-                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrLastNode->data))
+                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLastNode->data))
                     {
                         throw new std::logic_error("should not occur!");
                     }
@@ -373,15 +373,15 @@ public:
 
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, prNodeDetails));
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(prNodeDetails->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(prNodeDetails->data);
 
                 uidCurrentNode = ptrIndexNode->getChild(key);
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*prNodeDetails->data))
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(prNodeDetails->data))
             {
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*prNodeDetails->data);
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(prNodeDetails->data);
 
                 errCode = ptrDataNode->getValue(key, value);
 
@@ -426,13 +426,13 @@ public:
             {
                 if (ptrLastNode != nullptr)
                 {
-                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data))
+                    if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrLastNode->data))
                     {
-                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrLastNode->data);
+                        std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->data);
                         ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
-                        ptrLastNode->dirty = true;
+                        ptrLastNode->setDirtyFlag( true);
                     }
-                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrLastNode->data))
+                    else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLastNode->data))
                     {
                         throw new std::logic_error("should not occur!");
                     }
@@ -462,9 +462,9 @@ public:
 
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentNode->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->data);
 
                 if (ptrIndexNode->canTriggerMerge(m_nDegree))
                 {
@@ -486,9 +486,9 @@ public:
 
                 uidCurrentNode = ptrIndexNode->getChild(key); // fid it.. there are two kinds of methods..
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data))
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrCurrentNode->data))
             {
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentNode->data);
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrCurrentNode->data);
 
                 if (ptrDataNode->remove(key) == ErrorCode::KeyDoesNotExist)
                 {
@@ -496,7 +496,7 @@ public:
                 }
 
 #ifdef __TREE_WITH_CACHE__
-                ptrCurrentNode->dirty = true;
+                ptrCurrentNode->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
 
                 if (ptrDataNode->requireMerge(m_nDegree))
@@ -543,28 +543,28 @@ public:
 
                 assert(uidUpdated == std::nullopt);
 
-                ptrCurrentRoot->dirty = true;
+                ptrCurrentRoot->setDirtyFlag( true);
 #else __TREE_WITH_CACHE__
                 m_ptrCache->getObject(*m_uidRootNode, ptrCurrentRoot);
 #endif __TREE_WITH_CACHE__
 
-                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrCurrentRoot->data))
+                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrCurrentRoot->data))
                 {
-                    std::shared_ptr<IndexNodeType> ptrInnerNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrCurrentRoot->data);
+                    std::shared_ptr<IndexNodeType> ptrInnerNode = std::get<std::shared_ptr<IndexNodeType>>(ptrCurrentRoot->data);
                     if (ptrInnerNode->getKeysCount() == 0) {
                         ObjectUIDType _tmp = ptrInnerNode->getChildAt(0);
                         m_ptrCache->remove(*m_uidRootNode);
                         m_uidRootNode = _tmp;
 
 #ifdef __TREE_WITH_CACHE__
-                        ptrCurrentRoot->dirty = true;
+                        ptrCurrentRoot->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
                     }
                 }
-                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrCurrentRoot->data))
+                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrCurrentRoot->data))
                 {
                     int i = 0;
-                    /*std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrCurrentRoot->data);
+                    /*std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrCurrentRoot->data);
                     if (ptrDataNode->getKeysCount() == 0) {
                         m_ptrCache->remove(*m_uidRootNode);
                     }*/
@@ -573,23 +573,23 @@ public:
                 break;
             }
 
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(prNodeDetails.second->data))
             {
-                std::shared_ptr<IndexNodeType> ptrParentIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*prNodeDetails.second->data);
+                std::shared_ptr<IndexNodeType> ptrParentIndexNode = std::get<std::shared_ptr<IndexNodeType>>(prNodeDetails.second->data);
 
-                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data))
+                if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrChildNode->data))
                 {
                     std::optional<ObjectUIDType> uidToDelete = std::nullopt;
 
-                    std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrChildNode->data);
+                    std::shared_ptr<IndexNodeType> ptrChildIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrChildNode->data);
 
                     if (ptrChildIndexNode->requireMerge(m_nDegree))
                     {
                         ptrParentIndexNode->template rebalanceIndexNode<std::shared_ptr<CacheType>, std::shared_ptr<IndexNodeType>>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete);
 
 #ifdef __TREE_WITH_CACHE__
-                        prNodeDetails.second->dirty = true;
-                        ptrChildNode->dirty = true;
+                        prNodeDetails.second->setDirtyFlag( true);
+                        ptrChildNode->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
 
                         if (uidToDelete)
@@ -608,24 +608,27 @@ public:
 
                                 if (it != vtLocks.end())
                                     vtLocks.erase(it);
+
                             }
-#endif __CONCURRENT__
 
                             m_ptrCache->remove(*uidToDelete);
+#else __CONCURRENT__
+                            m_ptrCache->remove(*uidToDelete);
+#endif __CONCURRENT__
                         }
                     }
                 }
-                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrChildNode->data))
+                else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrChildNode->data))
                 {
                     std::optional<ObjectUIDType> uidToDelete = std::nullopt;
 
-                    std::shared_ptr<DataNodeType> ptrChildDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrChildNode->data);
+                    std::shared_ptr<DataNodeType> ptrChildDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrChildNode->data);
 
                     ptrParentIndexNode->template rebalanceDataNode<std::shared_ptr<CacheType>, std::shared_ptr<DataNodeType>>(m_ptrCache, uidChildNode, ptrChildDataNode, key, m_nDegree, uidToDelete);
 
 #ifdef __TREE_WITH_CACHE__
-                    prNodeDetails.second->dirty = true;
-                    ptrChildNode->dirty = true;
+                    prNodeDetails.second->setDirtyFlag( true);
+                    ptrChildNode->setDirtyFlag( true);
 #endif __TREE_WITH_CACHE__
 
                     if (uidToDelete)
@@ -645,9 +648,10 @@ public:
                             if (it != vtLocks.end())
                                 vtLocks.erase(it);
                         }
-#endif __CONCURRENT__
-
                         m_ptrCache->remove(*uidToDelete);
+#else __CONCURRENT__
+                        m_ptrCache->remove(*uidToDelete);
+#endif __CONCURRENT__
                     }
                 }
             }
@@ -683,15 +687,15 @@ public:
             m_uidRootNode = uidUpdated;
         }
 
-        if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrRootNode->data))
+        if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrRootNode->data))
         {
-            std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrRootNode->data);
+            std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrRootNode->data);
 
             ptrIndexNode->template print<std::shared_ptr<CacheType>, ObjectTypePtr, DataNodeType>(out, m_ptrCache, 0, prefix);
         }
-        else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrRootNode->data))
+        else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRootNode->data))
         {
-            std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrRootNode->data);
+            std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrRootNode->data);
 
             ptrDataNode->print(out, 0, prefix);
         }
@@ -714,9 +718,9 @@ public:
     void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
     {
-        if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*ptrObject->data))
+        if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrObject->data))
         {
-            std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*ptrObject->data);
+            std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrObject->data);
 
             auto it = ptrIndexNode->getChildrenBeginIterator();
             while (it != ptrIndexNode->getChildrenEndIterator())
@@ -729,12 +733,12 @@ public:
 
                     mpUIDUpdates.erase(uidTemp);
 
-                    ptrObject->dirty = true;
+                    ptrObject->setDirtyFlag( true);
                 }
                 it++;
             }
         }
-        else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrObject->data))
+        else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrObject->data))
         {
             // Nothing to update in this case!
         }
@@ -746,9 +750,9 @@ public:
         auto it = vtNodes.begin();
         while (it != vtNodes.end())
         {
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*(*it).second.second->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>((*it).second.second->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*(*it).second.second->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>((*it).second.second->data);
 
                 auto it_children = ptrIndexNode->getChildrenBeginIterator();
                 while (it_children != ptrIndexNode->getChildrenEndIterator())
@@ -761,12 +765,12 @@ public:
 
                         mpUIDUpdates.erase(uidTemp);
 
-                        (*it).second.second->dirty = true;
+                        (*it).second.second->setDirtyFlag( true);
                     }
                     it_children++;
                 }
             }
-            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*(*it).second.second->data))
+            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>((*it).second.second->data))
             {
                 // Nothing to update in this case!
             }
@@ -782,9 +786,9 @@ public:
 
         for (int idx = 0; idx < vtNodes.size(); idx++)
         {
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(*vtNodes[idx].second.second->data))
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->data))
             {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(*vtNodes[idx].second.second->data);
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->data);
 
                 auto it = ptrIndexNode->getChildrenBeginIterator();
                 while (it != ptrIndexNode->getChildrenEndIterator())
@@ -797,7 +801,7 @@ public:
                         if (*it == vtNodes[jdx].first)
                         {
                             *it = *vtNodes[jdx].second.first;
-                            vtNodes[idx].second.second->dirty = true;
+                            vtNodes[idx].second.second->setDirtyFlag( true);
 
                             vtAppliedUpdates[jdx] = true;
                             break;
@@ -806,7 +810,7 @@ public:
                     it++;
                 }
 
-                if (!vtNodes[idx].second.second->dirty)
+                if (!vtNodes[idx].second.second->getDirtyFlag())
                 {
                     vtNodes.erase(vtNodes.begin() + idx); idx--;
                     continue;
@@ -820,15 +824,15 @@ public:
 
                 nPos += std::ceil(nNodeSize / (float)nBlockSize);
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*vtNodes[idx].second.second->data))
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->data))
             {
-                if (!vtNodes[idx].second.second->dirty)
+                if (!vtNodes[idx].second.second->getDirtyFlag())
                 {
                     vtNodes.erase(vtNodes.begin() + idx); idx--;
                     continue;
                 }
 
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*vtNodes[idx].second.second->data);
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->data);
 
                 size_t nNodeSize = ptrDataNode->getSize();
 

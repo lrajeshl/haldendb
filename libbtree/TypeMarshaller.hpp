@@ -24,7 +24,7 @@ public:
 	}
 
 	template <typename ObjectType, typename... ObjectCoreTypes>
-	static void deserialize(std::fstream& is, std::shared_ptr<ObjectType>& ptrObject)
+	static void deserialize(std::fstream& is, ObjectType& ptrObject)
 	{
 		using TypeA = typename NthType<0, ObjectCoreTypes...>::type;
 		using TypeB = typename NthType<1, ObjectCoreTypes...>::type;
@@ -35,16 +35,16 @@ public:
 		switch (uidObjectType)
 		{
 		case TypeA::UID:
-			ptrObject = std::make_shared<ObjectType>(std::make_shared<TypeA>(is));
+			ptrObject = std::make_shared<TypeA>(is);
 			break;
 		case TypeB::UID:
-			ptrObject = std::make_shared<ObjectType>(std::make_shared<TypeB>(is));
+			ptrObject = std::make_shared<TypeB>(is);
 			break;
 		}
 	}
 
 	template <typename ObjectType, typename... ObjectCoreTypes>
-	static void deserialize(const char* szData, std::shared_ptr<ObjectType>& ptrObject)
+	static void deserialize(const char* szData, ObjectType& ptrObject)
 	{
 		using TypeA = typename NthType<0, ObjectCoreTypes...>::type;
 		using TypeB = typename NthType<1, ObjectCoreTypes...>::type;
@@ -54,10 +54,10 @@ public:
 		switch (szData[0])
 		{
 		case TypeA::UID:
-			ptrObject = std::make_shared<ObjectType>(std::make_shared<TypeA>(szData));
+			ptrObject = std::make_shared<TypeA>(szData);
 			break;
 		case TypeB::UID:
-			ptrObject = std::make_shared<ObjectType>(std::make_shared<TypeB>(szData));
+			ptrObject = std::make_shared<TypeB>(szData);
 			break;
 		}
 	}

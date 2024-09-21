@@ -284,11 +284,11 @@ public:
 //#ifdef __CONCURRENT__
 //			lock_cache.unlock();
 //#endif __CONCURRENT__
-			ptrItem->m_ptrObject->dirty = true; //todo fix it later..
+			ptrItem->m_ptrObject->setDirtyFlag( true); //todo fix it later..
 
-			if (std::holds_alternative<Type>(*ptrItem->m_ptrObject->data))
+			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->data))
 			{
-				ptrObject = std::get<Type>(*ptrItem->m_ptrObject->data);
+				ptrObject = std::get<Type>(ptrItem->m_ptrObject->data);
 				return CacheErrorCode::Success;
 			}
 
@@ -326,7 +326,7 @@ public:
 		{
 			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(_uidUpdated, ptrValue);
 
-			ptrValue->dirty = true; //todo fix it later..
+			ptrValue->setDirtyFlag( true); //todo fix it later..
 
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
@@ -336,9 +336,9 @@ public:
 				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdated];
 				moveToFront(ptrItem);
 
-				if (std::holds_alternative<Type>(*ptrItem->m_ptrObject->data))
+				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->data))
 				{
-					ptrObject = std::get<Type>(*ptrItem->m_ptrObject->data);
+					ptrObject = std::get<Type>(ptrItem->m_ptrObject->data);
 					return CacheErrorCode::Success;
 				}
 
@@ -364,9 +364,9 @@ public:
 //			lock_cache.unlock();
 //#endif __CONCURRENT__
 
-			if (std::holds_alternative<Type>(*ptrValue->data))
+			if (std::holds_alternative<Type>(ptrValue->data))
 			{
-				ptrObject = std::get<Type>(*ptrValue->data);
+				ptrObject = std::get<Type>(ptrValue->data);
 				return CacheErrorCode::Success;
 			}
 
@@ -383,7 +383,9 @@ public:
 	template<class Type, typename... ArgsType>
 	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& uidObject, const ArgsType... args)
 	{
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(std::make_shared<Type>(args...));
+		std::shared_ptr<Type> ptr = std::make_shared<Type>(args...);
+
+		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(ptr);
 
 		uidObject = ObjectUIDType::createAddressFromVolatilePointer(reinterpret_cast<uintptr_t>(ptrObject.get()));
 

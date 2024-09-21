@@ -511,7 +511,7 @@ public:
 		auto it = m_ptrData->m_vtChildren.begin();
 		while (it != m_ptrData->m_vtChildren.end())
 		{
-			if (( * it).m_uid.m_nMediaType < 3)
+			if ((*it).m_uid.m_nMediaType < 3)
 			{
 				throw new std::logic_error("should not occur!");
 			}

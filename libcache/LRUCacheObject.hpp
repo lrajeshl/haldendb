@@ -26,57 +26,64 @@ std::variant<std::shared_ptr<Types>...> cloneVariant(const std::variant<std::sha
 		}, source);
 }
 
-template <typename CoreTypesMarshaller, typename... CoreTypes>
+template <typename CoreTypesMarshaller, typename... ValueCoreTypes>
 class LRUCacheObject
 {
+private:
+	typedef std::variant<std::shared_ptr<ValueCoreTypes>...> ValueCoreTypesWrapper;
+
 public:
-	typedef std::tuple<CoreTypes...> ObjectCoreTypes;
+	typedef std::tuple<ValueCoreTypes...> ValueCoreTypesTuple;
 
 private:
-	typedef std::variant<std::shared_ptr<CoreTypes>...> CoreTypesWrapper;
-	typedef std::shared_ptr<std::variant<std::shared_ptr<CoreTypes>...>> CoreTypesWrapperPtr;
-
-	
+	bool m_bDirty;
+	mutable std::shared_mutex m_mtx;
 
 public:
-	bool dirty;
-	CoreTypesWrapperPtr data;
-	mutable std::shared_mutex mutex;
+	ValueCoreTypesWrapper data;
 
 public:
-	template<class Type>
-	LRUCacheObject(std::shared_ptr<Type> ptrCoreObject)
-		: dirty(true)
+	template<class ValueCoreType>
+	LRUCacheObject(std::shared_ptr<ValueCoreType>& ptrCoreObject)
+		: m_bDirty(true)	//TODO: should not it be false by default?
 	{
-		data = std::make_shared<CoreTypesWrapper>(ptrCoreObject);
+		data = ptrCoreObject;
 	}
 
-	//template <typename Type>
-	LRUCacheObject(const LRUCacheObject& source)
-		: dirty(true)
+	LRUCacheObject(std::fstream& fs)
+		: m_bDirty(true)
 	{
-		data = std::make_shared<CoreTypesWrapper>(cloneVariant(*source.data));
-	}
-
-	LRUCacheObject(std::fstream& is)
-		: dirty(true)
-	{
-		CoreTypesMarshaller::template deserialize<CoreTypesWrapper, CoreTypes...>(is, data);
+		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(fs, data);
 	}
 
 	LRUCacheObject(const char* szBuffer)
-		: dirty(true)
+		: m_bDirty(true)
 	{
-		CoreTypesMarshaller::template deserialize<CoreTypesWrapper, CoreTypes...>(szBuffer, data);
+		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(szBuffer, data);
 	}
 
-	inline void serialize(std::fstream& os, uint8_t& uidObjectType, size_t& nBufferSize)
+	inline void serialize(std::fstream& fs, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
-		CoreTypesMarshaller::template serialize<CoreTypes...>(os, *data, uidObjectType, nBufferSize);
+		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(fs, data, uidObjectType, nBufferSize);
 	}
 
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
-		CoreTypesMarshaller::template serialize<CoreTypes...>(szBuffer, *data, uidObjectType, nBufferSize);
+		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(szBuffer, data, uidObjectType, nBufferSize);
+	}
+
+	inline const bool getDirtyFlag() const 
+	{
+		return m_bDirty;
+	}
+
+	inline void setDirtyFlag(bool bDirty)
+	{
+		m_bDirty = bDirty;
+	}
+
+	inline const mutex& getObjectMutex() const
+	{
+		return &m_mtx;
 	}
 };

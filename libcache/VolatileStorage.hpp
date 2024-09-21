@@ -13,18 +13,18 @@
 
 template<
 	typename ICallback,
-	typename ObjectUIDType_,
-	template <typename, typename...> typename ObjectType_,
+	typename KeyType,
+	template <typename, typename...> typename ValueType,
 	typename CoreTypesMarshaller,
-	typename... ObjectCoreTypes
+	typename... ValueCoreTypes
 >
 class VolatileStorage
 {
-	typedef VolatileStorage<ICallback, ObjectUIDType_, ObjectType_, CoreTypesMarshaller, ObjectCoreTypes...> SelfType;
+	typedef VolatileStorage<ICallback, KeyType, ValueType, CoreTypesMarshaller, ValueCoreTypes...> SelfType;
 
 public:
-	typedef ObjectUIDType_ ObjectUIDType;
-	typedef ObjectType_<CoreTypesMarshaller, ObjectCoreTypes...> ObjectType;
+	typedef KeyType ObjectUIDType;
+	typedef ValueType<CoreTypesMarshaller, ValueCoreTypes...> ObjectType;
 
 private:
 	char* m_szStorage;
@@ -110,7 +110,7 @@ public:
 
 //std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer); //2
 
-		ptrObject->dirty = false;
+		ptrObject->setDirtyFlag( false);
 
 		//delete[] szBuffer; //2
 
