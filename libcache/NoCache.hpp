@@ -52,9 +52,9 @@ public:
 	{
 		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
 
-		if (std::holds_alternative<Type>(ptrValue->data))
+		if (std::holds_alternative<Type>(ptrValue->getInnerData()))
 		{
-			ptrObject = std::get<Type>(ptrValue->data);
+			ptrObject = std::get<Type>(ptrValue->getInnerData());
 			return CacheErrorCode::Success;
 		}
 

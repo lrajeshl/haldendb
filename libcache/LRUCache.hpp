@@ -286,9 +286,9 @@ public:
 //#endif __CONCURRENT__
 			ptrItem->m_ptrObject->setDirtyFlag( true); //todo fix it later..
 
-			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->data))
+			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
 			{
-				ptrObject = std::get<Type>(ptrItem->m_ptrObject->data);
+				ptrObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
 				return CacheErrorCode::Success;
 			}
 
@@ -336,9 +336,9 @@ public:
 				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdated];
 				moveToFront(ptrItem);
 
-				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->data))
+				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
 				{
-					ptrObject = std::get<Type>(ptrItem->m_ptrObject->data);
+					ptrObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
 					return CacheErrorCode::Success;
 				}
 
@@ -364,9 +364,9 @@ public:
 //			lock_cache.unlock();
 //#endif __CONCURRENT__
 
-			if (std::holds_alternative<Type>(ptrValue->data))
+			if (std::holds_alternative<Type>(ptrValue->getInnerData()))
 			{
-				ptrObject = std::get<Type>(ptrValue->data);
+				ptrObject = std::get<Type>(ptrValue->getInnerData());
 				return CacheErrorCode::Success;
 			}
 
@@ -644,7 +644,7 @@ private:
 			}
 
 			// Check if the object is in use
-			if (!m_ptrTail->m_ptrObject->mutex.try_lock())
+			if (!m_ptrTail->m_ptrObject->tryLockObject())
 			{
 				/* Info:
 				 * Should proceed with the preceeding one?
@@ -654,7 +654,7 @@ private:
 			}
 			else
 			{
-				m_ptrTail->m_ptrObject->mutex.unlock();
+				m_ptrTail->m_ptrObject->unlockObject();
 			}
 
 //std::cout << ptrItemToFlush->m_uidSelf.toString().c_str() << " , ";
@@ -748,7 +748,7 @@ private:
 				break;
 			}
 
-			if (m_ptrTail->m_ptrObject->dirty)
+			if (m_ptrTail->m_ptrObject->getDirtyFlag())
 			{
 				if (m_mpUpdatedUIDs.size() > 0)
 				{
@@ -812,7 +812,7 @@ private:
 				return;
 			}
 
-			if (ptrCurrentTail->m_ptrObject->dirty)
+			if (ptrCurrentTail->m_ptrObject->getDirtyFlag())
 			{
 				if (m_mpUpdatedUIDs.size() > 0)
 				{

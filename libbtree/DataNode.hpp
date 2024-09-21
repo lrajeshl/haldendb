@@ -23,43 +23,27 @@ private:
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ValueType>::const_iterator ValueTypeIterator;
 
-	struct DATANODESTRUCT
-	{
-		std::vector<KeyType> m_vtKeys;
-		std::vector<ValueType> m_vtValues;
-	};
-
-public:
-	std::shared_ptr<DATANODESTRUCT> m_ptrData;
+	std::vector<KeyType> m_vtKeys;
+	std::vector<ValueType> m_vtValues;
 
 public:
 	~DataNode()
 	{
-		// TODO: check for ref count?
-		m_ptrData.reset();
+		m_vtKeys.clear();
+		m_vtValues.clear();
 	}
 
 	DataNode()
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
 	}
 
 	DataNode(const DataNode& source)
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
-		for (const auto& obj : source.m_ptrData->m_vtKeys)
-		{
-			m_ptrData->m_vtKeys.push_back(KeyType(obj));
-		}
-
-		for (const auto& obj : source.m_ptrData->m_vtValues)
-		{
-			m_ptrData->m_vtValues.push_back(ValueType(obj));
-		}
+		m_vtKeys.assign(source.m_vtKeys.begin(), source.m_vtKeys.end());
+		m_vtValues.assign(source.m_vtValues.begin(), source.m_vtValues.end());
 	}
 
 	DataNode(const char* szData)
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -71,11 +55,11 @@ public:
 		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
 		nOffset += sizeof(size_t);
 
-		m_ptrData->m_vtKeys.resize(nKeyCount);
-		m_ptrData->m_vtValues.resize(nValueCount);
+		m_vtKeys.resize(nKeyCount);
+		m_vtValues.resize(nValueCount);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(m_ptrData->m_vtKeys.data(), szData + nOffset, nKeysSize);
+		memcpy(m_vtKeys.data(), szData + nOffset, nKeysSize);
 
 		//std::vector<KeyType> vt_ints(
 		//	reinterpret_cast<const int*>(szData + nOffset),
@@ -85,11 +69,10 @@ public:
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		memcpy(m_ptrData->m_vtValues.data(), szData + nOffset, nValuesSize);
+		memcpy(m_vtValues.data(), szData + nOffset, nValuesSize);
 	}
 
 	DataNode(const char* szData, bool readonly)
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -101,13 +84,13 @@ public:
 		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
 		nOffset += sizeof(size_t);
 
-		m_ptrData->m_vtKeys.resize(nKeyCount);
-		m_ptrData->m_vtValues.resize(nValueCount);
+		m_vtKeys.resize(nKeyCount);
+		m_vtValues.resize(nValueCount);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		//memcpy(m_ptrData->m_vtKeys.data(), szData + nOffset, nKeysSize);
+		//memcpy(m_vtKeys.data(), szData + nOffset, nKeysSize);
 
-		m_ptrData->m_vtKeys.assign(
+		m_vtKeys.assign(
 			reinterpret_cast<const KeyType*>(szData + nOffset),
 			reinterpret_cast<const KeyType*>(szData + nOffset + nKeysSize)
 		);
@@ -115,62 +98,60 @@ public:
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		//memcpy(m_ptrData->m_vtValues.data(), szData + nOffset, nValuesSize);
-		m_ptrData->m_vtValues.assign(
+		//memcpy(m_vtValues.data(), szData + nOffset, nValuesSize);
+		m_vtValues.assign(
 			reinterpret_cast<const ValueType*>(szData + nOffset),
 			reinterpret_cast<const ValueType*>(szData + nOffset + nValuesSize)
 		);
 	}
 
 	DataNode(std::fstream& is)
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
 		size_t keyCount, valueCount;
 
 		is.read(reinterpret_cast<char*>(&keyCount), sizeof(size_t));
 		is.read(reinterpret_cast<char*>(&valueCount), sizeof(size_t));
 
-		m_ptrData->m_vtKeys.resize(keyCount);
-		m_ptrData->m_vtValues.resize(valueCount);
+		m_vtKeys.resize(keyCount);
+		m_vtValues.resize(valueCount);
 
-		is.read(reinterpret_cast<char*>(m_ptrData->m_vtKeys.data()), keyCount * sizeof(KeyType));
-		is.read(reinterpret_cast<char*>(m_ptrData->m_vtValues.data()), valueCount * sizeof(ValueType));
+		is.read(reinterpret_cast<char*>(m_vtKeys.data()), keyCount * sizeof(KeyType));
+		is.read(reinterpret_cast<char*>(m_vtValues.data()), valueCount * sizeof(ValueType));
 	}
 
 	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
-		: m_ptrData(std::make_shared<DATANODESTRUCT>())
 	{
-		m_ptrData->m_vtKeys.assign(itBeginKeys, itEndKeys);
-		m_ptrData->m_vtValues.assign(itBeginValues, itEndValues);
+		m_vtKeys.assign(itBeginKeys, itEndKeys);
+		m_vtValues.assign(itBeginValues, itEndValues);
 	}
 
 	inline ErrorCode insert(const KeyType& key, const ValueType& value)
 	{
-		size_t nChildIdx = m_ptrData->m_vtKeys.size();
-		for (int nIdx = 0; nIdx < m_ptrData->m_vtKeys.size(); ++nIdx)
+		size_t nChildIdx = m_vtKeys.size();
+		for (int nIdx = 0; nIdx < m_vtKeys.size(); ++nIdx)
 		{
-			if (key < m_ptrData->m_vtKeys[nIdx])
+			if (key < m_vtKeys[nIdx])
 			{
 				nChildIdx = nIdx;
 				break;
 			}
 		}
 
-		m_ptrData->m_vtKeys.insert(m_ptrData->m_vtKeys.begin() + nChildIdx, key);
-		m_ptrData->m_vtValues.insert(m_ptrData->m_vtValues.begin() + nChildIdx, value);
+		m_vtKeys.insert(m_vtKeys.begin() + nChildIdx, key);
+		m_vtValues.insert(m_vtValues.begin() + nChildIdx, value);
 
 		return ErrorCode::Success;
 	}
 
 	inline ErrorCode remove(const KeyType& key)
 	{
-		KeyTypeIterator it = std::lower_bound(m_ptrData->m_vtKeys.begin(), m_ptrData->m_vtKeys.end(), key);
+		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
 
-		if (it != m_ptrData->m_vtKeys.end() && *it == key)
+		if (it != m_vtKeys.end() && *it == key)
 		{
-			int index = it - m_ptrData->m_vtKeys.begin();
-			m_ptrData->m_vtKeys.erase(it);
-			m_ptrData->m_vtValues.erase(m_ptrData->m_vtValues.begin() + index);
+			int index = it - m_vtKeys.begin();
+			m_vtKeys.erase(it);
+			m_vtValues.erase(m_vtValues.begin() + index);
 
 			return ErrorCode::Success;
 		}
@@ -180,25 +161,25 @@ public:
 
 	inline bool requireSplit(size_t nDegree) const
 	{
-		return m_ptrData->m_vtKeys.size() > nDegree;
+		return m_vtKeys.size() > nDegree;
 	}
 
 	inline bool requireMerge(size_t nDegree) const
 	{
-		return m_ptrData->m_vtKeys.size() <= std::ceil(nDegree / 2.0f);
+		return m_vtKeys.size() <= std::ceil(nDegree / 2.0f);
 	}
 
 	inline size_t getKeysCount() const {
-		return m_ptrData->m_vtKeys.size();
+		return m_vtKeys.size();
 	}
 
 	//inline ErrorCode getValue(const KeyType& key, ValueType& value)
 	//{
-	//	KeyTypeIterator it = std::lower_bound(m_ptrData->m_vtKeys.begin(), m_ptrData->m_vtKeys.end(), key);
-	//	if (it != m_ptrData->m_vtKeys.end() && *it == key)
+	//	KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
+	//	if (it != m_vtKeys.end() && *it == key)
 	//	{
-	//		size_t index = it - m_ptrData->m_vtKeys.begin();
-	//		value = m_ptrData->m_vtValues[index];
+	//		size_t index = it - m_vtKeys.begin();
+	//		value = m_vtValues[index];
 
 	//		return ErrorCode::Success;
 	//	}
@@ -208,11 +189,11 @@ public:
 
 	inline ErrorCode getValue(const KeyType& key, ValueType& value) const
 	{
-		KeyTypeIterator it = std::lower_bound(m_ptrData->m_vtKeys.begin(), m_ptrData->m_vtKeys.end(), key);
-		if (it != m_ptrData->m_vtKeys.end() && *it == key)
+		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
+		if (it != m_vtKeys.end() && *it == key)
 		{
-			size_t index = it - m_ptrData->m_vtKeys.begin();
-			value = m_ptrData->m_vtValues[index];
+			size_t index = it - m_vtKeys.begin();
+			value = m_vtValues[index];
 
 			return ErrorCode::Success;
 		}
@@ -220,85 +201,85 @@ public:
 		return ErrorCode::KeyDoesNotExist;
 	}
 
-	template <typename Cache, typename CacheKeyType>
-	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType>
+	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
 	{
-		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
+		size_t nMid = m_vtKeys.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling,
-			m_ptrData->m_vtKeys.begin() + nMid, m_ptrData->m_vtKeys.end(),
-			m_ptrData->m_vtValues.begin() + nMid, m_ptrData->m_vtValues.end());
+			m_vtKeys.begin() + nMid, m_vtKeys.end(),
+			m_vtValues.begin() + nMid, m_vtValues.end());
 
 		if (!uidSibling)
 		{
 			return ErrorCode::Error;
 		}
 
-		pivotKeyForParent = m_ptrData->m_vtKeys[nMid];
+		pivotKeyForParent = m_vtKeys[nMid];
 
-		m_ptrData->m_vtKeys.resize(nMid);
-		m_ptrData->m_vtValues.resize(nMid);
+		m_vtKeys.resize(nMid);
+		m_vtValues.resize(nMid);
 
 		return ErrorCode::Success;
 	}
 
 	inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
 	{
-		size_t nMid = m_ptrData->m_vtKeys.size() / 2;
+		size_t nMid = m_vtKeys.size() / 2;
 
-		ptrSibling->m_ptrData->m_vtKeys.assign(m_ptrData->m_vtKeys.begin() + nMid, m_ptrData->m_vtKeys.end());
-		ptrSibling->m_ptrData->m_vtValues.assign(m_ptrData->m_vtValues.begin() + nMid, m_ptrData->m_vtValues.end());
+		ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
+		ptrSibling->m_vtValues.assign(m_vtValues.begin() + nMid, m_vtValues.end());
 
-		pivotKeyForParent = m_ptrData->m_vtKeys[nMid];
+		pivotKeyForParent = m_vtKeys[nMid];
 
-		m_ptrData->m_vtKeys.resize(nMid);
-		m_ptrData->m_vtValues.resize(nMid);
+		m_vtKeys.resize(nMid);
+		m_vtValues.resize(nMid);
 
 		return ErrorCode::Success;
 	}
 
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)
 	{
-		KeyType key = ptrLHSSibling->m_ptrData->m_vtKeys.back();
-		ValueType value = ptrLHSSibling->m_ptrData->m_vtValues.back();
+		KeyType key = ptrLHSSibling->m_vtKeys.back();
+		ValueType value = ptrLHSSibling->m_vtValues.back();
 
-		ptrLHSSibling->m_ptrData->m_vtKeys.pop_back();
-		ptrLHSSibling->m_ptrData->m_vtValues.pop_back();
+		ptrLHSSibling->m_vtKeys.pop_back();
+		ptrLHSSibling->m_vtValues.pop_back();
 
-		if (ptrLHSSibling->m_ptrData->m_vtKeys.size() == 0)
+		if (ptrLHSSibling->m_vtKeys.size() == 0)
 		{
 			throw new std::logic_error("should not occur!");
 		}
 
-		m_ptrData->m_vtKeys.insert(m_ptrData->m_vtKeys.begin(), key);
-		m_ptrData->m_vtValues.insert(m_ptrData->m_vtValues.begin(), value);
+		m_vtKeys.insert(m_vtKeys.begin(), key);
+		m_vtValues.insert(m_vtValues.begin(), value);
 
 		pivotKeyForParent = key;
 	}
 
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent)
 	{
-		KeyType key = ptrRHSSibling->m_ptrData->m_vtKeys.front();
-		ValueType value = ptrRHSSibling->m_ptrData->m_vtValues.front();
+		KeyType key = ptrRHSSibling->m_vtKeys.front();
+		ValueType value = ptrRHSSibling->m_vtValues.front();
 
-		ptrRHSSibling->m_ptrData->m_vtKeys.erase(ptrRHSSibling->m_ptrData->m_vtKeys.begin());
-		ptrRHSSibling->m_ptrData->m_vtValues.erase(ptrRHSSibling->m_ptrData->m_vtValues.begin());
+		ptrRHSSibling->m_vtKeys.erase(ptrRHSSibling->m_vtKeys.begin());
+		ptrRHSSibling->m_vtValues.erase(ptrRHSSibling->m_vtValues.begin());
 
-		if (ptrRHSSibling->m_ptrData->m_vtKeys.size() == 0)
+		if (ptrRHSSibling->m_vtKeys.size() == 0)
 		{
 			throw new std::logic_error("should not occur!");
 		}
 
-		m_ptrData->m_vtKeys.push_back(key);
-		m_ptrData->m_vtValues.push_back(value);
+		m_vtKeys.push_back(key);
+		m_vtValues.push_back(value);
 
-		pivotKeyForParent = ptrRHSSibling->m_ptrData->m_vtKeys.front();
+		pivotKeyForParent = ptrRHSSibling->m_vtKeys.front();
 	}
 
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling)
 	{
-		m_ptrData->m_vtKeys.insert(m_ptrData->m_vtKeys.end(), ptrSibling->m_ptrData->m_vtKeys.begin(), ptrSibling->m_ptrData->m_vtKeys.end());
-		m_ptrData->m_vtValues.insert(m_ptrData->m_vtValues.end(), ptrSibling->m_ptrData->m_vtValues.begin(), ptrSibling->m_ptrData->m_vtValues.end());
+		m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_vtKeys.begin(), ptrSibling->m_vtKeys.end());
+		m_vtValues.insert(m_vtValues.end(), ptrSibling->m_vtValues.begin(), ptrSibling->m_vtValues.end());
 	}
 
 public:
@@ -308,8 +289,8 @@ public:
 			sizeof(uint8_t)
 			+ sizeof(size_t)
 			+ sizeof(size_t)
-			+ (m_ptrData->m_vtKeys.size() * sizeof(KeyType))
-			+ (m_ptrData->m_vtValues.size() * sizeof(ValueType));
+			+ (m_vtKeys.size() * sizeof(KeyType))
+			+ (m_vtValues.size() * sizeof(ValueType));
 	}
 
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize) const
@@ -323,8 +304,8 @@ public:
 
 		uidObjectType = UID;
 
-		size_t nKeyCount = m_ptrData->m_vtKeys.size();
-		size_t nValueCount = m_ptrData->m_vtValues.size();
+		size_t nKeyCount = m_vtKeys.size();
+		size_t nValueCount = m_vtValues.size();
 
 		nBufferSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ValueType)) + sizeof(size_t) + sizeof(size_t);
 
@@ -342,32 +323,32 @@ public:
 		nOffset += sizeof(size_t);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(szBuffer + nOffset, m_ptrData->m_vtKeys.data(), nKeysSize);
+		memcpy(szBuffer + nOffset, m_vtKeys.data(), nKeysSize);
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		memcpy(szBuffer + nOffset, m_ptrData->m_vtValues.data(), nValuesSize);
+		memcpy(szBuffer + nOffset, m_vtValues.data(), nValuesSize);
 		nOffset += nValuesSize;
 
 		assert(nBufferSize == nOffset);
 
 		SelfType* _t = new SelfType(szBuffer);
-		for (int i = 0; i < _t->m_ptrData->m_vtKeys.size(); i++)
+		for (int i = 0; i < _t->m_vtKeys.size(); i++)
 		{
-			assert(_t->m_ptrData->m_vtKeys[i] == m_ptrData->m_vtKeys[i]);
+			assert(_t->m_vtKeys[i] == m_vtKeys[i]);
 		}
-		for (int i = 0; i < _t->m_ptrData->m_vtValues.size(); i++)
+		for (int i = 0; i < _t->m_vtValues.size(); i++)
 		{
-			assert(_t->m_ptrData->m_vtValues[i] == m_ptrData->m_vtValues[i]);
+			assert(_t->m_vtValues[i] == m_vtValues[i]);
 		}
 		delete _t;
 
 		// hint
 		/*
 		if (std::is_trivial<ObjectUIDType>::value && std::is_standard_layout<ObjectUIDType>::value)
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
 		else
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
 
 		*/
 	}
@@ -383,16 +364,16 @@ public:
 
 		uidObjectType = SelfType::UID;
 
-		size_t nKeyCount = m_ptrData->m_vtKeys.size();
-		size_t nValueCount = m_ptrData->m_vtValues.size();
+		size_t nKeyCount = m_vtKeys.size();
+		size_t nValueCount = m_vtValues.size();
 
 		nDataSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ValueType)) + sizeof(size_t) + sizeof(size_t);
 
 		os.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
 		os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(size_t));
 		os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(size_t));
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtKeys.data()), nKeyCount * sizeof(KeyType));
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtValues.data()), nValueCount * sizeof(ValueType));
+		os.write(reinterpret_cast<const char*>(m_vtKeys.data()), nKeyCount * sizeof(KeyType));
+		os.write(reinterpret_cast<const char*>(m_vtValues.data()), nValueCount * sizeof(ValueType));
 	}
 
 public:
@@ -403,9 +384,9 @@ public:
 		prefix.append(std::string(nSpace - 1, ' '));
 		prefix.append("|");
 
-		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtKeys.size(); nIndex++)
+		for (size_t nIndex = 0; nIndex < m_vtKeys.size(); nIndex++)
 		{
-			out << " " << prefix << std::string(nSpace, '-').c_str() << "(K: " << m_ptrData->m_vtKeys[nIndex] << ", V: " << m_ptrData->m_vtValues[nIndex] << ")" << std::endl;
+			out << " " << prefix << std::string(nSpace, '-').c_str() << "(K: " << m_vtKeys[nIndex] << ", V: " << m_vtValues[nIndex] << ")" << std::endl;
 		}
 	}
 

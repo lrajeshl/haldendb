@@ -37,39 +37,37 @@ public:
 
 private:
 	bool m_bDirty;
+	ValueCoreTypesWrapper m_objData;
 	mutable std::shared_mutex m_mtx;
-
-public:
-	ValueCoreTypesWrapper data;
 
 public:
 	template<class ValueCoreType>
 	LRUCacheObject(std::shared_ptr<ValueCoreType>& ptrCoreObject)
 		: m_bDirty(true)	//TODO: should not it be false by default?
 	{
-		data = ptrCoreObject;
+		m_objData = ptrCoreObject;
 	}
 
 	LRUCacheObject(std::fstream& fs)
 		: m_bDirty(true)
 	{
-		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(fs, data);
+		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(fs, m_objData);
 	}
 
 	LRUCacheObject(const char* szBuffer)
 		: m_bDirty(true)
 	{
-		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(szBuffer, data);
+		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(szBuffer, m_objData);
 	}
 
 	inline void serialize(std::fstream& fs, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
-		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(fs, data, uidObjectType, nBufferSize);
+		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(fs, m_objData, uidObjectType, nBufferSize);
 	}
 
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize)
 	{
-		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(szBuffer, data, uidObjectType, nBufferSize);
+		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(szBuffer, m_objData, uidObjectType, nBufferSize);
 	}
 
 	inline const bool getDirtyFlag() const 
@@ -82,8 +80,23 @@ public:
 		m_bDirty = bDirty;
 	}
 
-	inline const mutex& getObjectMutex() const
+	inline const ValueCoreTypesWrapper& getInnerData() const
 	{
-		return &m_mtx;
+		return m_objData;
+	}
+
+	inline std::shared_mutex& getMutex() const
+	{
+		return m_mtx;
+	}
+
+	inline bool tryLockObject() const
+	{
+		return m_mtx.try_lock();
+	}
+
+	inline void unlockObject() const
+	{
+		m_mtx.unlock();
 	}
 };

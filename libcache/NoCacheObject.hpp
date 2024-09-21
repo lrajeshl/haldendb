@@ -18,14 +18,34 @@ private:
 public:
 	typedef std::tuple<ValueCoreTypes...> ValueCoreTypesTuple;
 
-public:
-	ValueCoreTypesWrapper data;
-	mutable std::shared_mutex mutex;
+private:
+	ValueCoreTypesWrapper m_objData;
+	mutable std::shared_mutex m_mtx;
 
 public:
 	template<class CoreObjectType>
 	NoCacheObject(std::shared_ptr<CoreObjectType> ptrCoreObject)
 	{
-		data = ptrCoreObject;
+		m_objData = ptrCoreObject;
+	}
+
+	inline const ValueCoreTypesWrapper& getInnerData() const
+	{
+		return m_objData;
+	}
+
+	inline std::shared_mutex& getMutex() const
+	{
+		return m_mtx;
+	}
+
+	inline bool tryLockObject() const
+	{
+		return m_mtx.try_lock();
+	}
+
+	inline void unlockObject() const
+	{
+		m_mtx.unlock();
 	}
 };

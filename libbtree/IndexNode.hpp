@@ -17,55 +17,39 @@
 
 using namespace std;
 
-template <typename KeyType, typename ValueType, typename ObjectUIDType, uint8_t TYPE_UID>
+template <typename KeyType, typename ValueType, typename ObjectUIDType, typename DataNodeType, uint8_t TYPE_UID>
 class IndexNode
 {
 public:
 	static const uint8_t UID = TYPE_UID;
 	
 private:
-	typedef IndexNode<KeyType, ValueType, ObjectUIDType, UID> SelfType;
+	typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, UID> SelfType;
 
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ObjectUIDType>::const_iterator CacheKeyTypeIterator;
 
-	struct INDEXNODESTRUCT
-	{
-		std::vector<KeyType> m_vtPivots;
-		std::vector<ObjectUIDType> m_vtChildren;
-	};
-
-public:
-	std::shared_ptr<INDEXNODESTRUCT> m_ptrData;
+	std::vector<KeyType> m_vtPivots;
+	std::vector<ObjectUIDType> m_vtChildren;
 
 public:
 	~IndexNode()
 	{
-		// TODO: check for ref count?
-		m_ptrData.reset();
+		m_vtPivots.clear();
+		m_vtChildren.clear();
 	}
 
 	IndexNode()
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{	
 	}
 
 	IndexNode(const IndexNode& source)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
-		for (const auto& obj : source.m_ptrData->m_vtPivots)
-		{
-			m_ptrData->m_vtPivots.push_back(KeyType(obj));
-		}
-
-		for (const auto& obj : source.m_ptrData->m_vtChildren)
-		{
-			m_ptrData->m_vtChildren.push_back(ObjectUIDType(obj));
-		}
+		m_vtPivots.assign(source.m_vtPivots.begin(), source.m_vtPivots.end());
+		m_vtChildren.assign(source.m_vtChildren.begin(), source.m_vtChildren.end());
 	}
 
 	IndexNode(const char* szData)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -77,19 +61,18 @@ public:
 		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
 		nOffset += sizeof(size_t);
 
-		m_ptrData->m_vtPivots.resize(nKeyCount);
-		m_ptrData->m_vtChildren.resize(nValueCount);
+		m_vtPivots.resize(nKeyCount);
+		m_vtChildren.resize(nValueCount);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(m_ptrData->m_vtPivots.data(), szData + nOffset, nKeysSize);
+		memcpy(m_vtPivots.data(), szData + nOffset, nKeysSize);
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-		memcpy(m_ptrData->m_vtChildren.data(), szData + nOffset, nValuesSize);
+		memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
 	}
 
 	IndexNode(const char* szData, bool readonly)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
 		size_t nKeyCount, nValueCount = 0;
 
@@ -101,12 +84,12 @@ public:
 		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
 		nOffset += sizeof(size_t);
 
-		m_ptrData->m_vtPivots.resize(nKeyCount);
-		m_ptrData->m_vtChildren.resize(nValueCount);
+		m_vtPivots.resize(nKeyCount);
+		m_vtChildren.resize(nValueCount);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		//memcpy(m_ptrData->m_vtPivots.data(), szData + nOffset, nKeysSize);
-		m_ptrData->m_vtPivots.assign(
+		//memcpy(m_vtPivots.data(), szData + nOffset, nKeysSize);
+		m_vtPivots.assign(
 			reinterpret_cast<const KeyType*>(szData + nOffset),
 			reinterpret_cast<const KeyType*>(szData + nOffset + nKeysSize)
 		);
@@ -114,8 +97,8 @@ public:
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-		//memcpy(m_ptrData->m_vtChildren.data(), szData + nOffset, nValuesSize);
-		m_ptrData->m_vtChildren.assign(
+		//memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
+		m_vtChildren.assign(
 			reinterpret_cast<const ObjectUIDType*>(szData + nOffset),
 			reinterpret_cast<const ObjectUIDType*>(szData + nOffset + nValuesSize)
 		);
@@ -123,57 +106,54 @@ public:
 	}
 
 	IndexNode(std::fstream& is)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
 		size_t nKeyCount, nValueCount;
 		is.read(reinterpret_cast<char*>(&nKeyCount), sizeof(size_t));
 		is.read(reinterpret_cast<char*>(&nValueCount), sizeof(size_t));
 
-		m_ptrData->m_vtPivots.resize(nKeyCount);
-		m_ptrData->m_vtChildren.resize(nValueCount);
+		m_vtPivots.resize(nKeyCount);
+		m_vtChildren.resize(nValueCount);
 
-		is.read(reinterpret_cast<char*>(m_ptrData->m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-		is.read(reinterpret_cast<char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
+		is.read(reinterpret_cast<char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
+		is.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
 	}
 
 	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
-		m_ptrData->m_vtPivots.assign(itBeginPivots, itEndPivots);
-		m_ptrData->m_vtChildren.assign(itBeginChildren, itEndChildren);
+		m_vtPivots.assign(itBeginPivots, itEndPivots);
+		m_vtChildren.assign(itBeginChildren, itEndChildren);
 	}
 
 	IndexNode(const KeyType& pivotKey, const ObjectUIDType& ptrLHSNode, const ObjectUIDType& ptrRHSNode)
-		: m_ptrData(make_shared<INDEXNODESTRUCT>())
 	{
-		m_ptrData->m_vtPivots.push_back(pivotKey);
-		m_ptrData->m_vtChildren.push_back(ptrLHSNode);
-		m_ptrData->m_vtChildren.push_back(ptrRHSNode);
+		m_vtPivots.push_back(pivotKey);
+		m_vtChildren.push_back(ptrLHSNode);
+		m_vtChildren.push_back(ptrRHSNode);
 	}
 
 	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling)
 	{
-		size_t nChildIdx = m_ptrData->m_vtPivots.size();
-		for (int nIdx = 0; nIdx < m_ptrData->m_vtPivots.size(); ++nIdx)
+		size_t nChildIdx = m_vtPivots.size();
+		for (int nIdx = 0; nIdx < m_vtPivots.size(); ++nIdx)
 		{
-			if (pivotKey < m_ptrData->m_vtPivots[nIdx])
+			if (pivotKey < m_vtPivots[nIdx])
 			{
 				nChildIdx = nIdx;
 				break;
 			}
 		}
 
-		m_ptrData->m_vtPivots.insert(m_ptrData->m_vtPivots.begin() + nChildIdx, pivotKey);
-		m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.begin() + nChildIdx + 1, uidSibling);
+		m_vtPivots.insert(m_vtPivots.begin() + nChildIdx, pivotKey);
+		m_vtChildren.insert(m_vtChildren.begin() + nChildIdx + 1, uidSibling);
 
 		return ErrorCode::Success;
 	}
 
-	template <typename CacheType, typename ObjectCoreType>
-	inline ErrorCode rebalanceIndexNode(CacheType ptrCache, const ObjectUIDType& uidChild, ObjectCoreType ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+	template <typename CacheType>
+	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 	{
-		ObjectCoreType ptrLHSNode = nullptr;
-		ObjectCoreType ptrRHSNode = nullptr;
+		std::shared_ptr<SelfType> ptrLHSNode = nullptr;
+		std::shared_ptr<SelfType> ptrRHSNode = nullptr;
 
 		size_t nChildIdx = getChildNodeIdx(key);
 
@@ -181,78 +161,78 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
-				m_ptrData->m_vtChildren[nChildIdx - 1] = *uidUpdated;
+				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
 #endif __TREE_WITH_CACHE__
 
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))	// TODO: macro?
 			{
 				KeyType key;
-				ptrChild->moveAnEntityFromLHSSibling(ptrLHSNode, m_ptrData->m_vtPivots[nChildIdx - 1], key);
+				ptrChild->moveAnEntityFromLHSSibling(ptrLHSNode, m_vtPivots[nChildIdx - 1], key);
 
-				m_ptrData->m_vtPivots[nChildIdx - 1] = key;
+				m_vtPivots[nChildIdx - 1] = key;
 				return ErrorCode::Success;
 			}
 		}
 
-		if (nChildIdx < m_ptrData->m_vtPivots.size())
+		if (nChildIdx < m_vtPivots.size())
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
-				m_ptrData->m_vtChildren[nChildIdx + 1] = *uidUpdated;
+				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
 #endif __TREE_WITH_CACHE__
 
 			if (ptrRHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
 			{
 				KeyType key;
-				ptrChild->moveAnEntityFromRHSSibling(ptrRHSNode, m_ptrData->m_vtPivots[nChildIdx], key);
+				ptrChild->moveAnEntityFromRHSSibling(ptrRHSNode, m_vtPivots[nChildIdx], key);
 
-				m_ptrData->m_vtPivots[nChildIdx] = key;
+				m_vtPivots[nChildIdx] = key;
 				return ErrorCode::Success;
 			}
 		}
 
 		if (nChildIdx > 0)
 		{
-			ptrLHSNode->mergeNodes(ptrChild, m_ptrData->m_vtPivots[nChildIdx - 1]);
+			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
 
-			uidObjectToDelete = m_ptrData->m_vtChildren[nChildIdx];
+			uidObjectToDelete = m_vtChildren[nChildIdx];
 			if (uidObjectToDelete != uidChild)
 			{
 				throw new std::logic_error("should not occur!");
 			}
 
-			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx - 1);
-			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx);
+			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
+			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
 
 			//uidObjectToDelete = uidChild;
 
 			return ErrorCode::Success;
 		}
 
-		if (nChildIdx < m_ptrData->m_vtPivots.size())
+		if (nChildIdx < m_vtPivots.size())
 		{
-			ptrChild->mergeNodes(ptrRHSNode, m_ptrData->m_vtPivots[nChildIdx]);
+			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
 
-			assert(uidChild == m_ptrData->m_vtChildren[nChildIdx]);
+			assert(uidChild == m_vtChildren[nChildIdx]);
 
-			uidObjectToDelete = m_ptrData->m_vtChildren[nChildIdx + 1];
+			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
 
-			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx);
-			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx + 1);
+			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
+			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
 
 			return ErrorCode::Success;
 		}
@@ -260,11 +240,11 @@ public:
 		throw new logic_error("should not occur!"); // TODO: critical log entry.
 	}
 
-	template <typename CacheType, typename ObjectCoreType>
-	inline ErrorCode rebalanceDataNode(CacheType ptrCache, const ObjectUIDType& uidChild, ObjectCoreType ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+	template <typename CacheType>
+	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 	{
-		ObjectCoreType ptrLHSNode = nullptr;
-		ObjectCoreType ptrRHSNode = nullptr;
+		std::shared_ptr<DataNodeType> ptrLHSNode = nullptr;
+		std::shared_ptr<DataNodeType> ptrRHSNode = nullptr;
 
 		size_t nChildIdx = getChildNodeIdx(key);
 
@@ -272,14 +252,14 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
-				m_ptrData->m_vtChildren[nChildIdx - 1] = *uidUpdated;
+				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
 #endif __TREE_WITH_CACHE__
 
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
@@ -287,23 +267,23 @@ public:
 				KeyType key;
 				ptrChild->moveAnEntityFromLHSSibling(ptrLHSNode, key);
 
-				m_ptrData->m_vtPivots[nChildIdx - 1] = key;
+				m_vtPivots[nChildIdx - 1] = key;
 				return ErrorCode::Success;
 			}
 		}
 
-		if (nChildIdx < m_ptrData->m_vtPivots.size())
+		if (nChildIdx < m_vtPivots.size())
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
-				m_ptrData->m_vtChildren[nChildIdx + 1] = *uidUpdated;
+				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<ObjectCoreType>(m_ptrData->m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
 #endif __TREE_WITH_CACHE__
 
 
@@ -312,7 +292,7 @@ public:
 				KeyType key;
 				ptrChild->moveAnEntityFromRHSSibling(ptrRHSNode, key);
 
-				m_ptrData->m_vtPivots[nChildIdx] = key;
+				m_vtPivots[nChildIdx] = key;
 				return ErrorCode::Success;
 			}
 		}
@@ -321,28 +301,28 @@ public:
 		{
 			ptrLHSNode->mergeNode(ptrChild);
 
-			uidObjectToDelete = m_ptrData->m_vtChildren[nChildIdx];
+			uidObjectToDelete = m_vtChildren[nChildIdx];
 			if (uidObjectToDelete != uidChild)
 			{
 				throw new std::logic_error("should not occur!");
 			}
 
-			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx - 1);
-			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx);
+			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
+			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
 
 			//uidObjectToDelete = uidChild;
 
 			return ErrorCode::Success;
 		}
 
-		if (nChildIdx < m_ptrData->m_vtPivots.size())
+		if (nChildIdx < m_vtPivots.size())
 		{
 			ptrChild->mergeNode(ptrRHSNode);
 
-			uidObjectToDelete = m_ptrData->m_vtChildren[nChildIdx + 1];
+			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
 
-			m_ptrData->m_vtPivots.erase(m_ptrData->m_vtPivots.begin() + nChildIdx);
-			m_ptrData->m_vtChildren.erase(m_ptrData->m_vtChildren.begin() + nChildIdx + 1);
+			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
+			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
 
 			return ErrorCode::Success;
 		}
@@ -352,18 +332,18 @@ public:
 
 	inline size_t getKeysCount() const
 	{
-		return m_ptrData->m_vtPivots.size();
+		return m_vtPivots.size();
 	}
 
 	inline size_t getChildNodeIdx(const KeyType& key) const
 	{
 		// std::cout << "[[[[";
-		// for(int idx=0; idx< m_ptrData->m_vtPivots.size(); idx++)
-		// 	std::cout << m_ptrData->m_vtPivots[idx] << ",";
+		// for(int idx=0; idx< m_vtPivots.size(); idx++)
+		// 	std::cout << m_vtPivots[idx] << ",";
 		// std::cout << "]]]]" << std::endl;
 
 		size_t nChildIdx = 0;
-		while (nChildIdx < m_ptrData->m_vtPivots.size() && key >= m_ptrData->m_vtPivots[nChildIdx])
+		while (nChildIdx < m_vtPivots.size() && key >= m_vtPivots[nChildIdx])
 		{
 			nChildIdx++;
 		}
@@ -373,115 +353,115 @@ public:
 
 	inline ObjectUIDType getChildAt(size_t nIdx) const 
 	{
-		return m_ptrData->m_vtChildren[nIdx];
+		return m_vtChildren[nIdx];
 	}
 
 	inline ObjectUIDType getChild(const KeyType& key) const
 	{
-		return m_ptrData->m_vtChildren[getChildNodeIdx(key)];
+		return m_vtChildren[getChildNodeIdx(key)];
 	}
 
 	inline bool requireSplit(size_t nDegree) const
 	{
-		return m_ptrData->m_vtPivots.size() > nDegree;
+		return m_vtPivots.size() > nDegree;
 	}
 
 	inline bool canTriggerSplit(size_t nDegree) const
 	{
-		return m_ptrData->m_vtPivots.size() + 1 > nDegree;
+		return m_vtPivots.size() + 1 > nDegree;
 	}
 
 	inline bool canTriggerMerge(size_t nDegree) const
 	{
-		return m_ptrData->m_vtPivots.size() <= std::ceil(nDegree / 2.0f) + 1;	// TODO: macro!
+		return m_vtPivots.size() <= std::ceil(nDegree / 2.0f) + 1;	// TODO: macro!
 
 	}
 
 	inline bool requireMerge(size_t nDegree) const
 	{
-		return m_ptrData->m_vtPivots.size() <= std::ceil(nDegree / 2.0f);
+		return m_vtPivots.size() <= std::ceil(nDegree / 2.0f);
 	}
 
-	template <typename Cache>
-	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType>
+	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
 	{
-		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
+		size_t nMid = m_vtPivots.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling,
-			m_ptrData->m_vtPivots.begin() + nMid + 1, m_ptrData->m_vtPivots.end(),
-			m_ptrData->m_vtChildren.begin() + nMid + 1, m_ptrData->m_vtChildren.end());
+			m_vtPivots.begin() + nMid + 1, m_vtPivots.end(),
+			m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
 
 		if (!uidSibling)
 		{
 			return ErrorCode::Error;
 		}
 
-		pivotKeyForParent = m_ptrData->m_vtPivots[nMid];
+		pivotKeyForParent = m_vtPivots[nMid];
 
-		m_ptrData->m_vtPivots.resize(nMid);
-		m_ptrData->m_vtChildren.resize(nMid + 1);
+		m_vtPivots.resize(nMid);
+		m_vtChildren.resize(nMid + 1);
 
 		return ErrorCode::Success;
 	}
 
 	inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
 	{
-		size_t nMid = m_ptrData->m_vtPivots.size() / 2;
+		size_t nMid = m_vtPivots.size() / 2;
 
-		ptrSibling->m_ptrData->m_vtPivots.assign(m_ptrData->m_vtPivots.begin() + nMid + 1, m_ptrData->m_vtPivots.end());
-		ptrSibling->m_ptrData->m_vtChildren.assign(m_ptrData->m_vtChildren.begin() + nMid + 1, m_ptrData->m_vtChildren.end());
+		ptrSibling->m_vtPivots.assign(m_vtPivots.begin() + nMid + 1, m_vtPivots.end());
+		ptrSibling->m_vtChildren.assign(m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
 
-		pivotKeyForParent = m_ptrData->m_vtPivots[nMid];
+		pivotKeyForParent = m_vtPivots[nMid];
 
-		m_ptrData->m_vtPivots.resize(nMid);
-		m_ptrData->m_vtChildren.resize(nMid + 1);
+		m_vtPivots.resize(nMid);
+		m_vtChildren.resize(nMid + 1);
 
 		return ErrorCode::Success;
 	}
 
 	inline void moveAnEntityFromLHSSibling(shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
 	{
-		KeyType key = ptrLHSSibling->m_ptrData->m_vtPivots.back();
-		ObjectUIDType value = ptrLHSSibling->m_ptrData->m_vtChildren.back();
+		KeyType key = ptrLHSSibling->m_vtPivots.back();
+		ObjectUIDType value = ptrLHSSibling->m_vtChildren.back();
 
-		ptrLHSSibling->m_ptrData->m_vtPivots.pop_back();
-		ptrLHSSibling->m_ptrData->m_vtChildren.pop_back();
+		ptrLHSSibling->m_vtPivots.pop_back();
+		ptrLHSSibling->m_vtChildren.pop_back();
 
-		if (ptrLHSSibling->m_ptrData->m_vtPivots.size() == 0)
+		if (ptrLHSSibling->m_vtPivots.size() == 0)
 		{
 			throw new std::logic_error("should not occur!");
 		}
 
-		m_ptrData->m_vtPivots.insert(m_ptrData->m_vtPivots.begin(), pivotKeyForEntity);
-		m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.begin(), value);
+		m_vtPivots.insert(m_vtPivots.begin(), pivotKeyForEntity);
+		m_vtChildren.insert(m_vtChildren.begin(), value);
 
 		pivotKeyForParent = key;
 	}
 
 	inline void moveAnEntityFromRHSSibling(shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
 	{
-		KeyType key = ptrRHSSibling->m_ptrData->m_vtPivots.front();
-		ObjectUIDType value = ptrRHSSibling->m_ptrData->m_vtChildren.front();
+		KeyType key = ptrRHSSibling->m_vtPivots.front();
+		ObjectUIDType value = ptrRHSSibling->m_vtChildren.front();
 
-		ptrRHSSibling->m_ptrData->m_vtPivots.erase(ptrRHSSibling->m_ptrData->m_vtPivots.begin());
-		ptrRHSSibling->m_ptrData->m_vtChildren.erase(ptrRHSSibling->m_ptrData->m_vtChildren.begin());
+		ptrRHSSibling->m_vtPivots.erase(ptrRHSSibling->m_vtPivots.begin());
+		ptrRHSSibling->m_vtChildren.erase(ptrRHSSibling->m_vtChildren.begin());
 
-		if (ptrRHSSibling->m_ptrData->m_vtPivots.size() == 0)
+		if (ptrRHSSibling->m_vtPivots.size() == 0)
 		{
 			throw new std::logic_error("should not occur!");
 		}
 
-		m_ptrData->m_vtPivots.push_back(pivotKeyForEntity);
-		m_ptrData->m_vtChildren.push_back(value);
+		m_vtPivots.push_back(pivotKeyForEntity);
+		m_vtChildren.push_back(value);
 
-		pivotKeyForParent = key;// ptrRHSSibling->m_ptrData->m_vtPivots.front();
+		pivotKeyForParent = key;// ptrRHSSibling->m_vtPivots.front();
 	}
 
 	inline void mergeNodes(shared_ptr<SelfType> ptrSibling, KeyType& pivotKey)
 	{
-		m_ptrData->m_vtPivots.push_back(pivotKey);
-		m_ptrData->m_vtPivots.insert(m_ptrData->m_vtPivots.end(), ptrSibling->m_ptrData->m_vtPivots.begin(), ptrSibling->m_ptrData->m_vtPivots.end());
-		m_ptrData->m_vtChildren.insert(m_ptrData->m_vtChildren.end(), ptrSibling->m_ptrData->m_vtChildren.begin(), ptrSibling->m_ptrData->m_vtChildren.end());
+		m_vtPivots.push_back(pivotKey);
+		m_vtPivots.insert(m_vtPivots.end(), ptrSibling->m_vtPivots.begin(), ptrSibling->m_vtPivots.end());
+		m_vtChildren.insert(m_vtChildren.end(), ptrSibling->m_vtChildren.begin(), ptrSibling->m_vtChildren.end());
 	}
 
 public:
@@ -496,20 +476,20 @@ public:
 
 		uidObjectType = SelfType::UID;
 
-		size_t nKeyCount = m_ptrData->m_vtPivots.size();
-		size_t nValueCount = m_ptrData->m_vtChildren.size();
+		size_t nKeyCount = m_vtPivots.size();
+		size_t nValueCount = m_vtChildren.size();
 
 		nDataSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(typename ObjectUIDType::NodeUID)) + sizeof(size_t) + sizeof(size_t);
 
 		os.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
 		os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(size_t));
 		os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(size_t));
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+		os.write(reinterpret_cast<const char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
 
 
-		auto it = m_ptrData->m_vtChildren.begin();
-		while (it != m_ptrData->m_vtChildren.end())
+		auto it = m_vtChildren.begin();
+		while (it != m_vtChildren.end())
 		{
 			if ((*it).m_uid.m_nMediaType < 3)
 			{
@@ -521,9 +501,9 @@ public:
 		// hint
 		/*
 		if (std::is_trivial<ObjectUIDType>::value && std::is_standard_layout<ObjectUIDType>::value)
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
 		else
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
 
 		*/
 	}
@@ -539,8 +519,8 @@ public:
 
 		uidObjectType = UID;
 
-		size_t nKeyCount = m_ptrData->m_vtPivots.size();
-		size_t nValueCount = m_ptrData->m_vtChildren.size();
+		size_t nKeyCount = m_vtPivots.size();
+		size_t nValueCount = m_vtChildren.size();
 
 		nBufferSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(typename ObjectUIDType::NodeUID)) + sizeof(size_t) + sizeof(size_t);
 
@@ -558,32 +538,32 @@ public:
 		nOffset += sizeof(size_t);
 
 		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(szBuffer + nOffset, m_ptrData->m_vtPivots.data(), nKeysSize);
+		memcpy(szBuffer + nOffset, m_vtPivots.data(), nKeysSize);
 		nOffset += nKeysSize;
 
 		size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-		memcpy(szBuffer + nOffset, m_ptrData->m_vtChildren.data(), nValuesSize);
+		memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
 		nOffset += nValuesSize;
 
 		assert(nBufferSize == nOffset);
 
 		SelfType* _t = new SelfType(szBuffer);
-		for (int i = 0; i < _t->m_ptrData->m_vtPivots.size(); i++)
+		for (int i = 0; i < _t->m_vtPivots.size(); i++)
 		{
-			assert(_t->m_ptrData->m_vtPivots[i] == m_ptrData->m_vtPivots[i]);
+			assert(_t->m_vtPivots[i] == m_vtPivots[i]);
 		}
-		for (int i = 0; i < _t->m_ptrData->m_vtChildren.size(); i++)
+		for (int i = 0; i < _t->m_vtChildren.size(); i++)
 		{
-			assert(_t->m_ptrData->m_vtChildren[i] == m_ptrData->m_vtChildren[i]);
+			assert(_t->m_vtChildren[i] == m_vtChildren[i]);
 		}
 		delete _t;
 
 		// hint
 		/*
 		if (std::is_trivial<ObjectUIDType>::value && std::is_standard_layout<ObjectUIDType>::value)
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
 		else
-		os.write(reinterpret_cast<const char*>(m_ptrData->m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
+		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
 
 		*/
 	}
@@ -594,15 +574,15 @@ public:
 			sizeof(uint8_t)
 			+ sizeof(size_t)
 			+ sizeof(size_t)
-			+ (m_ptrData->m_vtPivots.size() * sizeof(KeyType))
-			+ (m_ptrData->m_vtChildren.size() * sizeof(typename ObjectUIDType::NodeUID));
+			+ (m_vtPivots.size() * sizeof(KeyType))
+			+ (m_vtChildren.size() * sizeof(typename ObjectUIDType::NodeUID));
 	}
 
 	void updateChildUID(const ObjectUIDType& uidOld, const ObjectUIDType& uidNew)
 	{
 		int idx = 0;
-		auto it = m_ptrData->m_vtChildren.begin();
-		while (it != m_ptrData->m_vtChildren.end())
+		auto it = m_vtChildren.begin();
+		while (it != m_vtChildren.end())
 		{
 			if (*it == uidOld)
 			{
@@ -618,43 +598,43 @@ public:
 
 	inline std::vector<ObjectUIDType>::iterator getChildrenBeginIterator()
 	{
-		return m_ptrData->m_vtChildren.begin();		
+		return m_vtChildren.begin();		
 	}
 
 	inline std::vector<ObjectUIDType>::iterator getChildrenEndIterator()
 	{
-		return m_ptrData->m_vtChildren.end();
+		return m_vtChildren.end();
 	}
 
 public:
-	template <typename CacheType, typename ObjectType, typename DataNodeType>
-	void print(std::ofstream& out, CacheType ptrCache, size_t nLevel, string prefix)
+	template <typename CacheType, typename ObjectType>
+	void print(std::ofstream& out, std::shared_ptr<CacheType>& ptrCache, size_t nLevel, string prefix)
 	{
 		int nSpace = 7;
 
 		prefix.append(std::string(nSpace - 1, ' '));
 		prefix.append("|");
-		for (size_t nIndex = 0; nIndex < m_ptrData->m_vtChildren.size(); nIndex++)
+		for (size_t nIndex = 0; nIndex < m_vtChildren.size(); nIndex++)
 		{
 			out << " " << prefix << std::endl;
 			out << " " << prefix << std::string(nSpace, '-').c_str();// << std::endl;
 
-			if (nIndex < m_ptrData->m_vtPivots.size())
+			if (nIndex < m_vtPivots.size())
 			{
-				out << " < (" << m_ptrData->m_vtPivots[nIndex] << ")";// << std::endl;
+				out << " < (" << m_vtPivots[nIndex] << ")";// << std::endl;
 			}
 			else {
-				out << " >= (" << m_ptrData->m_vtPivots[nIndex - 1] << ")";// << std::endl;
+				out << " >= (" << m_vtPivots[nIndex - 1] << ")";// << std::endl;
 			}
 
 
 			ObjectType ptrNode = nullptr;
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->getObject(m_ptrData->m_vtChildren[nIndex], ptrNode, uidUpdated);
+			ptrCache->getObject(m_vtChildren[nIndex], ptrNode, uidUpdated);
 
 			if (uidUpdated != std::nullopt)
 			{
-				m_ptrData->m_vtChildren[nIndex] = *uidUpdated;
+				m_vtChildren[nIndex] = *uidUpdated;
 			}
 
 			out << std::endl;
