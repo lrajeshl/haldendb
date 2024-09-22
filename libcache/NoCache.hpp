@@ -48,6 +48,20 @@ public:
 	}
 
 	template <typename Type>
+	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject, ObjectTypePtr& ptrValue)
+	{
+		ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
+
+		if (std::holds_alternative<Type>(ptrValue->getInnerData()))
+		{
+			ptrObject = std::get<Type>(ptrValue->getInnerData());
+			return CacheErrorCode::Success;
+		}
+
+		return CacheErrorCode::Error;
+	}
+
+	template <typename Type>
 	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject)
 	{
 		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);

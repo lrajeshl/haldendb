@@ -152,6 +152,10 @@ public:
 	template <typename CacheType>
 	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 	{
+		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+
+		ObjectTypePtr lhs_ = nullptr;
+		ObjectTypePtr rhs_ = nullptr;
 		std::shared_ptr<SelfType> ptrLHSNode = nullptr;
 		std::shared_ptr<SelfType> ptrRHSNode = nullptr;
 
@@ -168,8 +172,8 @@ public:
 				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
-			//std::unique_lock<std::shared_mutex> lock(ptrLHSNode->getMutex());
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_);    //TODO: lock
+			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
 #endif __TREE_WITH_CACHE__
 
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))	// TODO: macro?
@@ -193,7 +197,8 @@ public:
 				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_);    //TODO: lock
+			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 #endif __TREE_WITH_CACHE__
 
 			if (ptrRHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
@@ -208,6 +213,8 @@ public:
 
 		if (nChildIdx > 0)
 		{
+			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
+
 			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
 
 			uidObjectToDelete = m_vtChildren[nChildIdx];
@@ -226,6 +233,8 @@ public:
 
 		if (nChildIdx < m_vtPivots.size())
 		{
+			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
+
 			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
 
 			assert(uidChild == m_vtChildren[nChildIdx]);
@@ -244,6 +253,11 @@ public:
 	template <typename CacheType>
 	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 	{
+		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+
+		ObjectTypePtr lhs_ = nullptr;
+		ObjectTypePtr rhs_ = nullptr;
+
 		std::shared_ptr<DataNodeType> ptrLHSNode = nullptr;
 		std::shared_ptr<DataNodeType> ptrRHSNode = nullptr;
 
@@ -260,7 +274,8 @@ public:
 				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_);    //TODO: lock
+			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
 #endif __TREE_WITH_CACHE__
 
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
@@ -284,7 +299,8 @@ public:
 				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
 #else __TREE_WITH_CACHE__
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_);    //TODO: lock
+			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 #endif __TREE_WITH_CACHE__
 
 
@@ -300,6 +316,7 @@ public:
 
 		if (nChildIdx > 0)
 		{
+			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
 			ptrLHSNode->mergeNode(ptrChild);
 
 			uidObjectToDelete = m_vtChildren[nChildIdx];
@@ -318,6 +335,7 @@ public:
 
 		if (nChildIdx < m_vtPivots.size())
 		{
+			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 			ptrChild->mergeNode(ptrRHSNode);
 
 			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
