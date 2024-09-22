@@ -38,7 +38,7 @@ public:
 private:
 	bool m_bDirty;
 	ValueCoreTypesWrapper m_objData;
-	mutable std::shared_mutex m_mtx;
+	std::shared_mutex m_mtx;
 
 public:
 	template<class ValueCoreType>
@@ -85,7 +85,7 @@ public:
 		return m_objData;
 	}
 
-	inline std::shared_mutex& getMutex() const
+	inline std::shared_mutex& getMutex()
 	{
 		return m_mtx;
 	}

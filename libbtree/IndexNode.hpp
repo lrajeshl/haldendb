@@ -169,6 +169,7 @@ public:
 			}
 #else __TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode);    //TODO: lock
+			//std::unique_lock<std::shared_mutex> lock(ptrLHSNode->getMutex());
 #endif __TREE_WITH_CACHE__
 
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))	// TODO: macro?

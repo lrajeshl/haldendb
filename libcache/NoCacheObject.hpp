@@ -23,6 +23,10 @@ private:
 	mutable std::shared_mutex m_mtx;
 
 public:
+	~NoCacheObject()
+	{
+	}
+
 	template<class CoreObjectType>
 	NoCacheObject(std::shared_ptr<CoreObjectType> ptrCoreObject)
 	{
@@ -34,18 +38,18 @@ public:
 		return m_objData;
 	}
 
-	inline std::shared_mutex& getMutex() const
+	inline std::shared_mutex& getMutex()
 	{
 		return m_mtx;
 	}
 
-	inline bool tryLockObject() const
-	{
-		return m_mtx.try_lock();
-	}
+	//inline bool tryLockObject() const
+	//{
+	//	return m_mtx.try_lock();
+	//}
 
-	inline void unlockObject() const
-	{
-		m_mtx.unlock();
-	}
+	//inline void unlockObject() const
+	//{
+	//	m_mtx.unlock();
+	//}
 };

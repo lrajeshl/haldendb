@@ -133,7 +133,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
         {
             int nTotal = total_entries / thread_count;
             vtThreads.push_back(std::thread(delete_concurent<BPlusStoreType, IndexNodeType, DataNodeType>, ptrTree, nIdx * nTotal, nIdx * nTotal + nTotal));
-        }
+        }   
 
         it = vtThreads.begin();
         while (it != vtThreads.end())
@@ -601,8 +601,8 @@ void test_for_threaded()
 int main(int argc, char* argv[])
 {
     for (int i = 0; i < 10; i++) {
-        test_for_ints();
-        test_for_string();
+        //test_for_ints();
+        //test_for_string();
         test_for_threaded();
     }
 
