@@ -42,20 +42,20 @@ private:
 
 public:
 	template<class ValueCoreType>
-	LRUCacheObject(std::shared_ptr<ValueCoreType>& ptrCoreObject)
+	LRUCacheObject(std::shared_ptr<ValueCoreType> ptrCoreObject)
 		: m_bDirty(true)	//TODO: should not it be false by default?
 	{
 		m_objData = ptrCoreObject;
 	}
 
 	LRUCacheObject(std::fstream& fs)
-		: m_bDirty(true)
+		: m_bDirty(false)
 	{
 		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(fs, m_objData);
 	}
 
 	LRUCacheObject(const char* szBuffer)
-		: m_bDirty(true)
+		: m_bDirty(false)
 	{
 		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(szBuffer, m_objData);
 	}
@@ -90,12 +90,12 @@ public:
 		return m_mtx;
 	}
 
-	inline bool tryLockObject() const
+	inline bool tryLockObject()
 	{
 		return m_mtx.try_lock();
 	}
 
-	inline void unlockObject() const
+	inline void unlockObject()
 	{
 		m_mtx.unlock();
 	}

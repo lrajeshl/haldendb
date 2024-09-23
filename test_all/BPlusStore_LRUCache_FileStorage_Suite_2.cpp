@@ -31,12 +31,12 @@
 //        typedef ObjectFatUID ObjectUIDType;
 //        
 //        typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_STRING_STRING> DataNodeType;
-//        typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_STRING_STRING> InternalNodeType;
+//        typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_STRING_STRING> IndexNodeType;
 //
-//        typedef LRUCacheObject<TypeMarshaller, DataNodeType, InternalNodeType> ObjectType;
+//        typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
 //        typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 //
-//        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, InternalNodeType>>> BPlusStoreType;
+//        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 //
 //        BPlusStoreType* m_ptrTree;
 //

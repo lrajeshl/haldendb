@@ -165,7 +165,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
@@ -190,7 +190,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
@@ -267,7 +267,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
@@ -292,7 +292,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, uidUpdated);    //TODO: lock
+			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_, uidUpdated);    //TODO: lock
 
 			if (uidUpdated != std::nullopt)
 			{
@@ -650,6 +650,7 @@ public:
 
 
 			ObjectType ptrNode = nullptr;
+#ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
 			ptrCache->getObject(m_vtChildren[nIndex], ptrNode, uidUpdated);
 
@@ -657,19 +658,22 @@ public:
 			{
 				m_vtChildren[nIndex] = *uidUpdated;
 			}
+#else __TREE_WITH_CACHE__
+			ptrCache->getObject(m_vtChildren[nIndex], ptrNode);
+#endif __TREE_WITH_CACHE__
 
 			out << std::endl;
 
 
-			if (std::holds_alternative<shared_ptr<SelfType>>(*ptrNode->data))
+			if (std::holds_alternative<shared_ptr<SelfType>>(ptrNode->getInnerData()))
 			{
-				shared_ptr<SelfType> ptrIndexNode = std::get<shared_ptr<SelfType>>(*ptrNode->data);
+				shared_ptr<SelfType> ptrIndexNode = std::get<shared_ptr<SelfType>>(ptrNode->getInnerData());
 
-				ptrIndexNode->template print<CacheType, ObjectType, DataNodeType>(out, ptrCache, nLevel + 1, prefix);
+				ptrIndexNode->template print<CacheType, ObjectType>(out, ptrCache, nLevel + 1, prefix);
 			}
-			else if (std::holds_alternative<shared_ptr<DataNodeType>>(*ptrNode->data))
+			else //if (std::holds_alternative<shared_ptr<DataNodeType>>(ptrNode->getInnerData()))
 			{
-				shared_ptr<DataNodeType> ptrDataNode = std::get<shared_ptr<DataNodeType>>(*ptrNode->data);
+				shared_ptr<DataNodeType> ptrDataNode = std::get<shared_ptr<DataNodeType>>(ptrNode->getInnerData());
 				ptrDataNode->print(out, nLevel + 1, prefix);
 			}
 		}

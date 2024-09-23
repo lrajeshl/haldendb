@@ -154,7 +154,7 @@ public:
 
 		//delete[] szBuffer; //2
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(m_nNextBlock, m_nBlockSize, nBufferSize + sizeof(uint8_t));
+		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, m_nNextBlock, m_nBlockSize, nBufferSize + sizeof(uint8_t));
 
 		for (int idx = 0; idx < nRequiredBlocks; idx++)
 		{
@@ -228,7 +228,7 @@ public:
 
 			size_t nBlockRequired = std::ceil(std::get<2>(tpSerializedData) / (float)m_nBlockSize);
 
-			ObjectUIDType uid = ObjectUIDType::createAddressFromFileOffset(m_nBlockSize, nBlockRequired * m_nBlockSize);
+			ObjectUIDType uid = ObjectUIDType::createAddressFromFileOffset((*it).m_uid.m_nType, m_nBlockSize, nBlockRequired * m_nBlockSize);
 			mpUpdatedUIDs[it->first] = uid;
 
 			for (int idx = 0; idx < nBlockRequired; idx++)
