@@ -108,9 +108,4 @@ public:
 		lru = 1;
 		map = 1;
 	}
-
-	CacheErrorCode reorder(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vt, bool ensure = true)
-	{
-		return CacheErrorCode::Success;
-	}
 };

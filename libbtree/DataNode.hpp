@@ -201,12 +201,12 @@ public:
 		return ErrorCode::KeyDoesNotExist;
 	}
 
-	template <typename CacheType>
-	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType, typename CacheObjectTypePtr>
+	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
 		size_t nMid = m_vtKeys.size() / 2;
 
-		ptrCache->template createObjectOfType<SelfType>(uidSibling,
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_vtKeys.begin() + nMid, m_vtKeys.end(),
 			m_vtValues.begin() + nMid, m_vtValues.end());
 

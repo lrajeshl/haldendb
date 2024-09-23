@@ -401,12 +401,14 @@ public:
 		return m_vtPivots.size() <= std::ceil(nDegree / 2.0f);
 	}
 
-	template <typename CacheType>
-	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	//template <typename CacheType>
+	//inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType, typename CacheObjectTypePtr>
+	inline ErrorCode split(std::shared_ptr<CacheType> ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
 		size_t nMid = m_vtPivots.size() / 2;
 
-		ptrCache->template createObjectOfType<SelfType>(uidSibling,
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_vtPivots.begin() + nMid + 1, m_vtPivots.end(),
 			m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
 
