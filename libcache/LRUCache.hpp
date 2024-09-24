@@ -120,7 +120,6 @@ public:
 
 		m_ptrCallback = ptrCallback;
 		return m_ptrStorage->init(this/*getNthElement<0>(args...)*/);
-
 	}
 
 	CacheErrorCode remove(const ObjectUIDType& uidObject)

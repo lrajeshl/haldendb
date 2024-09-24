@@ -98,27 +98,24 @@ public:
 
 	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
 	{
-		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1]; //2
-		//memset(szBuffer, '\0', uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
+		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1];
+		//memset(szBuffer, '\0', uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1);
 
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
 		m_fsStorage.seekg(uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage); //1
-		//m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
+		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage);
+		//m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize);
 
 #ifdef __CONCURRENT__
 		lock_file_storage.unlock();
 #endif __CONCURRENT__
 
-
-		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer); //2
-		
-		ptrObject->setDirtyFlag( false);
-
-		//delete[] szBuffer; //2
+		//ptrObject->setDirtyFlag(false);
+		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer);
+		//delete[] szBuffer;
 
 		return ptrObject;
 	}
@@ -134,32 +131,33 @@ public:
 		size_t nBufferSize = 0;
 		uint8_t uidObjectType = 0;
 		
-		//char* szBuffer = NULL; //2
-		//ptrObject->serialize(szBuffer, uidObjectType, nBufferSize); //2
+		//char* szBuffer = NULL;
+		//ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
 
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
 		m_fsStorage.seekp(m_nNextBlock * m_nBlockSize);
-		ptrObject->serialize(m_fsStorage, uidObjectType, nBufferSize); //1
-		//m_fsStorage.write(szBuffer, nBufferSize); //2
-		m_fsStorage.flush();
+		ptrObject->serialize(m_fsStorage, uidObjectType, nBufferSize);
+		//m_fsStorage.write(szBuffer, nBufferSize);
+		m_fsStorage.flush();	// how about flushing after enough bytes are written?
 
-		size_t nRequiredBlocks = std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);
+		size_t nNextBlockOld = m_nNextBlock;
+		//size_t nRequiredBlocks = std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);
+		//for (int idx = 0; idx < nRequiredBlocks; idx++)
+		//{
+		//	m_vtAllocationTable[m_nNextBlock++] = true;
+		//}
+		m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
 
 #ifdef __CONCURRENT__
 		lock_file_storage.unlock();
 #endif __CONCURRENT__
 
-		//delete[] szBuffer; //2
+		//delete[] szBuffer;
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, m_nNextBlock, m_nBlockSize, nBufferSize + sizeof(uint8_t));
-
-		for (int idx = 0; idx < nRequiredBlocks; idx++)
-		{
-			m_vtAllocationTable[m_nNextBlock++] = true;
-		}
+		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
 
 		return CacheErrorCode::Success;
 	}
@@ -185,10 +183,7 @@ public:
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
-		m_nNextBlock = nNewOffset;
-
-		auto it = vtObjects.begin();
-		while (it != vtObjects.end())
+		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{
 				m_fsStorage.seekp((*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 				//m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
@@ -201,10 +196,10 @@ public:
 				//vtUIDUpdates.push_back(std::move(m_vtObjects[idx].uidDetails));
 
 				//delete[] vtBuffer[idx];
-
-			it++;
 		}
 		m_fsStorage.flush();
+
+		m_nNextBlock = nNewOffset;
 
 		return CacheErrorCode::Success;
 	}

@@ -149,8 +149,13 @@ public:
 		return ErrorCode::Success;
 	}
 
+#ifdef __TREE_WITH_CACHE__
 	template <typename CacheType>
+	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete, std::optional<ObjectUIDType>& uidAffectedNode, CacheType::ObjectTypePtr& ptrAffectedNode)
+#else __TREE_WITH_CACHE__
+		template <typename CacheType>
 	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+#endif __TREE_WITH_CACHE__
 	{
 		typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
@@ -158,6 +163,11 @@ public:
 		ObjectTypePtr rhs_ = nullptr;
 		std::shared_ptr<SelfType> ptrLHSNode = nullptr;
 		std::shared_ptr<SelfType> ptrRHSNode = nullptr;
+
+#ifdef __TREE_WITH_CACHE__
+		uidAffectedNode = std::nullopt;
+		ptrAffectedNode = nullptr;
+#endif __TREE_WITH_CACHE__
 
 		size_t nChildIdx = getChildNodeIdx(key);
 
@@ -171,6 +181,11 @@ public:
 			{
 				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
+
+			lhs_->setDirtyFlag(true);
+
+			uidAffectedNode = m_vtChildren[nChildIdx - 1];
+			ptrAffectedNode = lhs_;
 #else __TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_);    //TODO: lock
 			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
@@ -196,6 +211,11 @@ public:
 			{
 				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
+
+			rhs_->setDirtyFlag(true);
+
+			uidAffectedNode = m_vtChildren[nChildIdx + 1];
+			ptrAffectedNode = rhs_;
 #else __TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_);    //TODO: lock
 			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
@@ -213,7 +233,7 @@ public:
 
 		if (nChildIdx > 0)
 		{
-			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
+			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());	//Lock acquired twice!!! merge the respective sections!
 
 			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
 
@@ -250,8 +270,13 @@ public:
 		throw new logic_error("should not occur!"); // TODO: critical log entry.
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	template <typename CacheType>
+	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete, std::optional<ObjectUIDType>& uidAffectedNode, CacheType::ObjectTypePtr& ptrAffectedNode)
+#else __TREE_WITH_CACHE__
 	template <typename CacheType>
 	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+#endif __TREE_WITH_CACHE__
 	{
 		typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
@@ -260,6 +285,11 @@ public:
 
 		std::shared_ptr<DataNodeType> ptrLHSNode = nullptr;
 		std::shared_ptr<DataNodeType> ptrRHSNode = nullptr;
+
+#ifdef __TREE_WITH_CACHE__
+		uidAffectedNode = std::nullopt;
+		ptrAffectedNode = nullptr;
+#endif __TREE_WITH_CACHE__
 
 		size_t nChildIdx = getChildNodeIdx(key);
 
@@ -273,6 +303,11 @@ public:
 			{
 				m_vtChildren[nChildIdx - 1] = *uidUpdated;
 			}
+
+			lhs_->setDirtyFlag(true);
+
+			uidAffectedNode = m_vtChildren[nChildIdx - 1];
+			ptrAffectedNode = lhs_;
 #else __TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, lhs_);    //TODO: lock
 			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());
@@ -284,6 +319,7 @@ public:
 				ptrChild->moveAnEntityFromLHSSibling(ptrLHSNode, key);
 
 				m_vtPivots[nChildIdx - 1] = key;
+
 				return ErrorCode::Success;
 			}
 		}
@@ -298,11 +334,15 @@ public:
 			{
 				m_vtChildren[nChildIdx + 1] = *uidUpdated;
 			}
+
+			rhs_->setDirtyFlag(true);
+
+			uidAffectedNode = m_vtChildren[nChildIdx + 1];
+			ptrAffectedNode = rhs_;
 #else __TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, rhs_);    //TODO: lock
 			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 #endif __TREE_WITH_CACHE__
-
 
 			if (ptrRHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
 			{

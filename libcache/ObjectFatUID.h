@@ -27,6 +27,7 @@ public:
 
 	struct NodeUID
 	{
+		uint8_t m_nType;
 		uint8_t m_nMediaType;
 		union
 		{
@@ -61,28 +62,31 @@ public:
 		throw new std::logic_error("should not occur!");
 	}
 
-	static ObjectFatUID createAddressFromFileOffset(uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = File;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nSize= nSize;
+		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
 
 		return key;
 	}
 
-	static ObjectFatUID createAddressFromVolatilePointer(uintptr_t ptr, ...)
+	static ObjectFatUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr, ...)
 	{
 		ObjectFatUID key;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = Volatile;
 		key.m_uid.FATPOINTER.m_ptrVolatile = ptr;
 
 		return key;
 	}
 
-	static ObjectFatUID createAddressFromDRAMCacheCounter(uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
+		key.m_uid.m_nType = nType;
 		key.m_uid.m_nMediaType = DRAM;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
 		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
@@ -90,26 +94,26 @@ public:
 		return key;
 	}
 
-	bool operator==(const ObjectFatUID& rhs) const 
+	bool operator==(const ObjectFatUID& rhs) const
 	{
-        if (m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
+		if (m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
 		{
-            return false;
+			return false;
 		}
 
-		switch (m_uid.m_nMediaType) 
+		switch (m_uid.m_nMediaType)
 		{
-			case Volatile:
-				return m_uid.FATPOINTER.m_ptrVolatile == rhs.m_uid.FATPOINTER.m_ptrVolatile;
-			case DRAM:
-				return m_uid.FATPOINTER.m_ptrVolatile == rhs.m_uid.FATPOINTER.m_ptrVolatile;
-			case PMem:
-				return false;
-			case File:
-				return m_uid.FATPOINTER.m_ptrFile.m_nOffset == rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset &&
-					m_uid.FATPOINTER.m_ptrFile.m_nSize == rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
-			default:
-				return std::memcmp(this, &rhs.m_uid, sizeof(NodeUID)) == 0;
+		case Volatile:
+			return m_uid.FATPOINTER.m_ptrVolatile == rhs.m_uid.FATPOINTER.m_ptrVolatile;
+		case DRAM:
+			return m_uid.FATPOINTER.m_ptrVolatile == rhs.m_uid.FATPOINTER.m_ptrVolatile;
+		case PMem:
+			return false;
+		case File:
+			return m_uid.FATPOINTER.m_ptrFile.m_nOffset == rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset &&
+				m_uid.FATPOINTER.m_ptrFile.m_nSize == rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+		default:
+			return std::memcmp(this, &rhs.m_uid, sizeof(NodeUID)) == 0;
 		}
 
 		//Following is comiler specific!
@@ -118,29 +122,29 @@ public:
 
 	bool operator <(const ObjectFatUID& rhs) const
 	{
-        if (m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
-            return true;
-        else if (m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
-            return false;
+		if (m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
+			return true;
+		else if (m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
+			return false;
 
-		switch (m_uid.m_nMediaType) 
+		switch (m_uid.m_nMediaType)
 		{
-			case Volatile:
-				return m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
+		case Volatile:
+			return m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
 
-			case DRAM:
-				return m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
+		case DRAM:
+			return m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
 
-			case File:
-				if (m_uid.FATPOINTER.m_ptrFile.m_nOffset < rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
-					return true;
-				else if (m_uid.FATPOINTER.m_ptrFile.m_nOffset > rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
-					return false;
+		case File:
+			if (m_uid.FATPOINTER.m_ptrFile.m_nOffset < rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
+				return true;
+			else if (m_uid.FATPOINTER.m_ptrFile.m_nOffset > rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
+				return false;
 
-				return m_uid.FATPOINTER.m_ptrFile.m_nSize < rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+			return m_uid.FATPOINTER.m_ptrFile.m_nSize < rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
 
-			default:
-				return std::memcmp(this, &rhs, sizeof(NodeUID)) < 0;
+		default:
+			return std::memcmp(this, &rhs, sizeof(NodeUID)) < 0;
 		}
 
 		//Following is comiler specific!
@@ -162,7 +166,7 @@ public:
 	struct EqualFunction
 	{
 	public:
-		bool operator()(const ObjectFatUID& lhs, const ObjectFatUID& rhs) const 
+		bool operator()(const ObjectFatUID& lhs, const ObjectFatUID& rhs) const
 		{
 			if (lhs.m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
 				return true;
@@ -170,22 +174,22 @@ public:
 				return false;
 
 			switch (lhs.m_uid.m_nMediaType) {
-				case Volatile:
-					return lhs.m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
+			case Volatile:
+				return lhs.m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
 
-				case DRAM:
-					return lhs.m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
+			case DRAM:
+				return lhs.m_uid.FATPOINTER.m_ptrVolatile < rhs.m_uid.FATPOINTER.m_ptrVolatile;
 
-				case File:
-					if (lhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset < rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
-						return true;
-					else if (lhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset > rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
-						return false;
+			case File:
+				if (lhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset < rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
+					return true;
+				else if (lhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset > rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
+					return false;
 
-					return lhs.m_uid.FATPOINTER.m_ptrFile.m_nSize < rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+				return lhs.m_uid.FATPOINTER.m_ptrFile.m_nSize < rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
 
-				default:
-					return std::memcmp(&lhs, &rhs, sizeof(NodeUID)) < 0;
+			default:
+				return std::memcmp(&lhs, &rhs, sizeof(NodeUID)) < 0;
 			}
 
 			//Following is comiler specific!
@@ -257,4 +261,3 @@ namespace std {
 		}
 	};
 }
-
