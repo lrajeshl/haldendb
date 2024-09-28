@@ -23,6 +23,7 @@ private:
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ValueType>::const_iterator ValueTypeIterator;
 
+private:
 	std::vector<KeyType> m_vtKeys;
 	std::vector<ValueType> m_vtValues;
 
@@ -45,78 +46,66 @@ public:
 
 	DataNode(const char* szData)
 	{
-		size_t nKeyCount, nValueCount = 0;
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			uint16_t nTotalEntries = 0;
 
-		size_t nOffset = sizeof(uint8_t);
+			uint32_t nOffset = sizeof(uint8_t);
 
-		memcpy(&nKeyCount, szData + nOffset, sizeof(size_t));
-		nOffset += sizeof(size_t);
+			memcpy(&nTotalEntries, szData + nOffset, sizeof(uint16_t));
+			nOffset += sizeof(uint16_t);
 
-		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
-		nOffset += sizeof(size_t);
+			m_vtKeys.resize(nTotalEntries);
+			m_vtValues.resize(nTotalEntries);
 
-		m_vtKeys.resize(nKeyCount);
-		m_vtValues.resize(nValueCount);
+			uint32_t nKeysSize = nTotalEntries * sizeof(KeyType);
+			memcpy(m_vtKeys.data(), szData + nOffset, nKeysSize);
 
-		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(m_vtKeys.data(), szData + nOffset, nKeysSize);
+			nOffset += nKeysSize;
 
-		//std::vector<KeyType> vt_ints(
-		//	reinterpret_cast<const int*>(szData + nOffset),
-		//	reinterpret_cast<const int*>(szData + nOffset + nKeyCount * sizeof(KeyType))
-		//);;
-
-		nOffset += nKeysSize;
-
-		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		memcpy(m_vtValues.data(), szData + nOffset, nValuesSize);
-	}
-
-	DataNode(const char* szData, bool readonly)
-	{
-		size_t nKeyCount, nValueCount = 0;
-
-		size_t nOffset = sizeof(uint8_t);
-
-		memcpy(&nKeyCount, szData + nOffset, sizeof(size_t));
-		nOffset += sizeof(size_t);
-
-		memcpy(&nValueCount, szData + nOffset, sizeof(size_t));
-		nOffset += sizeof(size_t);
-
-		m_vtKeys.resize(nKeyCount);
-		m_vtValues.resize(nValueCount);
-
-		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		//memcpy(m_vtKeys.data(), szData + nOffset, nKeysSize);
-
-		m_vtKeys.assign(
-			reinterpret_cast<const KeyType*>(szData + nOffset),
-			reinterpret_cast<const KeyType*>(szData + nOffset + nKeysSize)
-		);
-
-		nOffset += nKeysSize;
-
-		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		//memcpy(m_vtValues.data(), szData + nOffset, nValuesSize);
-		m_vtValues.assign(
-			reinterpret_cast<const ValueType*>(szData + nOffset),
-			reinterpret_cast<const ValueType*>(szData + nOffset + nValuesSize)
-		);
+			uint32_t nValuesSize = nTotalEntries * sizeof(ValueType);
+			memcpy(m_vtValues.data(), szData + nOffset, nValuesSize);
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly implement custome de/serializer.");
+		}
 	}
 
 	DataNode(std::fstream& is)
 	{
-		size_t keyCount, valueCount;
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			uint16_t nTotalEntries = 0;
 
-		is.read(reinterpret_cast<char*>(&keyCount), sizeof(size_t));
-		is.read(reinterpret_cast<char*>(&valueCount), sizeof(size_t));
+			is.read(reinterpret_cast<char*>(&nTotalEntries), sizeof(uint16_t));
 
-		m_vtKeys.resize(keyCount);
-		m_vtValues.resize(valueCount);
+			m_vtKeys.resize(nTotalEntries);
+			m_vtValues.resize(nTotalEntries);
 
-		is.read(reinterpret_cast<char*>(m_vtKeys.data()), keyCount * sizeof(KeyType));
-		is.read(reinterpret_cast<char*>(m_vtValues.data()), valueCount * sizeof(ValueType));
+			is.read(reinterpret_cast<char*>(m_vtKeys.data()), nTotalEntries * sizeof(KeyType));
+			is.read(reinterpret_cast<char*>(m_vtValues.data()), nTotalEntries * sizeof(ValueType));
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly implement custome de/serializer.");
+		}
 	}
 
 	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
@@ -295,85 +284,79 @@ public:
 
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize) const
 	{
-		static_assert(
-			std::is_trivial<KeyType>::value &&
+		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
-			std::is_standard_layout<ValueType>::value,
-			"Can only deserialize POD types with this function");
-
-		uidObjectType = UID;
-
-		size_t nKeyCount = m_vtKeys.size();
-		size_t nValueCount = m_vtValues.size();
-
-		nBufferSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ValueType)) + sizeof(size_t) + sizeof(size_t);
-
-		szBuffer = new char[nBufferSize + 1];
-		memset(szBuffer, 0, nBufferSize + 1);
-
-		size_t nOffset = 0;
-		memcpy(szBuffer, &UID, sizeof(uint8_t));
-		nOffset += sizeof(uint8_t);
-
-		memcpy(szBuffer + nOffset, &nKeyCount, sizeof(size_t));
-		nOffset += sizeof(size_t);
-
-		memcpy(szBuffer + nOffset, &nValueCount, sizeof(size_t));
-		nOffset += sizeof(size_t);
-
-		size_t nKeysSize = nKeyCount * sizeof(KeyType);
-		memcpy(szBuffer + nOffset, m_vtKeys.data(), nKeysSize);
-		nOffset += nKeysSize;
-
-		size_t nValuesSize = nValueCount * sizeof(ValueType);
-		memcpy(szBuffer + nOffset, m_vtValues.data(), nValuesSize);
-		nOffset += nValuesSize;
-
-		assert(nBufferSize == nOffset);
-
-		SelfType* _t = new SelfType(szBuffer);
-		for (int i = 0; i < _t->m_vtKeys.size(); i++)
+			std::is_standard_layout<ValueType>::value)
 		{
-			assert(_t->m_vtKeys[i] == m_vtKeys[i]);
-		}
-		for (int i = 0; i < _t->m_vtValues.size(); i++)
-		{
-			assert(_t->m_vtValues[i] == m_vtValues[i]);
-		}
-		delete _t;
+			uidObjectType = UID;
 
-		// hint
-		/*
-		if (std::is_trivial<ObjectUIDType>::value && std::is_standard_layout<ObjectUIDType>::value)
-		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::NodeUID));
+			uint16_t nTotalEntries = m_vtKeys.size();
+
+			nBufferSize = sizeof(uint8_t)				// UID
+				+ sizeof(uint16_t)						// Total entries
+				+ (nTotalEntries * sizeof(KeyType))		// Size of all keys
+				+ (nTotalEntries * sizeof(ValueType));	// Size of all values
+
+			szBuffer = new char[nBufferSize + 1];
+			memset(szBuffer, 0, nBufferSize + 1);
+
+			uint16_t nOffset = 0;
+			memcpy(szBuffer, &UID, sizeof(uint8_t));
+			nOffset += sizeof(uint8_t);
+
+			memcpy(szBuffer + nOffset, &nTotalEntries, sizeof(uint16_t));
+			nOffset += sizeof(uint16_t);
+
+			uint16_t nKeysSize = nTotalEntries * sizeof(KeyType);
+			memcpy(szBuffer + nOffset, m_vtKeys.data(), nKeysSize);
+			nOffset += nKeysSize;
+
+			uint16_t nValuesSize = nTotalEntries * sizeof(ValueType);
+			memcpy(szBuffer + nOffset, m_vtValues.data(), nValuesSize);
+			nOffset += nValuesSize;
+		}
 		else
-		os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(ObjectUIDType::PODType));
-
-		*/
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly implement custome de/serializer.");
+		}
 	}
 
 	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, size_t& nDataSize) const
 	{
-		static_assert(
-			std::is_trivial<KeyType>::value &&
+		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
-			std::is_standard_layout<ValueType>::value,
-			"Can only deserialize POD types with this function");
+			std::is_standard_layout<ValueType>::value)
+		{
+			uidObjectType = SelfType::UID;
 
-		uidObjectType = SelfType::UID;
+			uint16_t nTotalEntries = m_vtKeys.size();
 
-		size_t nKeyCount = m_vtKeys.size();
-		size_t nValueCount = m_vtValues.size();
+			nDataSize = sizeof(uint8_t)					// UID
+				+ sizeof(uint16_t)						// Total entries
+				+ (nTotalEntries * sizeof(KeyType))		// Size of all keys
+				+ (nTotalEntries * sizeof(ValueType));	// Size of all values
 
-		nDataSize = sizeof(uint8_t) + (nKeyCount * sizeof(KeyType)) + (nValueCount * sizeof(ValueType)) + sizeof(size_t) + sizeof(size_t);
-
-		os.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
-		os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(size_t));
-		os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(size_t));
-		os.write(reinterpret_cast<const char*>(m_vtKeys.data()), nKeyCount * sizeof(KeyType));
-		os.write(reinterpret_cast<const char*>(m_vtValues.data()), nValueCount * sizeof(ValueType));
+			os.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
+			os.write(reinterpret_cast<const char*>(&nTotalEntries), sizeof(uint16_t));
+			os.write(reinterpret_cast<const char*>(m_vtKeys.data()), nTotalEntries * sizeof(KeyType));
+			os.write(reinterpret_cast<const char*>(m_vtValues.data()), nTotalEntries * sizeof(ValueType));
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly implement custome de/serializer.");
+		}
 	}
 
 public:

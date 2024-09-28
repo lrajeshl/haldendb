@@ -17,19 +17,19 @@
 
 using namespace std;
 
-template <typename KeyType, typename ValueType, typename ObjectUIDType, typename NVMIndexNode, typename DRAMIndexNode, uint8_t TYPE_UID>
+template <typename KeyType, typename ValueType, typename ObjectUIDType, typename NVMIndexNode, typename DRAMIndexNode, typename DataNodeType, uint8_t TYPE_UID>
 class NVMROIndexNode
 {
 public:
 	static const uint8_t UID = TYPE_UID;
 	
 private:
-	typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, NVMIndexNode, DRAMIndexNode, TYPE_UID> SelfType;
+	typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, NVMIndexNode, DRAMIndexNode, DataNodeType, TYPE_UID> SelfType;
 
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ObjectUIDType>::const_iterator CacheKeyTypeIterator;
 
-private:
+public:
 	std::shared_ptr<DRAMIndexNode> m_ptrDRAMIndexNode;
 	std::shared_ptr<const NVMIndexNode> m_ptrNVMIndexNode;
 
@@ -77,8 +77,8 @@ public:
 			if (m_ptrNVMIndexNode != nullptr)
 			{
 				m_ptrDRAMIndexNode = std::make_shared<DRAMIndexNode>(
-					m_ptrNVMIndexNode->m_ptrData->m_vtPivots.begin(), m_ptrNVMIndexNode->m_ptrData->m_vtPivots.end(),
-					m_ptrNVMIndexNode->m_ptrData->m_vtChildren.begin(), m_ptrNVMIndexNode->m_ptrData->m_vtChildren.end());
+					m_ptrNVMIndexNode->m_vtPivots.begin(), m_ptrNVMIndexNode->m_vtPivots.end(),
+					m_ptrNVMIndexNode->m_vtChildren.begin(), m_ptrNVMIndexNode->m_vtChildren.end());
 
 				m_ptrNVMIndexNode.reset();
 			}
@@ -94,18 +94,37 @@ public:
 		return m_ptrDRAMIndexNode->insert(pivotKey, uidSibling);
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	template <typename CacheType>
+	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete, std::optional<ObjectUIDType>& uidAffectedNode, CacheType::ObjectTypePtr& ptrAffectedNode)
+#else __TREE_WITH_CACHE__
 	template <typename CacheType, typename ObjectCoreType>
-	inline ErrorCode rebalanceIndexNode(CacheType ptrCache, const ObjectUIDType& uidChild, ObjectCoreType ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+#endif __TREE_WITH_CACHE__
 	{
 		moveDataToDRAM();
+
+#ifdef __TREE_WITH_CACHE__
+		return m_ptrDRAMIndexNode->template rebalanceIndexNode<CacheType>(ptrCache, uidChild, ptrChild->m_ptrDRAMIndexNode, key, nDegree, uidObjectToDelete, uidAffectedNode, ptrAffectedNode);
+#else __TREE_WITH_CACHE__
 		return m_ptrDRAMIndexNode->rebalanceIndexNode(ptrCache, uidChild, ptrChild, key, nDegree, uidObjectToDelete);
+#endif __TREE_WITH_CACHE__
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	template <typename CacheType>
+	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete, std::optional<ObjectUIDType>& uidAffectedNode, CacheType::ObjectTypePtr& ptrAffectedNode)
+#else __TREE_WITH_CACHE__
 	template <typename CacheType, typename ObjectCoreType>
-	inline ErrorCode rebalanceDataNode(CacheType ptrCache, const ObjectUIDType& uidChild, ObjectCoreType ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
+#endif __TREE_WITH_CACHE__
 	{
 		moveDataToDRAM();
+#ifdef __TREE_WITH_CACHE__
+		return m_ptrDRAMIndexNode->template rebalanceDataNode<CacheType>(ptrCache, uidChild, ptrChild->m_ptrDRAMDataNode, key, nDegree, uidObjectToDelete, uidAffectedNode, ptrAffectedNode);
+#else __TREE_WITH_CACHE__
 		return m_ptrDRAMIndexNode->rebalanceDataNode(ptrCache, uidChild, ptrChild, key, nDegree, uidObjectToDelete);
+#endif __TREE_WITH_CACHE__
 	}
 
 	inline size_t getKeysCount() 
@@ -172,8 +191,8 @@ public:
 		return m_ptrDRAMIndexNode->requireMerge(nDegree);
 	}
 
-	template <typename Cache>
-	inline ErrorCode split(Cache ptrCache, std::optional<ObjectUIDType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType, typename CacheObjectTypePtr>
+	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSiblingy, KeyType& pivotKeyForParent)
 	{
 		std::shared_ptr<SelfType> ptrSibling = nullptr;
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);

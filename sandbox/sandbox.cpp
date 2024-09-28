@@ -30,7 +30,6 @@
 #include "NVMRODataNode.hpp"
 #include "NVMROIndexNode.hpp"
 
-
 #ifdef __CONCURRENT__
 
 template <typename BPlusStoreType, typename IndexNodeType, typename DataNodeType>
@@ -184,8 +183,14 @@ void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 1)
         {
             //std::cout << nCntr << ",";
-            ptrTree->insert(nCntr, nCntr);
+            ErrorCode code = ptrTree->insert(nCntr, nCntr);
+            assert(code == ErrorCode::Success);
         }
+
+        //std::ofstream out_1("d:\\tree_post_insert_0.txt");
+        //ptrTree->print(out_1);
+        //out_1.flush();
+        //out_1.close();
 
         for (size_t nCntr = 0; nCntr < total_entries; nCntr++)
         {
@@ -380,7 +385,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 50000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 10000);
 #endif __TREE_WITH_CACHE__
         }
         {
@@ -390,10 +395,10 @@ void test_for_ints()
             //typedef ObjectFatUID ObjectUIDType;
 
             //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
-            //typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+            //typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
             //typedef NVMRODataNode<KeyType, ValueType, ObjectUIDType, DataNodeType, DataNodeType, TYPE_UID::DATA_NODE_INT_INT> NVMRODataNodeType;
-            //typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
+            //typedef NVMROIndexNode<KeyType, ValueType, ObjectUIDType, IndexNodeType, IndexNodeType, NVMRODataNodeType, TYPE_UID::INDEX_NODE_INT_INT> NVMROIndexNodeType;
 
             //typedef LRUCacheObject<TypeMarshaller, NVMRODataNodeType, NVMROIndexNodeType> ObjectType;
             //typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
@@ -418,10 +423,10 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 5000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000);
 #endif __TREE_WITH_CACHE__
         }
 
@@ -438,10 +443,10 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 1000, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
             ptrTree->init<DataNodeType>(); 
             
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 10000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 100000);
 #endif __TREE_WITH_CACHE__
         }
         std::cout << std::endl;
@@ -513,7 +518,7 @@ void test_for_string()
 void test_for_threaded()
 {
 #ifdef __CONCURRENT__
-    for (int idx = 3; idx < 20; idx++) {
+    for (int idx = 3; idx < 60; idx++) {
         std::cout << "iteration.." << idx << std::endl;
         {
 #ifndef __TREE_WITH_CACHE__
@@ -528,7 +533,7 @@ void test_for_threaded()
             BPlusStoreType ptrTree(idx);
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 8);
 #endif __TREE_WITH_CACHE__
 
         }
@@ -569,10 +574,10 @@ void test_for_threaded()
 
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024);
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);
 #endif __TREE_WITH_CACHE__
         }
         {
@@ -588,10 +593,10 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
-            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 3 * 10000, 10);
+            threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);
 #endif __TREE_WITH_CACHE__
         }
     }
@@ -600,12 +605,12 @@ void test_for_threaded()
 
 int main(int argc, char* argv[])
 {
-    for (int i = 0; i < 10; i++) {
-        //test_for_ints();
-        //test_for_string();
+    for (int i = 0; i < 100; i++) {
+        test_for_ints();
+        test_for_string();
         test_for_threaded();
     }
-
+    return 0;
     typedef int KeyType;
     typedef int ValueType;
 
@@ -709,4 +714,3 @@ int main(int argc, char* argv[])
     char ch = getchar();
     return 0;
 }
-

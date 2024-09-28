@@ -23,7 +23,7 @@ private:
 	typedef std::vector<KeyType>::const_iterator KeyTypeIterator;
 	typedef std::vector<ValueType>::const_iterator ValueTypeIterator;
 
-private:
+public:
 	std::shared_ptr<DRAMDataNode> m_ptrDRAMDataNode;
 	std::shared_ptr<const NVMDataNode> m_ptrNVMDataNode;
 
@@ -64,8 +64,8 @@ public:
 			if (m_ptrNVMDataNode != nullptr)
 			{
 				m_ptrDRAMDataNode = std::make_shared<DRAMDataNode>(
-					m_ptrNVMDataNode->m_ptrData->m_vtKeys.begin(), m_ptrNVMDataNode->m_ptrData->m_vtKeys.end(),
-					m_ptrNVMDataNode->m_ptrData->m_vtValues.begin(), m_ptrNVMDataNode->m_ptrData->m_vtValues.end());
+					m_ptrNVMDataNode->m_vtKeys.begin(), m_ptrNVMDataNode->m_vtKeys.end(),
+					m_ptrNVMDataNode->m_vtValues.begin(), m_ptrNVMDataNode->m_vtValues.end());
 
 				m_ptrNVMDataNode.reset();
 			}
@@ -119,10 +119,10 @@ public:
 		return m_ptrDRAMDataNode->getValue(key, value);
 	}
 
-	template <typename Cache, typename CacheKeyType>
-	inline ErrorCode split(Cache ptrCache, std::optional<CacheKeyType>& uidSibling, KeyType& pivotKeyForParent)
+	template <typename CacheType, typename CacheObjectTypePtr>
+	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 	{
-		std::shared_ptr<SelfType> ptrSibling = nullptr;
+		//std::shared_ptr<SelfType> ptrSibling = nullptr;
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling);
 
 		if (!uidSibling)
@@ -133,7 +133,9 @@ public:
 
 		moveDataToDRAM();
 
-		return m_ptrDRAMDataNode->split(ptrSibling->m_ptrDRAMDataNode, pivotKeyForParent);
+		std::shared_ptr<SelfType> ptrInnerData = std::get<std::shared_ptr<SelfType>>(ptrSibling->getInnerData());
+
+		return m_ptrDRAMDataNode->split(ptrInnerData->m_ptrDRAMDataNode, pivotKeyForParent);
 	}
 
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)

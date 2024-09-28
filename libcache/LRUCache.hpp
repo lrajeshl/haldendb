@@ -238,10 +238,13 @@ public:
 		return CacheErrorCode::Error;
 	}
 
-	CacheErrorCode reorder(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vt, bool ensure = true)
+	// This method reorders the recently access objects. 
+	// It is necessary to ensure that the objects are flushed in order otherwise a child object (data node) may preceed its parent (internal node).
+	CacheErrorCode reorder(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vt, bool bEnsure = true)
 	{
+		// TODO: Need optimization.
 #ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache); // std::unique_lock due to LRU's linked-list update! is there any better way?
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
 		while (vt.size() > 0)
@@ -251,18 +254,51 @@ public:
 			if (m_mpObjects.find(prNode.first) != m_mpObjects.end())
 			{
 				std::shared_ptr<Item> ptrItem = m_mpObjects[prNode.first];
-				moveToFront(ptrItem);
+				moveToFront(ptrItem);	//TODO: How about passing whole list together and re-arrange the list?
 			}
 			else
 			{
-				if (ensure) 
+				if (bEnsure)
 				{
-					throw new std::logic_error("should not occur!");
+					throw new std::logic_error("Fatal Error. The expected item is missing in cache.");
 				}
 			}
 
 			vt.pop_back();
 		}
+
+		return CacheErrorCode::Success;
+	}
+
+	CacheErrorCode reorderOpt(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vtObjects, bool bEnsure = true)
+	{
+		size_t _test = vtObjects.size();
+		std::vector<std::shared_ptr<Item>> vtItems;
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
+
+		while (vtObjects.size() > 0)
+		{
+			std::pair<ObjectUIDType, ObjectTypePtr> prObject = vtObjects.back();
+
+			if (m_mpObjects.find(prObject.first) != m_mpObjects.end())
+			{
+				vtItems.emplace_back(m_mpObjects[prObject.first]);
+			}
+
+			vtObjects.pop_back();
+		}
+
+		if (bEnsure)
+		{
+			assert(_test == vtItems.size());
+		}
+		if (vtItems.size() > 1)
+			moveToFront(vtItems);
+		else
+			moveToFront(vtItems[0]);
 
 		return CacheErrorCode::Success;
 	}
@@ -748,6 +784,76 @@ private:
 			m_ptrHead->m_ptrPrev = ptrItem;
 		}
 		m_ptrHead = ptrItem;
+	}
+
+	inline void moveToFront(const std::vector<std::shared_ptr<Item>>& itemList)
+	{
+		if (itemList.empty())
+		{
+			return;
+		}
+
+		// Step 1: Rearrange the items within the vector
+		for (size_t i = 0; i < itemList.size(); i++)
+		{
+			if (i > 0 && itemList[i - 1] == itemList[i]) {
+				//throw new std::logic_error("should not occur!");
+				continue;
+			}
+
+			auto ptrItem = itemList[i];
+
+			// Detach the item from its current neighbors in the linked list
+			if (ptrItem->m_ptrPrev)
+			{
+				ptrItem->m_ptrPrev->m_ptrNext = ptrItem->m_ptrNext;
+			}
+
+			if (ptrItem->m_ptrNext)
+			{
+				ptrItem->m_ptrNext->m_ptrPrev = ptrItem->m_ptrPrev;
+			}
+
+			// If the item is the tail, update the tail pointer
+			if (ptrItem == m_ptrTail)
+			{
+				m_ptrTail = ptrItem->m_ptrPrev;
+				//m_ptrTail->m_ptrNext = nullptr;
+			}
+
+			if (ptrItem == m_ptrHead)
+			{
+				m_ptrHead = ptrItem->m_ptrNext;
+				m_ptrHead->m_ptrPrev = nullptr;
+			}
+
+			// Prepare the item for its new position
+			ptrItem->m_ptrPrev = (i > 0) ? itemList[i - 1] : nullptr;  // Previous item in the list
+			ptrItem->m_ptrNext = (i < itemList.size() - 1) ? itemList[i + 1] : nullptr;  // Next item in the list
+		}
+
+		// Step 2: Link the rearranged items to the front of the linked list
+
+		auto firstItem = itemList.front();
+		auto lastItem = itemList.back();
+
+		firstItem->m_ptrPrev = nullptr;
+		lastItem->m_ptrNext = m_ptrHead;
+
+		// Connect the last item in the vector to the current head of the linked list
+		if (m_ptrHead)
+		{
+			m_ptrHead->m_ptrPrev = lastItem;
+		}
+
+		//lastItem->m_ptrNext = m_ptrHead;
+		m_ptrHead = firstItem;  // The first item becomes the new head
+
+		// Step 3: If the list was empty, also set the tail
+		if (!m_ptrTail)
+		{
+			m_ptrTail = lastItem;
+		}
 	}
 
 	inline void removeFromLRU(std::shared_ptr<Item> ptrItem)

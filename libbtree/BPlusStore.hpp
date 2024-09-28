@@ -284,11 +284,8 @@ public:
             {
                 throw new std::logic_error("should not occur!");
             }
-#endif __TREE_WITH_CACHE__
-        }
-
-#ifdef __TREE_WITH_CACHE__
-        if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
+        } 
+        else if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
         {
             bool test = false;
             for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
