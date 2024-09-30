@@ -11,6 +11,8 @@
 #include <assert.h>
 #include "ErrorCodes.h"
 
+//#define DEFAULT_ITEMS_IN_DATA_NODE 100 TODO: Uncomment and set it properly
+
 template <typename KeyType, typename ValueType, typename ObjectUIDType, uint8_t TYPE_UID>
 class DataNode
 {
@@ -27,6 +29,10 @@ private:
 	std::vector<KeyType> m_vtKeys;
 	std::vector<ValueType> m_vtValues;
 
+#ifdef __TREE_WITH_CACHE__
+	std::optional<ObjectUIDType> m_uidParentNode;
+#endif __TREE_WITH_CACHE__
+
 public:
 	~DataNode()
 	{
@@ -35,16 +41,30 @@ public:
 	}
 
 	DataNode()
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
 	}
 
 	DataNode(const DataNode& source)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(source.m_uidParentNode)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+
 		m_vtKeys.assign(source.m_vtKeys.begin(), source.m_vtKeys.end());
 		m_vtValues.assign(source.m_vtValues.begin(), source.m_vtValues.end());
 	}
 
 	DataNode(const char* szData)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -81,6 +101,9 @@ public:
 	}
 
 	DataNode(std::fstream& is)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -108,8 +131,16 @@ public:
 		}
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues, const std::optional<ObjectUIDType> uidParentNode)
+		: m_uidParentNode(uidParentNode)
+#else __TREE_WITH_CACHE__
 	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+
 		m_vtKeys.assign(itBeginKeys, itEndKeys);
 		m_vtValues.assign(itBeginValues, itEndValues);
 	}
@@ -195,9 +226,15 @@ public:
 	{
 		size_t nMid = m_vtKeys.size() / 2;
 
+#ifdef __TREE_WITH_CACHE__
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
+			m_vtKeys.begin() + nMid, m_vtKeys.end(),
+			m_vtValues.begin() + nMid, m_vtValues.end(), m_uidParentNode);
+#else __TREE_WITH_CACHE__
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_vtKeys.begin() + nMid, m_vtKeys.end(),
 			m_vtValues.begin() + nMid, m_vtValues.end());
+#endif __TREE_WITH_CACHE__
 
 		if (!uidSibling)
 		{
@@ -216,8 +253,13 @@ public:
 	{
 		size_t nMid = m_vtKeys.size() / 2;
 
+#ifdef __TREE_WITH_CACHE__
+		ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
+		ptrSibling->m_vtValues.assign(m_vtValues.begin() + nMid, m_vtValues.end(), m_uidParentNode);
+#else __TREE_WITH_CACHE__
 		ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
 		ptrSibling->m_vtValues.assign(m_vtValues.begin() + nMid, m_vtValues.end());
+#endif __TREE_WITH_CACHE__
 
 		pivotKeyForParent = m_vtKeys[nMid];
 
@@ -358,6 +400,23 @@ public:
 				"Non-POD type is provided. Kindly implement custome de/serializer.");
 		}
 	}
+
+#ifdef __TREE_WITH_CACHE__
+	inline const std::optional<ObjectUIDType>& getParentUID() const
+	{
+		return m_uidParentNode;
+	}
+
+	inline void updateParentUID(const ObjectUIDType& uidParentNode)
+	{
+		this->m_uidParentNode = uidParentNode;
+	}
+
+	inline void setParentUID(const ObjectUIDType& uidParentNode)
+	{
+		m_uidParentNode = uidParentNode;
+	}
+#endif __TREE_WITH_CACHE__
 
 public:
 	void print(std::ofstream& out, size_t nLevel, std::string prefix)

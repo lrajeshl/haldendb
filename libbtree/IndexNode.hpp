@@ -15,6 +15,8 @@
 
 #include "ErrorCodes.h"
 
+//#define DEFAULT_ITEMS_IN_INDEX_NODE 100 TODO: Uncomment and set it properly
+
 using namespace std;
 
 template <typename KeyType, typename ValueType, typename ObjectUIDType, typename DataNodeType, uint8_t TYPE_UID>
@@ -33,6 +35,10 @@ private:
 	std::vector<KeyType> m_vtPivots;
 	std::vector<ObjectUIDType> m_vtChildren;
 
+#ifdef __TREE_WITH_CACHE__
+	std::optional<ObjectUIDType> m_uidParentNode;
+#endif __TREE_WITH_CACHE__
+
 public:
 	~IndexNode()
 	{
@@ -41,16 +47,30 @@ public:
 	}
 
 	IndexNode()
-	{	
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
+	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
 	}
 
 	IndexNode(const IndexNode& source)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(source.m_uidParentNode)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+
 		m_vtPivots.assign(source.m_vtPivots.begin(), source.m_vtPivots.end());
 		m_vtChildren.assign(source.m_vtChildren.begin(), source.m_vtChildren.end());
 	}
 
 	IndexNode(const char* szData)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -89,6 +109,9 @@ public:
 	}
 
 	IndexNode(std::fstream& is)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -116,14 +139,28 @@ public:
 		}
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren, std::optional<ObjectUIDType> uidParentNode)
+		: m_uidParentNode(uidParentNode)
+#else __TREE_WITH_CACHE__
 	IndexNode(KeyTypeIterator itBeginPivots, KeyTypeIterator itEndPivots, CacheKeyTypeIterator itBeginChildren, CacheKeyTypeIterator itEndChildren)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+
 		m_vtPivots.assign(itBeginPivots, itEndPivots);
 		m_vtChildren.assign(itBeginChildren, itEndChildren);
 	}
 
 	IndexNode(const KeyType& pivotKey, const ObjectUIDType& ptrLHSNode, const ObjectUIDType& ptrRHSNode)
+#ifdef __TREE_WITH_CACHE__
+		: m_uidParentNode(std::nullopt)
+#endif __TREE_WITH_CACHE__
 	{
+		//m_vtKeys.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+		//m_vtValues.reserve(DEFAULT_ITEMS_IN_DATA_NODE);
+
 		m_vtPivots.push_back(pivotKey);
 		m_vtChildren.push_back(ptrLHSNode);
 		m_vtChildren.push_back(ptrRHSNode);
@@ -195,7 +232,7 @@ public:
 			if (ptrLHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))	// TODO: macro?
 			{
 				KeyType key;
-				ptrChild->moveAnEntityFromLHSSibling(ptrLHSNode, m_vtPivots[nChildIdx - 1], key);
+				ptrChild->template moveAnEntityFromLHSSibling<CacheType>(ptrCache, uidChild, ptrLHSNode, m_vtPivots[nChildIdx - 1], key);
 
 				m_vtPivots[nChildIdx - 1] = key;
 				return ErrorCode::Success;
@@ -228,7 +265,7 @@ public:
 			if (ptrRHSNode->getKeysCount() > std::ceil(nDegree / 2.0f))
 			{
 				KeyType key;
-				ptrChild->moveAnEntityFromRHSSibling(ptrRHSNode, m_vtPivots[nChildIdx], key);
+				ptrChild->template moveAnEntityFromRHSSibling<CacheType>(ptrCache, uidChild, ptrRHSNode, m_vtPivots[nChildIdx], key);
 
 				m_vtPivots[nChildIdx] = key;
 				return ErrorCode::Success;
@@ -240,6 +277,8 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());	//Lock acquired twice!!! merge the respective sections!
 #endif __CONCURRENT__
+
+			ptrChild->template updateChildrenParentUID<CacheType>(ptrCache, m_vtChildren[nChildIdx - 1]);
 
 			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
 
@@ -262,6 +301,8 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 #endif __CONCURRENT__
+
+			ptrRHSNode->template updateChildrenParentUID<CacheType>(ptrCache, uidChild);
 
 			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
 
@@ -468,9 +509,15 @@ public:
 	{
 		size_t nMid = m_vtPivots.size() / 2;
 
+#ifdef __TREE_WITH_CACHE__
+		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
+			m_vtPivots.begin() + nMid + 1, m_vtPivots.end(),
+			m_vtChildren.begin() + nMid + 1, m_vtChildren.end(), m_uidParentNode);
+#else __TREE_WITH_CACHE__
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
 			m_vtPivots.begin() + nMid + 1, m_vtPivots.end(),
 			m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
+#endif __TREE_WITH_CACHE__
 
 		if (!uidSibling)
 		{
@@ -500,7 +547,12 @@ public:
 		return ErrorCode::Success;
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	template <typename CacheType>
+	inline void moveAnEntityFromLHSSibling(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uidSelf, shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
+#else __TREE_WITH_CACHE__
 	inline void moveAnEntityFromLHSSibling(shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
+#endif __TREE_WITH_CACHE__
 	{
 		KeyType key = ptrLHSSibling->m_vtPivots.back();
 		ObjectUIDType value = ptrLHSSibling->m_vtChildren.back();
@@ -516,10 +568,41 @@ public:
 		m_vtPivots.insert(m_vtPivots.begin(), pivotKeyForEntity);
 		m_vtChildren.insert(m_vtChildren.begin(), value);
 
+#ifdef __TREE_WITH_CACHE__
+		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+
+		ObjectTypePtr ptrChildNode = nullptr;
+
+		std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+		ptrCache->tryGetObjectFromCacheOnly(value, ptrChildNode, uidUpdated);
+
+		if (ptrChildNode != nullptr)
+		{
+#ifdef __CONCURRENT__
+			std::unique_lock<std::shared_mutex> lock(ptrChildNode->getMutex());
+#endif __CONCURRENT__
+
+			if (uidUpdated != std::nullopt)
+			{
+				m_vtChildren[0] = *uidUpdated;
+			}
+
+			std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
+			ptrDataNode->setParentUID(uidSelf);
+
+			ptrChildNode->setDirtyFlag(true);
+		}
+#endif __TREE_WITH_CACHE__
+
 		pivotKeyForParent = key;
 	}
 
+#ifdef __TREE_WITH_CACHE__
+	template <typename CacheType>
+	inline void moveAnEntityFromRHSSibling(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uidSelf, shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
+#else __TREE_WITH_CACHE__
 	inline void moveAnEntityFromRHSSibling(shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent)
+#endif __TREE_WITH_CACHE__
 	{
 		KeyType key = ptrRHSSibling->m_vtPivots.front();
 		ObjectUIDType value = ptrRHSSibling->m_vtChildren.front();
@@ -534,6 +617,32 @@ public:
 
 		m_vtPivots.push_back(pivotKeyForEntity);
 		m_vtChildren.push_back(value);
+
+#ifdef __TREE_WITH_CACHE__
+		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+
+		ObjectTypePtr ptrChildNode = nullptr;
+
+		std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+		ptrCache->tryGetObjectFromCacheOnly(value, ptrChildNode, uidUpdated);
+
+		if (ptrChildNode != nullptr)
+		{
+#ifdef __CONCURRENT__
+			std::unique_lock<std::shared_mutex> lock(ptrChildNode->getMutex());
+#endif __CONCURRENT__
+
+			if (uidUpdated != std::nullopt)
+			{
+				m_vtChildren[m_vtChildren.size() - 1] = *uidUpdated;
+			}
+
+			std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
+			ptrDataNode->setParentUID(uidSelf);
+
+			ptrChildNode->setDirtyFlag(true);
+		}
+#endif __TREE_WITH_CACHE__
 
 		pivotKeyForParent = key;// ptrRHSSibling->m_vtPivots.front();
 	}
@@ -713,6 +822,103 @@ public:
 	{
 		return m_vtChildren.end();
 	}
+
+#ifdef __TREE_WITH_CACHE__
+	inline const std::optional<ObjectUIDType>& getParentUID() const
+	{
+		return m_uidParentNode;
+	}
+
+	inline void updateParentUID(const ObjectUIDType& uidParentNode)
+	{
+		this->m_uidParentNode = uidParentNode;
+	}
+
+	inline void setParentUID(const ObjectUIDType& uidParentNode)
+	{
+		m_uidParentNode = uidParentNode;
+	}
+
+	template <typename CacheType>
+	void updateChildrenParentUID(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uid)
+	{
+		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+
+		auto it = m_vtChildren.begin();
+		while (it != m_vtChildren.end())
+		{
+			ObjectTypePtr ptrNode = nullptr;
+			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+#ifdef __TREE_WITH_CACHE__
+			ptrCache->tryGetObjectFromCacheOnly(*it, ptrNode, uidUpdated);	//lockless variant..
+#endif __TREE_WITH_CACHE__
+
+			if (ptrNode != nullptr)
+			{
+#ifdef __CONCURRENT__
+				std::unique_lock<std::shared_mutex> lock(ptrNode->getMutex());
+#endif __CONCURRENT__
+
+				if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrNode->getInnerData()))
+				{
+					std::shared_ptr<SelfType> ptrIndexNode = std::get<std::shared_ptr<SelfType>>(ptrNode->getInnerData());
+					ptrIndexNode->updateParentUID(uid);
+				}
+				else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrNode->getInnerData()))
+				{
+					std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrNode->getInnerData());
+					ptrDataNode->updateParentUID(uid);
+				}
+			}
+
+			it++;
+		}
+
+		// unlock ptrCache->template
+
+
+
+		//throw new std::logic_error("should not occur!");
+	}
+
+	template <typename CacheType, typename CacheObjectTypePtr>
+	void updateFirstChildParentUID(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uid)
+	{
+		// lock ptrCache->template
+
+		//auto it = m_vtChildren.begin();
+		//while (it != m_vtChildren.end())
+		{
+			CacheObjectTypePtr ptrNode = nullptr;
+			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
+#ifdef __TREE_WITH_CACHE__
+			ptrCache->tryGetObjectFromCacheOnly(m_vtChildren[0], ptrNode, uidUpdated);	//lockless variant..
+#endif __TREE_WITH_CACHE__
+
+			if (ptrNode != nullptr)
+			{
+				if (std::holds_alternative<std::shared_ptr<SelfType>>(*ptrNode->data))
+				{
+					std::shared_ptr<SelfType> ptrIndexNode = std::get<std::shared_ptr<SelfType>>(*ptrNode->data);
+					ptrIndexNode->updateParentUID(uid);
+				}
+				else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(*ptrNode->data))
+				{
+					std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(*ptrNode->data);
+					ptrDataNode->updateParentUID(uid);
+				}
+			}
+
+			//it++;
+		}
+
+		// unlock ptrCache->template
+
+
+
+		//throw new std::logic_error("should not occur!");
+	}
+#endif __TREE_WITH_CACHE__
 
 public:
 	template <typename CacheType, typename ObjectType>

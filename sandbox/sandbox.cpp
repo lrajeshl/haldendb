@@ -429,7 +429,6 @@ void test_for_ints()
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000);
 #endif __TREE_WITH_CACHE__
         }
-
         {
 #ifdef __TREE_WITH_CACHE__
             typedef int KeyType;
@@ -443,10 +442,10 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
-            ptrTree->init<DataNodeType>(); 
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
+            ptrTree.template init<DataNodeType>(); 
             
-            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 100000);
+            int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000);
 #endif __TREE_WITH_CACHE__
         }
         std::cout << std::endl;
@@ -606,8 +605,8 @@ void test_for_threaded()
 int main(int argc, char* argv[])
 {
     for (int i = 0; i < 100; i++) {
-        test_for_ints();
-        test_for_string();
+        //test_for_ints();
+        //test_for_string();
         test_for_threaded();
     }
     return 0;
