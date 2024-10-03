@@ -113,6 +113,11 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
 
         vtThreads.clear();
 
+        std::ofstream out_1("d:\\tree_post_insert_0.txt");
+ptrTree->print(out_1);
+out_1.flush();
+out_1.close();
+
         for (int nIdx = 0; nIdx < thread_count; nIdx++)
         {
             int nTotal = total_entries / thread_count;
@@ -573,7 +578,7 @@ void test_for_threaded()
 
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024);
+            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024);
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);
@@ -592,7 +597,7 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 1000, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);

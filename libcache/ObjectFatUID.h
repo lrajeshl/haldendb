@@ -96,7 +96,8 @@ public:
 
 	bool operator==(const ObjectFatUID& rhs) const
 	{
-		if (m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
+		if (m_uid.m_nType != rhs.m_uid.m_nType
+			|| m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
 		{
 			return false;
 		}
@@ -122,6 +123,11 @@ public:
 
 	bool operator <(const ObjectFatUID& rhs) const
 	{
+		if (m_uid.m_nType < rhs.m_uid.m_nType)
+			return true;
+		else if (m_uid.m_nType > rhs.m_uid.m_nType)
+			return false;
+
 		if (m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
 			return true;
 		else if (m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
@@ -156,7 +162,8 @@ public:
 	public:
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
-			return std::hash<uint8_t>()(rhs.m_uid.m_nMediaType)
+			return std::hash<uint8_t>()(rhs.m_uid.m_nType)
+				^ std::hash<uint8_t>()(rhs.m_uid.m_nMediaType)
 				^ std::hash<uintptr_t>()(rhs.m_uid.FATPOINTER.m_ptrVolatile)
 				^ std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
 				^ std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize);
@@ -168,6 +175,11 @@ public:
 	public:
 		bool operator()(const ObjectFatUID& lhs, const ObjectFatUID& rhs) const
 		{
+			if (lhs.m_uid.m_nType < rhs.m_uid.m_nType)
+				return true;
+			else if (lhs.m_uid.m_nType > rhs.m_uid.m_nType)
+				return false;
+
 			if (lhs.m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
 				return true;
 			else if (lhs.m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
@@ -238,6 +250,7 @@ namespace std {
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
 			size_t hashValue = 0;
+			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nType);
 			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nMediaType);
 
 			switch (rhs.m_uid.m_nMediaType)

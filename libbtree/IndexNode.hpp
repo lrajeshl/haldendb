@@ -278,7 +278,8 @@ public:
 			std::unique_lock<std::shared_mutex> lock(lhs_->getMutex());	//Lock acquired twice!!! merge the respective sections!
 #endif __CONCURRENT__
 
-			ptrChild->template updateChildrenParentUID<CacheType>(ptrCache, m_vtChildren[nChildIdx - 1]);
+			std::vector<ObjectUIDType> vtAffectedNodes;
+			ptrChild->template updateChildrenParentUID<CacheType>(ptrCache, m_vtChildren[nChildIdx - 1], vtAffectedNodes);
 
 			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
 
@@ -302,7 +303,8 @@ public:
 			std::unique_lock<std::shared_mutex> lock(rhs_->getMutex());
 #endif __CONCURRENT__
 
-			ptrRHSNode->template updateChildrenParentUID<CacheType>(ptrCache, uidChild);
+			std::vector<ObjectUIDType> vtAffectedNodes;
+			ptrRHSNode->template updateChildrenParentUID<CacheType>(ptrCache, uidChild, vtAffectedNodes);
 
 			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
 
@@ -587,8 +589,16 @@ public:
 				m_vtChildren[0] = *uidUpdated;
 			}
 
-			std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
-			ptrDataNode->setParentUID(uidSelf);
+			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData()))
+			{
+				std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
+				ptrDataNode->setParentUID(uidSelf);
+			}
+			else // if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrChildNode->getInnerData()))
+			{
+				std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrChildNode->getInnerData());
+				ptrDataNode->setParentUID(uidSelf);
+			}
 
 			ptrChildNode->setDirtyFlag(true);
 		}
@@ -637,8 +647,16 @@ public:
 				m_vtChildren[m_vtChildren.size() - 1] = *uidUpdated;
 			}
 
-			std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
-			ptrDataNode->setParentUID(uidSelf);
+			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData()))
+			{
+				std::shared_ptr<SelfType> ptrDataNode = std::get<std::shared_ptr<SelfType>>(ptrChildNode->getInnerData());
+				ptrDataNode->setParentUID(uidSelf);
+			}
+			else // if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrChildNode->getInnerData()))
+			{
+				std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrChildNode->getInnerData());
+				ptrDataNode->setParentUID(uidSelf);
+			}
 
 			ptrChildNode->setDirtyFlag(true);
 		}
@@ -752,18 +770,28 @@ public:
 			memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
 			nOffset += nValuesSize;
 
-			//assert(nBufferSize == nOffset);
+			auto it = m_vtChildren.begin();
+			while (it != m_vtChildren.end())
+			{
+				if ((*it).m_uid.m_nMediaType < 2)
+				{
+					throw new std::logic_error("should not occur!");
+				}
+				it++;
+			}
 
-			//SelfType* _t = new SelfType(szBuffer);
-			//for (int i = 0; i < _t->m_vtPivots.size(); i++)
-			//{
-			//	assert(_t->m_vtPivots[i] == m_vtPivots[i]);
-			//}
-			//for (int i = 0; i < _t->m_vtChildren.size(); i++)
-			//{
-			//	assert(_t->m_vtChildren[i] == m_vtChildren[i]);
-			//}
-			//delete _t;
+			assert(nBufferSize == nOffset);
+
+			SelfType* _t = new SelfType(szBuffer);
+			for (int i = 0; i < _t->m_vtPivots.size(); i++)
+			{
+				assert(_t->m_vtPivots[i] == m_vtPivots[i]);
+			}
+			for (int i = 0; i < _t->m_vtChildren.size(); i++)
+			{
+				assert(_t->m_vtChildren[i] == m_vtChildren[i]);
+			}
+			delete _t;
 
 			// hint
 			/*
@@ -840,7 +868,7 @@ public:
 	}
 
 	template <typename CacheType>
-	void updateChildrenParentUID(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uid)
+	void updateChildrenParentUID(std::shared_ptr<CacheType> ptrCache, const ObjectUIDType& uid, std::vector<ObjectUIDType>& vtAffectedNodes)
 	{
 		typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
@@ -869,6 +897,8 @@ public:
 					std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrNode->getInnerData());
 					ptrDataNode->updateParentUID(uid);
 				}
+
+				vtAffectedNodes.push_back(*it);
 			}
 
 			it++;

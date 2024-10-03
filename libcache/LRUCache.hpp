@@ -190,6 +190,11 @@ public:
 		lock_storage.unlock();
 #endif __CONCURRENT__
 
+		if (_uidUpdated.m_uid.m_nMediaType < 2)
+		{
+			throw new std::logic_error("should not occur!");
+		}
+
 		std::shared_ptr<ObjectType> _ptrObject = m_ptrStorage->getObject(_uidUpdated);
 
 
@@ -972,6 +977,12 @@ private:
 			}
 		}
 
+		if (vtObjects.size() == 0)
+		{
+			lock_cache.unlock();
+			return;
+		}
+
 		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
 
 		lock_cache.unlock();
@@ -1006,7 +1017,6 @@ private:
 			it++;
 		}
 
-		lock_storage.unlock();
 		
 		m_ptrStorage->addObjects(vtObjects, nPos);
 
@@ -1024,6 +1034,7 @@ private:
 
 			it++;
 		}
+		lock_storage.unlock();
 
 		cv.notify_all();
 
