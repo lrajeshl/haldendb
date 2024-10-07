@@ -845,5 +845,105 @@ public:
             }
         }
     }
+
+
+    void prepareFlushext(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates
+        , size_t& nPos, size_t nBlockSize, ObjectUIDType::Media nMediaType)
+    {
+        std::vector<bool> vtAppliedUpdates;
+        vtAppliedUpdates.resize(vtNodes.size(), false);
+
+        for (int idx = 0; idx < vtNodes.size(); idx++)
+        {
+            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData()))
+            {
+                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData());
+
+                auto it_children = ptrIndexNode->getChildrenBeginIterator();
+                while (it_children != ptrIndexNode->getChildrenEndIterator())
+                {
+                    //for (int jdx = 0; jdx < idx; jdx++)
+                    //{
+                    //    if (vtAppliedUpdates[jdx])
+                    //        continue;
+
+                    //    if (*it == vtNodes[jdx].first)
+                    //    {
+                    //        *it = *vtNodes[jdx].second.first;
+                    //        vtNodes[idx].second.second->setDirtyFlag(true);
+
+                    //        vtAppliedUpdates[jdx] = true;
+                    //        break;
+                    //    }
+                    //}
+                    //it++;
+                    if (mpUIDUpdates.find(*it_children) != mpUIDUpdates.end())
+                    {
+                        ObjectUIDType uidTemp = *it_children;
+
+                        *it_children = *(mpUIDUpdates[*it_children].first);
+
+                        mpUIDUpdates.erase(uidTemp);
+
+                        vtNodes[idx].second.second->setDirtyFlag(true);
+                    }
+                    it_children++;
+                }
+
+                if (!vtNodes[idx].second.second->getDirtyFlag())
+                {
+                    vtNodes.erase(vtNodes.begin() + idx); idx--;
+                    continue;
+                }
+
+                size_t nNodeSize = ptrIndexNode->getSize();
+
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nPos, nBlockSize, nNodeSize);
+
+                vtNodes[idx].second.first = uidUpdated;
+
+                nPos += std::ceil(nNodeSize / (float)nBlockSize);
+
+                if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
+                {
+                    throw new std::logic_error("should not occur!");
+                }
+                else
+                {
+                    mpUIDUpdates[vtNodes[idx].first] = std::make_pair(uidUpdated, vtNodes[idx].second.second);
+                }
+
+            }
+            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData()))
+            {
+                if (!vtNodes[idx].second.second->getDirtyFlag())
+                {
+                    vtNodes.erase(vtNodes.begin() + idx); idx--;
+                    continue;
+                }
+
+                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData());
+
+                size_t nNodeSize = ptrDataNode->getSize();
+
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nPos, nBlockSize, nNodeSize);
+
+                vtNodes[idx].second.first = uidUpdated;
+
+                nPos += std::ceil(nNodeSize / (float)nBlockSize);
+
+                if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
+                {
+                    throw new std::logic_error("should not occur!");
+                }
+                else
+                {
+                    mpUIDUpdates[vtNodes[idx].first] = std::make_pair(uidUpdated, vtNodes[idx].second.second);
+                }
+
+            }
+        }
+    }
 #endif __TREE_WITH_CACHE__
 };

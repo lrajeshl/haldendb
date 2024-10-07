@@ -952,55 +952,57 @@ private:
 
 		lock_cache.unlock();
 
-		if (m_mpUpdatedUIDs.size() > 0)
-		{
-			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUpdatedUIDs);
-		}
+		//if (m_mpUpdatedUIDs.size() > 0)
+		//{
+		//	m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUpdatedUIDs);
+		//}
 
 		// Important: Ensure that no other thread should write to the stroage as the nPos is use to generate the addresses.
 		size_t nPos = m_ptrStorage->getWritePos();
 
-		m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+		m_ptrCallback->prepareFlushext(vtObjects, m_mpUpdatedUIDs, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+
+		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
 
 		auto it = vtObjects.begin();
-		while (it != vtObjects.end())
-		{
-			if ((*it).second.second.use_count() != 1)
-			{
-				throw new std::logic_error("should not occur!");
-			}
+		//while (it != vtObjects.end())
+		//{
+		//	if ((*it).second.second.use_count() != 1)
+		//	{
+		//		throw new std::logic_error("should not occur!");
+		//	}
 
-			if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
-			{
-				throw new std::logic_error("should not occur!");
-			}
-			else
-			{
-				m_mpUpdatedUIDs[(*it).first] = std::make_pair(std::nullopt, (*it).second.second);
-			}
+		//	if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
+		//	{
+		//		throw new std::logic_error("should not occur!");
+		//	}
+		//	else
+		//	{
+		//		m_mpUpdatedUIDs[(*it).first] = std::make_pair(std::nullopt, (*it).second.second);
+		//	}
 
-			it++;
-		}
+		//	it++;
+		//}
 
-		lock_storage.unlock();
 		
 		m_ptrStorage->addObjects(vtObjects, nPos);
 
-		it = vtObjects.begin();
-		while (it != vtObjects.end())
-		{
-			if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
-			{
-				m_mpUpdatedUIDs[(*it).first] = std::make_pair((*it).second.first, (*it).second.second);
-			}
-			else
-			{
-				throw new std::logic_error("should not occur!");
-			}
+		//it = vtObjects.begin();
+		//while (it != vtObjects.end())
+		//{
+		//	if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
+		//	{
+		//		m_mpUpdatedUIDs[(*it).first] = std::make_pair((*it).second.first, (*it).second.second);
+		//	}
+		//	else
+		//	{
+		//		throw new std::logic_error("should not occur!");
+		//	}
 
-			it++;
-		}
+		//	it++;
+		//}
 
+		lock_storage.unlock();
 		cv.notify_all();
 
 		vtObjects.clear();
@@ -1150,6 +1152,13 @@ public:
 	}
 
 	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects
+		, size_t& nOffset, size_t nPointerSize, ObjectUIDType::Media nMediaType)
+	{
+
+	}
+
+	void prepareFlushext(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects
+		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUpdatedUIDs
 		, size_t& nOffset, size_t nPointerSize, ObjectUIDType::Media nMediaType)
 	{
 
