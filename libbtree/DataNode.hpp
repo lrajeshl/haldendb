@@ -30,8 +30,8 @@ private:
 public:
 	~DataNode()
 	{
-		m_vtKeys.clear();
-		m_vtValues.clear();
+		//m_vtKeys.clear();
+		//m_vtValues.clear();
 	}
 
 	DataNode()
@@ -282,7 +282,7 @@ public:
 			+ (m_vtValues.size() * sizeof(ValueType));
 	}
 
-	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize) const
+	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, uint32_t& nBufferSize) const
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -327,7 +327,7 @@ public:
 		}
 	}
 
-	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, size_t& nDataSize) const
+	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, uint32_t& nDataSize) const
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&

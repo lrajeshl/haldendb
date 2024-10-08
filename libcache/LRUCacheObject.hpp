@@ -17,12 +17,26 @@ std::shared_ptr<T> cloneSharedPtr(const std::shared_ptr<T>& source) {
 	return source ? std::make_shared<T>(*source) : nullptr;
 }
 
+template <typename T>
+void resetSharedPtr(std::shared_ptr<T>& source) {
+	source.reset();
+}
+
 template <typename... Types>
 std::variant<std::shared_ptr<Types>...> cloneVariant(const std::variant<std::shared_ptr<Types>...>& source) {
 	using VariantType = std::variant<std::shared_ptr<Types>...>;
 
 	return std::visit([](const auto& ptr) -> VariantType {
 		return VariantType(cloneSharedPtr(ptr));
+		}, source);
+}
+
+template <typename... Types>
+void reset_(std::variant<std::shared_ptr<Types>...>& source) {
+	using VariantType = std::variant<std::shared_ptr<Types>...>;
+
+	return std::visit([](auto& ptr) {
+		resetSharedPtr(ptr);
 		}, source);
 }
 
@@ -41,6 +55,12 @@ private:
 	std::shared_mutex m_mtx;
 
 public:
+	~LRUCacheObject()
+	{
+		reset_(m_objData);
+		//std::visit({ ptr.reset(); }, m_objData);
+	}
+
 	template<class ValueCoreType>
 	LRUCacheObject(std::shared_ptr<ValueCoreType> ptrCoreObject)
 		: m_bDirty(true)	//TODO: should not it be false by default?
@@ -60,12 +80,12 @@ public:
 		CoreTypesMarshaller::template deserialize<ValueCoreTypesWrapper, ValueCoreTypes...>(szBuffer, m_objData);
 	}
 
-	inline void serialize(std::fstream& fs, uint8_t& uidObjectType, size_t& nBufferSize)
+	inline void serialize(std::fstream& fs, uint8_t& uidObjectType, uint32_t& nBufferSize)
 	{
 		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(fs, m_objData, uidObjectType, nBufferSize);
 	}
 
-	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, size_t& nBufferSize)
+	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, uint32_t& nBufferSize)
 	{
 		CoreTypesMarshaller::template serialize<ValueCoreTypes...>(szBuffer, m_objData, uidObjectType, nBufferSize);
 	}

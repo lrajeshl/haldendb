@@ -50,9 +50,9 @@ private:
 
 		~Item()
 		{
-			m_ptrPrev = nullptr;
-			m_ptrNext = nullptr;
-			m_ptrObject = nullptr;
+			m_ptrPrev.reset();
+			m_ptrNext.reset();
+			m_ptrObject.reset();
 		}
 	};
 
@@ -888,19 +888,17 @@ private:
 	inline void flushItemsToStorage()
 	{
 #ifdef __CONCURRENT__
+		// TODO: used key as pointer to key in object.....!
 		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
 
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
-//std::cout << m_mpObjects.size() << " , ";
-		if (m_mpObjects.size() < m_nCacheCapacity)
+
+		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
 
-		size_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
+		uint16_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
 
-		if (nFlushCount > FLUSH_COUNT)	//todo: should push all the outstanding orders all together?
-			nFlushCount = FLUSH_COUNT;
-
-		for (size_t idx = 0; idx < nFlushCount; idx++)
+		for (uint16_t idx = 0; idx < nFlushCount; idx++)
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
@@ -924,8 +922,6 @@ private:
 			{
 				m_ptrTail->m_ptrObject->unlockObject();
 			}
-
-//std::cout << ptrItemToFlush->m_uidSelf.toString().c_str() << " , ";
 
 			std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
 
@@ -952,61 +948,56 @@ private:
 
 		lock_cache.unlock();
 
-		//if (m_mpUpdatedUIDs.size() > 0)
-		//{
-		//	m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUpdatedUIDs);
-		//}
+		if (m_mpUpdatedUIDs.size() > 0)
+		{
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUpdatedUIDs);
+		}
 
-		// Important: Ensure that no other thread should write to the stroage as the nPos is use to generate the addresses.
-		size_t nPos = m_ptrStorage->getWritePos();
-
-		m_ptrCallback->prepareFlushext(vtObjects, m_mpUpdatedUIDs, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+		// TODO: ensure that no other thread should touch the storage related params..
+		size_t nNewOffset = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getWritePos(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
 
 		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
-
-		auto it = vtObjects.begin();
-		//while (it != vtObjects.end())
-		//{
-		//	if ((*it).second.second.use_count() != 1)
-		//	{
-		//		throw new std::logic_error("should not occur!");
-		//	}
-
-		//	if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
-		//	{
-		//		throw new std::logic_error("should not occur!");
-		//	}
-		//	else
-		//	{
-		//		m_mpUpdatedUIDs[(*it).first] = std::make_pair(std::nullopt, (*it).second.second);
-		//	}
-
-		//	it++;
-		//}
-
 		
-		m_ptrStorage->addObjects(vtObjects, nPos);
+		for(auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+#ifdef VALIDITY_CHECKS
+			if ((*itObject).second.second.use_count() != 1)
+			{
+				throw new std::logic_error("should not occur!");
+			}
 
-		//it = vtObjects.begin();
-		//while (it != vtObjects.end())
-		//{
-		//	if (m_mpUpdatedUIDs.find((*it).first) != m_mpUpdatedUIDs.end())
-		//	{
-		//		m_mpUpdatedUIDs[(*it).first] = std::make_pair((*it).second.first, (*it).second.second);
-		//	}
-		//	else
-		//	{
-		//		throw new std::logic_error("should not occur!");
-		//	}
-
-		//	it++;
-		//}
+			if (m_mpUpdatedUIDs.find((*itObject).first) != m_mpUpdatedUIDs.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+#endif // VALIDITY_CHECKS
+			m_mpUpdatedUIDs[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
+		}
 
 		lock_storage.unlock();
+		
+		m_ptrStorage->addObjects(vtObjects, nNewOffset);
+
+		std::unique_lock<std::shared_mutex> relock_storage(m_mtxStorage);
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+#ifdef VALIDITY_CHECKS
+			if (m_mpUpdatedUIDs.find((*itObject).first) == m_mpUpdatedUIDs.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+#endif VALIDITY_CHECKS
+
+			m_mpUpdatedUIDs[(*itObject).first] = std::make_pair((*itObject).second.first, (*itObject).second.second);
+		}
+		relock_storage.unlock();
+
 		cv.notify_all();
 
 		vtObjects.clear();
-#else
+#else //__CONCURRENT__
 		while (m_mpObjects.size() > m_nCacheCapacity)
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
@@ -1018,12 +1009,13 @@ private:
 				break;
 			}
 
+			if (m_mpUpdatedUIDs.size() > 0)
+			{
+				m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUpdatedUIDs);
+			}
+
 			if (m_ptrTail->m_ptrObject->getDirtyFlag())
 			{
-				if (m_mpUpdatedUIDs.size() > 0)
-				{
-					m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUpdatedUIDs);
-				}
 
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
@@ -1151,15 +1143,8 @@ public:
 
 	}
 
-	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects
-		, size_t& nOffset, size_t nPointerSize, ObjectUIDType::Media nMediaType)
-	{
-
-	}
-
-	void prepareFlushext(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects
-		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUpdatedUIDs
-		, size_t& nOffset, size_t nPointerSize, ObjectUIDType::Media nMediaType)
+	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+		, size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::Media nMediaType)
 	{
 
 	}

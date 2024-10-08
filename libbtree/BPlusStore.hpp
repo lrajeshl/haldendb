@@ -320,8 +320,8 @@ public:
 #endif __TREE_WITH_CACHE__
 
 #ifdef __CONCURRENT__
-        std::vector<std::shared_lock<std::shared_mutex>> vtLocks;
-        vtLocks.emplace_back(std::shared_lock<std::shared_mutex>(m_mutex));
+        std::vector<std::unique_lock<std::shared_mutex>> vtLocks;
+        vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(m_mutex));
 #endif __CONCURRENT__
 
         ObjectTypePtr ptrCurrentNode = nullptr;
@@ -356,7 +356,7 @@ public:
 #endif __TREE_WITH_CACHE__
 
 #ifdef __CONCURRENT__
-            vtLocks.emplace_back(std::shared_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
+            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
             vtLocks.erase(vtLocks.begin());
 #endif __CONCURRENT__
 
@@ -780,79 +780,13 @@ public:
     }
 
     void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , size_t& nPos, size_t nBlockSize, ObjectUIDType::Media nMediaType)
+        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::Media nMediaType)
     {
-        std::vector<bool> vtAppliedUpdates;
-        vtAppliedUpdates.resize(vtNodes.size(), false);
+        nNewOffset = nOffset;
 
-        for (int idx = 0; idx < vtNodes.size(); idx++)
-        {
-            if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData()))
-            {
-                std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData());
-
-                auto it = ptrIndexNode->getChildrenBeginIterator();
-                while (it != ptrIndexNode->getChildrenEndIterator())
-                {
-                    for (int jdx = 0; jdx < idx; jdx++)
-                    {
-                        if (vtAppliedUpdates[jdx])
-                            continue;
-
-                        if (*it == vtNodes[jdx].first)
-                        {
-                            *it = *vtNodes[jdx].second.first;
-                            vtNodes[idx].second.second->setDirtyFlag( true);
-
-                            vtAppliedUpdates[jdx] = true;
-                            break;
-                        }
-                    }
-                    it++;
-                }
-
-                if (!vtNodes[idx].second.second->getDirtyFlag())
-                {
-                    vtNodes.erase(vtNodes.begin() + idx); idx--;
-                    continue;
-                }
-
-                size_t nNodeSize = ptrIndexNode->getSize();
-
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nPos, nBlockSize, nNodeSize);
-
-                vtNodes[idx].second.first = uidUpdated;
-
-                nPos += std::ceil(nNodeSize / (float)nBlockSize);
-            }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData()))
-            {
-                if (!vtNodes[idx].second.second->getDirtyFlag())
-                {
-                    vtNodes.erase(vtNodes.begin() + idx); idx--;
-                    continue;
-                }
-
-                std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData());
-
-                size_t nNodeSize = ptrDataNode->getSize();
-
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nPos, nBlockSize, nNodeSize);
-
-                vtNodes[idx].second.first = uidUpdated;
-
-                nPos += std::ceil(nNodeSize / (float)nBlockSize);
-            }
-        }
-    }
-
-
-    void prepareFlushext(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates
-        , size_t& nPos, size_t nBlockSize, ObjectUIDType::Media nMediaType)
-    {
-        std::vector<bool> vtAppliedUpdates;
-        vtAppliedUpdates.resize(vtNodes.size(), false);
+        std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>> mpUIDUpdates;
+        //std::vector<bool> vtAppliedUpdates;
+        //vtAppliedUpdates.resize(vtNodes.size(), false);
 
         for (int idx = 0; idx < vtNodes.size(); idx++)
         {
@@ -899,11 +833,11 @@ public:
 
                 size_t nNodeSize = ptrIndexNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nPos, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nNewOffset, nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                nPos += std::ceil(nNodeSize / (float)nBlockSize);
+                nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {
@@ -927,11 +861,11 @@ public:
 
                 size_t nNodeSize = ptrDataNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nPos, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nNewOffset, nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                nPos += std::ceil(nNodeSize / (float)nBlockSize);
+                nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {

@@ -144,7 +144,7 @@ public:
 
 		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{
-			size_t nBufferSize = 0;
+			uint32_t nBufferSize = 0;
 			uint8_t uidObjectType = 0;
 
 			char* szBuffer = NULL;

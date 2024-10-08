@@ -62,7 +62,7 @@ public:
 		throw new std::logic_error("should not occur!");
 	}
 
-	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint16_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
 		key.m_uid.m_nType = nType;
@@ -83,7 +83,7 @@ public:
 		return key;
 	}
 
-	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint32_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint16_t nBlockSize, uint32_t nSize)
 	{
 		ObjectFatUID key;
 		key.m_uid.m_nType = nType;
@@ -96,7 +96,8 @@ public:
 
 	bool operator==(const ObjectFatUID& rhs) const
 	{
-		if (m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
+		if (m_uid.m_nType != rhs.m_uid.m_nType
+			|| m_uid.m_nMediaType != rhs.m_uid.m_nMediaType)
 		{
 			return false;
 		}
@@ -122,6 +123,11 @@ public:
 
 	bool operator <(const ObjectFatUID& rhs) const
 	{
+		if (m_uid.m_nType < rhs.m_uid.m_nType)
+			return true;
+		else if (m_uid.m_nType > rhs.m_uid.m_nType)
+			return false;
+
 		if (m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
 			return true;
 		else if (m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
@@ -156,7 +162,8 @@ public:
 	public:
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
-			return std::hash<uint8_t>()(rhs.m_uid.m_nMediaType)
+			return std::hash<uint8_t>()(rhs.m_uid.m_nType)
+				^ std::hash<uint8_t>()(rhs.m_uid.m_nMediaType)
 				^ std::hash<uintptr_t>()(rhs.m_uid.FATPOINTER.m_ptrVolatile)
 				^ std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset)
 				^ std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize);
@@ -168,6 +175,11 @@ public:
 	public:
 		bool operator()(const ObjectFatUID& lhs, const ObjectFatUID& rhs) const
 		{
+			if (lhs.m_uid.m_nType < rhs.m_uid.m_nType)
+				return true;
+			else if (lhs.m_uid.m_nType > rhs.m_uid.m_nType)
+				return false;
+
 			if (lhs.m_uid.m_nMediaType < rhs.m_uid.m_nMediaType)
 				return true;
 			else if (lhs.m_uid.m_nMediaType > rhs.m_uid.m_nMediaType)
@@ -199,8 +211,36 @@ public:
 
 
 public:
+	~ObjectFatUID()
+	{
+		m_uid.m_nType = 0;
+		m_uid.m_nMediaType = 0;
+		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
+		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
+	}
+
 	ObjectFatUID()
 	{
+		m_uid.m_nType = 0;
+		m_uid.m_nMediaType = 0;
+		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
+		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
+	}
+
+	ObjectFatUID(const ObjectFatUID& other)
+	{
+		m_uid.m_nType = other.m_uid.m_nType;
+		m_uid.m_nMediaType = other.m_uid.m_nMediaType;
+		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
+		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+	}
+
+	ObjectFatUID(ObjectFatUID& other)
+	{
+		m_uid.m_nType = other.m_uid.m_nType;
+		m_uid.m_nMediaType = other.m_uid.m_nMediaType;
+		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
+		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
 	}
 
 	std::string toString() const
@@ -238,6 +278,7 @@ namespace std {
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
 			size_t hashValue = 0;
+			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nType);
 			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nMediaType);
 
 			switch (rhs.m_uid.m_nMediaType)

@@ -8,7 +8,7 @@ class TypeMarshaller
 {
 public:
 	template <typename... ObjectCoreTypes>
-	static void serialize(std::fstream& os, const std::variant<std::shared_ptr<ObjectCoreTypes>...>& objVariant, uint8_t& uidObjectType, size_t& nnBufferLength)
+	static void serialize(std::fstream& os, const std::variant<std::shared_ptr<ObjectCoreTypes>...>& objVariant, uint8_t& uidObjectType, uint32_t& nnBufferLength)
 	{
 		std::visit([&os, &uidObjectType, &nnBufferLength](const auto& value) {
 			value->writeToStream(os, uidObjectType, nnBufferLength);
@@ -16,7 +16,7 @@ public:
 	}
 
 	template <typename... ObjectCoreTypes>
-	static void serialize(char*& szBuffer, const std::variant<std::shared_ptr<ObjectCoreTypes>...>& objVariant, uint8_t& uidObjectType, size_t& nnBufferLength)
+	static void serialize(char*& szBuffer, const std::variant<std::shared_ptr<ObjectCoreTypes>...>& objVariant, uint8_t& uidObjectType, uint32_t& nnBufferLength)
 	{
 		std::visit([&szBuffer, &uidObjectType, &nnBufferLength](const auto& value) {
 			value->serialize(szBuffer, uidObjectType, nnBufferLength);

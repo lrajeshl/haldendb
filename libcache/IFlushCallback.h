@@ -13,10 +13,6 @@ public:
 		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates) = 0;
 
 	virtual void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-		, size_t& nPos, size_t nBlockSize, ObjectUIDType::Media nMediaType) = 0;
-
-	virtual void prepareFlushext(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates
-		, size_t& nPos, size_t nBlockSize, ObjectUIDType::Media nMediaType) = 0;
+		, size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::Media nMediaType) = 0;
 
 };

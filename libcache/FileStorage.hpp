@@ -188,7 +188,7 @@ public:
 				m_fsStorage.seekp((*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 				//m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
 
-				size_t nBufferSize = 0;
+				uint32_t nBufferSize = 0;
 				uint8_t uidObjectType = 0;
 
 				(*it).second.second->serialize(m_fsStorage, uidObjectType, nBufferSize);
