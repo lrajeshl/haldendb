@@ -68,14 +68,20 @@ public:
 			nOffset += sizeof(uint16_t);
 
 			m_vtPivots.resize(nKeyCount);
-			m_vtChildren.resize(nValueCount);
+			//m_vtChildren.resize(nValueCount);
 
 			uint32_t nKeysSize = nKeyCount * sizeof(KeyType);
 			memcpy(m_vtPivots.data(), szData + nOffset, nKeysSize);
 			nOffset += nKeysSize;
 
-			uint32_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-			memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
+			for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
+			{
+				m_vtChildren.push_back(szData + nOffset);
+				nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			}
+
+			//uint32_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			//memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
 		}
 		else
 		{
@@ -100,10 +106,19 @@ public:
 			is.read(reinterpret_cast<char*>(&nValueCount), sizeof(uint16_t));
 
 			m_vtPivots.resize(nKeyCount);
-			m_vtChildren.resize(nValueCount);
+			//m_vtChildren.resize(nValueCount);
 
 			is.read(reinterpret_cast<char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			is.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
+			
+			
+			for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
+			{
+				ObjectUIDType uid;
+				is.read(reinterpret_cast<char*>(&uid), sizeof(typename ObjectUIDType::NodeUID));
+				m_vtChildren.push_back(uid);
+				//nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			}
+			//is.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
 		}
 		else
 		{
@@ -569,13 +584,16 @@ public:
 			os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(uint16_t));
 			os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(uint16_t));
 			os.write(reinterpret_cast<const char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
-
+			
+			for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
+			{
+				os.write(reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+			}
 
 			auto it = m_vtChildren.begin();
 			while (it != m_vtChildren.end())
 			{
-				if ((*it).m_uid.m_nMediaType < 3)
+				if ((*it).getMediaType() < 3)
 				{
 					throw new std::logic_error("should not occur!");
 				}
@@ -639,9 +657,15 @@ public:
 			memcpy(szBuffer + nOffset, m_vtPivots.data(), nKeysSize);
 			nOffset += nKeysSize;
 
-			size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-			memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
-			nOffset += nValuesSize;
+			for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
+			{
+				memcpy(szBuffer + nOffset, reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));
+				nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			}
+
+			//size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			//memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
+			//nOffset += nValuesSize;
 
 			//assert(nBufferSize == nOffset);
 

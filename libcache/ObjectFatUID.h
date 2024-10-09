@@ -36,7 +36,35 @@ public:
 		} FATPOINTER;
 	};
 
+public:
 	NodeUID m_uid;
+	size_t m_hash;
+
+public:
+	inline uint8_t getObjectType() const
+	{
+		return m_uid.m_nType;
+	}
+
+	inline uint8_t getMediaType() const
+	{
+		return m_uid.m_nMediaType;
+	}
+
+	inline uintptr_t getVolatilePointerValue() const
+	{
+		return m_uid.FATPOINTER.m_ptrVolatile;
+	}
+
+	inline uint32_t getPersistentPointerValue() const
+	{
+		return m_uid.FATPOINTER.m_ptrFile.m_nOffset;
+	}
+
+	inline uint32_t getPersistentBytesSize() const
+	{
+		return m_uid.FATPOINTER.m_ptrFile.m_nSize;
+	}
 
 	template <typename... Args>
 	static ObjectFatUID createAddressFromArgs(Media nMediaType, Args... args)
@@ -157,6 +185,39 @@ public:
 		//return memcmp(&m_uid, &rhs.m_uid, sizeof(NodeUID)) < 0;
 	}
 
+	inline size_t gethash() const
+	{
+		return m_hash;
+	}
+
+	void recalculateHash()
+	{
+		m_hash = std::hash<uint8_t>()(m_uid.m_nType);
+		m_hash ^= std::hash<uint8_t>()(m_uid.m_nMediaType);
+
+		switch (m_uid.m_nMediaType)
+		{
+		case ObjectFatUID::Media::None:
+			break;
+		case ObjectFatUID::Media::Volatile:
+			m_hash ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
+			break;
+		case ObjectFatUID::Media::DRAM:
+			m_hash ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
+			break;
+		case ObjectFatUID::Media::File:
+			size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+			size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
+			m_hash ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
+			break;
+		}
+	}
+
+	bool compare(const ObjectFatUID& rhs) const
+	{
+		return *this == rhs;
+	}
+
 	struct HashFunction
 	{
 	public:
@@ -215,32 +276,51 @@ public:
 	{
 		m_uid.m_nType = 0;
 		m_uid.m_nMediaType = 0;
+		m_uid.FATPOINTER.m_ptrVolatile = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
+
+		m_hash = 0;
+	}
+
+	ObjectFatUID(const char* uid)
+	{
+		const NodeUID* i = reinterpret_cast<const NodeUID*>(uid);
+		m_uid = *i;
+		m_hash = 0;
 	}
 
 	ObjectFatUID()
 	{
 		m_uid.m_nType = 0;
 		m_uid.m_nMediaType = 0;
+		m_uid.FATPOINTER.m_ptrVolatile = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
+
+		m_hash = 0;
 	}
 
 	ObjectFatUID(const ObjectFatUID& other)
 	{
 		m_uid.m_nType = other.m_uid.m_nType;
 		m_uid.m_nMediaType = other.m_uid.m_nMediaType;
+		m_uid.FATPOINTER.m_ptrVolatile = other.m_uid.FATPOINTER.m_ptrVolatile;
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+
+		recalculateHash();
 	}
 
 	ObjectFatUID(ObjectFatUID& other)
 	{
 		m_uid.m_nType = other.m_uid.m_nType;
 		m_uid.m_nMediaType = other.m_uid.m_nMediaType;
+		m_uid.FATPOINTER.m_ptrVolatile = other.m_uid.FATPOINTER.m_ptrVolatile;
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
+
+		recalculateHash();
 	}
 
 	std::string toString() const
@@ -277,28 +357,7 @@ namespace std {
 	struct hash<ObjectFatUID> {
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
-			size_t hashValue = 0;
-			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nType);
-			hashValue ^= std::hash<uint8_t>()(rhs.m_uid.m_nMediaType);
-
-			switch (rhs.m_uid.m_nMediaType)
-			{
-			case ObjectFatUID::Media::None:
-				break;
-			case ObjectFatUID::Media::Volatile:
-				hashValue ^= std::hash<uintptr_t>()(rhs.m_uid.FATPOINTER.m_ptrVolatile);
-				break;
-			case ObjectFatUID::Media::DRAM:
-				hashValue ^= std::hash<uintptr_t>()(rhs.m_uid.FATPOINTER.m_ptrVolatile);
-				break;
-			case ObjectFatUID::Media::File:
-				size_t offsetHash = std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
-				size_t sizeHash = std::hash<uint32_t>()(rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize);
-				hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
-				break;
-			}
-
-			return hashValue;
+			return rhs.gethash();
 		}
 	};
 }

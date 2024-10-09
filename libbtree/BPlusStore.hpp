@@ -264,6 +264,7 @@ public:
 
         if (uidCurrentNode == m_uidRootNode && ptrLHSChildNode != nullptr && ptrRHSChildNode != nullptr)
         {
+            m_uidRootNode = std::nullopt;
             m_ptrCache->template createObjectOfType<IndexNodeType>(m_uidRootNode, pivotKey, *uidLHSChildNode, *uidRHSChildNode);
 
 #ifdef __TREE_WITH_CACHE__

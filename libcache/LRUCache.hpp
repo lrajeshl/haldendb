@@ -17,9 +17,22 @@
 
 #define FLUSH_COUNT 100
 
-
 using namespace std::chrono_literals;
 
+template<typename T>
+struct SharedPtrHash
+{
+	std::size_t operator()(const T* ptr) const {
+		return ptr->gethash();
+	}
+};
+
+template<typename T>
+struct SharedPtrEqual {
+	bool operator()(const T* lhs, const T* rhs) const {
+		return lhs->compare(*rhs);
+	}
+};
 
 template <typename ICallback, typename StorageType>
 class LRUCache : public ICallback
@@ -64,7 +77,7 @@ private:
 	std::unique_ptr<StorageType> m_ptrStorage;
 
 	size_t m_nCacheCapacity;
-	std::unordered_map<ObjectUIDType, std::shared_ptr<Item>> m_mpObjects;
+	std::unordered_map<const ObjectUIDType*, std::shared_ptr<Item>, SharedPtrHash<ObjectUIDType>, SharedPtrEqual<ObjectUIDType>> m_mpObjects;
 
 	std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, ObjectTypePtr>> m_mpUpdatedUIDs;
 
@@ -130,11 +143,11 @@ public:
 		std::unique_lock<std::shared_mutex>  lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		auto it = m_mpObjects.find(uidObject);
+		auto it = m_mpObjects.find(&uidObject);
 		if (it != m_mpObjects.end()) 
 		{
 			removeFromLRU((*it).second);
-			m_mpObjects.erase((*it).first);
+			m_mpObjects.erase(((*it).first));
 			errCode = CacheErrorCode::Success;
 		}
 
@@ -149,9 +162,9 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache); // std::unique_lock due to LRU's linked-list update! is there any better way?
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(&uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[&uidObject];
 			moveToFront(ptrItem);
 			ptrObject = ptrItem->m_ptrObject;
 
@@ -200,16 +213,16 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(_uidUpdated) != m_mpObjects.end())
+			if (m_mpObjects.find(&_uidUpdated) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdated];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[&_uidUpdated];
 				moveToFront(ptrItem);
 				ptrObject = ptrItem->m_ptrObject;
 				return CacheErrorCode::Success;
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[_uidUpdated] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -251,9 +264,9 @@ public:
 		{
 			std::pair<ObjectUIDType, ObjectTypePtr> prNode = vt.back();
 
-			if (m_mpObjects.find(prNode.first) != m_mpObjects.end())
+			if (m_mpObjects.find(&prNode.first) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[prNode.first];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[&(prNode.first)];
 				moveToFront(ptrItem);	//TODO: How about passing whole list together and re-arrange the list?
 			}
 			else
@@ -381,7 +394,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[_uidUpdated] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -422,9 +435,9 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(key) != m_mpObjects.end())
+		if (m_mpObjects.find(&key) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[key];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[&key];
 
 			moveToFront(ptrItem);
 
@@ -479,9 +492,9 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(_uidUpdated) != m_mpObjects.end())
+			if (m_mpObjects.find(&(_uidUpdated)) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[_uidUpdated];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[&(_uidUpdated)];
 				moveToFront(ptrItem);
 
 				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
@@ -495,7 +508,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[_uidUpdated] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -545,15 +558,15 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(&*uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[&*uidObject];
 			ptrItem->m_ptrObject = ptrObject;
 			moveToFront(ptrItem);
 		}
 		else
 		{
-			m_mpObjects[*uidObject] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 			if (!m_ptrHead) 
 			{
 				m_ptrHead = ptrItem;
@@ -593,15 +606,15 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(&*uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[&*uidObject];
 			ptrItem->m_ptrObject = ptrObject;
 			moveToFront(ptrItem);
 		}
 		else
 		{
-			m_mpObjects[*uidObject] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 			if (!m_ptrHead)
 			{
 				m_ptrHead = ptrItem;
@@ -647,7 +660,7 @@ public:
 		}
 		else
 		{
-			m_mpObjects[*uidObject] = ptrItem;
+			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
 			if (!m_ptrHead)
 			{
 				m_ptrHead = ptrItem;
@@ -927,7 +940,7 @@ private:
 
 			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
 
-			m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
+			m_mpObjects.erase(&ptrItemToFlush->m_uidSelf);
 
 			m_ptrTail = ptrItemToFlush->m_ptrPrev;
 
@@ -1031,7 +1044,7 @@ private:
 				m_mpUpdatedUIDs[m_ptrTail->m_uidSelf] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
 			}
 
-			m_mpObjects.erase(m_ptrTail->m_uidSelf);
+			m_mpObjects.erase(&m_ptrTail->m_uidSelf);
 
 			std::shared_ptr<Item> ptrTemp = m_ptrTail;
 
@@ -1094,8 +1107,8 @@ private:
 
 				m_mpUpdatedUIDs[ptrCurrentTail->m_uidSelf] = std::make_pair(uidUpdated, ptrCurrentTail->m_ptrObject);
 
-				m_mpObjects[uidUpdated] = ptrCurrentTail;
-				m_mpObjects.erase(ptrCurrentTail->m_uidSelf);
+				m_mpObjects[&ptrCurrentTail->m_uidSelf] = ptrCurrentTail;
+				m_mpObjects.erase(&ptrCurrentTail->m_uidSelf);
 			}
 
 			//m_mpObjects.erase(m_ptrTail->m_uidSelf);

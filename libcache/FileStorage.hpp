@@ -105,7 +105,7 @@ public:
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
-		m_fsStorage.seekg(uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+		m_fsStorage.seekg(uidObject.getPersistentPointerValue());
 		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage);
 		//m_fsStorage.read(szBuffer, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize);
 
@@ -128,7 +128,7 @@ public:
 
 	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
 	{
-		size_t nBufferSize = 0;
+		uint32_t nBufferSize = 0;
 		uint8_t uidObjectType = 0;
 		
 		//char* szBuffer = NULL;
@@ -157,7 +157,7 @@ public:
 
 		//delete[] szBuffer;
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
+		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
 
 		return CacheErrorCode::Success;
 	}
@@ -185,7 +185,7 @@ public:
 
 		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{
-				m_fsStorage.seekp((*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+				m_fsStorage.seekp((*(*it).second.first).getPersistentPointerValue());
 				//m_fsStorage.write( vtBuffer[idx], (*(m_vtObjects[idx].uidDetails.uidObject_Updated)).m_uid.FATPOINTER.m_ptrFile.m_nSize); //2
 
 				uint32_t nBufferSize = 0;

@@ -74,7 +74,7 @@ public:
 	{
 		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1];
 		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1);
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_szStorage + uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_szStorage + uidObject.getPersistentPointerValue());
 
 		//ptrObject->setDirtyFlag(false);
 		//delete[] szBuffer;
@@ -90,7 +90,7 @@ public:
 
 	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
 	{
-		size_t nBufferSize = 0;
+		uint32_t nBufferSize = 0;
 		uint8_t uidObjectType = 0;
 
 		char* szBuffer = NULL;
@@ -116,7 +116,7 @@ public:
 
 		delete[] szBuffer;
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.m_uid.m_nType, nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
+		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
 
 		return CacheErrorCode::Success;
 	}
@@ -149,7 +149,7 @@ public:
 
 			char* szBuffer = NULL;
 			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize);
-			memcpy(m_szStorage + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize);
+			memcpy(m_szStorage + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize);
 
 			delete[] szBuffer;
 		}
