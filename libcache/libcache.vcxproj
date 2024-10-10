@@ -727,8 +727,6 @@
     <ClInclude Include="VolatileStorage.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ObjectFatUID.cpp" />
-    <ClCompile Include="ObjectUID.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug_TWC|x64'">Create</PrecompiledHeader>

@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "LRUCache.hpp"
 #include "BPlusStore.hpp"
 #include "NoCache.hpp"
 #include "glog/logging.h"
@@ -14,7 +15,6 @@
 #include <chrono>
 #include <cassert>
 
-#include "LRUCache.hpp"
 #include "VolatileStorage.hpp"
 #include "NoCacheObject.hpp"
 #include "LRUCacheObject.hpp"
@@ -29,6 +29,9 @@
 #include "ObjectUID.h"
 #include "NVMRODataNode.hpp"
 #include "NVMROIndexNode.hpp"
+
+#define VALIDITY_CHECKS
+
 
 #ifdef __CONCURRENT__
 

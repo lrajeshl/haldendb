@@ -118,7 +118,8 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
-                    ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
+                    //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
                     ptrLastNode->setDirtyFlag(true);
                 }
                 else
@@ -373,7 +374,8 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
-                    ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
+                    //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
 
                     ptrLastNode->setDirtyFlag(true);
                 }
@@ -466,7 +468,7 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
-                    ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
                     ptrLastNode->setDirtyFlag(true);
                 }
                 else
@@ -813,8 +815,6 @@ public:
         nNewOffset = nOffset;
 
         std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>> mpUIDUpdates;
-        //std::vector<bool> vtAppliedUpdates;
-        //vtAppliedUpdates.resize(vtNodes.size(), false);
 
         for (int idx = 0; idx < vtNodes.size(); idx++)
         {
@@ -822,35 +822,20 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData());
 
-                auto it_children = ptrIndexNode->getChildrenBeginIterator();
-                while (it_children != ptrIndexNode->getChildrenEndIterator())
+                auto it = ptrIndexNode->getChildrenBeginIterator();
+                while (it != ptrIndexNode->getChildrenEndIterator())
                 {
-                    //for (int jdx = 0; jdx < idx; jdx++)
-                    //{
-                    //    if (vtAppliedUpdates[jdx])
-                    //        continue;
-
-                    //    if (*it == vtNodes[jdx].first)
-                    //    {
-                    //        *it = *vtNodes[jdx].second.first;
-                    //        vtNodes[idx].second.second->setDirtyFlag(true);
-
-                    //        vtAppliedUpdates[jdx] = true;
-                    //        break;
-                    //    }
-                    //}
-                    //it++;
-                    if (mpUIDUpdates.find(*it_children) != mpUIDUpdates.end())
+                    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
                     {
-                        ObjectUIDType uidTemp = *it_children;
+                        ObjectUIDType uidTemp = *it;
 
-                        *it_children = *(mpUIDUpdates[*it_children].first);
+                        *it = *(mpUIDUpdates[*it].first);
 
                         mpUIDUpdates.erase(uidTemp);
 
                         vtNodes[idx].second.second->setDirtyFlag(true);
                     }
-                    it_children++;
+                    it++;
                 }
 
                 if (!vtNodes[idx].second.second->getDirtyFlag())
@@ -861,7 +846,8 @@ public:
 
                 size_t nNodeSize = ptrIndexNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated;
+                ObjectUIDType::createAddressFromArgs(uidUpdated, nMediaType, IndexNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
@@ -875,7 +861,6 @@ public:
                 {
                     mpUIDUpdates[vtNodes[idx].first] = std::make_pair(uidUpdated, vtNodes[idx].second.second);
                 }
-
             }
             else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData()))
             {
@@ -889,7 +874,8 @@ public:
 
                 size_t nNodeSize = ptrDataNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated;
+                ObjectUIDType::createAddressFromArgs(uidUpdated, nMediaType, DataNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
@@ -903,7 +889,6 @@ public:
                 {
                     mpUIDUpdates[vtNodes[idx].first] = std::make_pair(uidUpdated, vtNodes[idx].second.second);
                 }
-
             }
         }
     }

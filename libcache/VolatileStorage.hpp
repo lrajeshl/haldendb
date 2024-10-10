@@ -131,7 +131,7 @@ public:
 
 		delete[] szBuffer;
 
-		uidUpdated = std::move(ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nOffset, nBufferSize));
+		ObjectUIDType::createAddressFromFileOffset(uidUpdated, uidObject.getObjectType(), nOffset, nBufferSize);
 
 		return CacheErrorCode::Success;
 	}

@@ -62,7 +62,7 @@ private:
 	std::unique_ptr<StorageType> m_ptrStorage;
 
 	size_t m_nCacheCapacity;
-	std::unordered_map<const ObjectUIDType*, std::shared_ptr<Item>> m_mpObjects;
+	std::unordered_map<ObjectUIDType, std::shared_ptr<Item>> m_mpObjects;
 	std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, ObjectTypePtr>> m_mpUIDUpdates;
 
 #ifdef __CONCURRENT__
@@ -126,7 +126,7 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		auto it = m_mpObjects.find(&uidObject);
+		auto it = m_mpObjects.find(uidObject);
 		if (it != m_mpObjects.end()) 
 		{
 			removeFromLRU((*it).second);
@@ -149,9 +149,9 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache); // std::unique_lock due to LRU's linked-list update! is there any better way?
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(&uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[&uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
 			moveToFront(ptrItem);
 			ptrObject = ptrItem->m_ptrObject;
 
@@ -195,15 +195,15 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(&uidTemp) != m_mpObjects.end())
+			if (m_mpObjects.find(uidTemp) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[&uidTemp];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[uidTemp];
 				moveToFront(ptrItem);
 				return CacheErrorCode::Success;
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -240,9 +240,9 @@ public:
 		{
 			std::pair<ObjectUIDType, ObjectTypePtr> prNode = vt.back();
 
-			if (m_mpObjects.find(&prNode.first) != m_mpObjects.end())
+			if (m_mpObjects.find(prNode.first) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[&(prNode.first)];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[prNode.first];
 				moveToFront(ptrItem);	//TODO: How about passing whole list together and re-arrange the list?
 			}
 			else
@@ -349,9 +349,9 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(&(*uidTemp)) != m_mpObjects.end())
+			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[&(*uidTemp)];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
 				moveToFront(ptrItem);
 
 				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
@@ -364,7 +364,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -401,9 +401,9 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(&uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[&uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
 			moveToFront(ptrItem);
 
 			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
@@ -452,9 +452,9 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
-			if (m_mpObjects.find(&(*uidTemp)) != m_mpObjects.end())
+			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
 			{
-				std::shared_ptr<Item> ptrItem = m_mpObjects[&(*uidTemp)];
+				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
 				moveToFront(ptrItem);
 
 				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
@@ -467,7 +467,7 @@ public:
 			}
 #endif __CONCURRENT__
 
-			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -505,7 +505,10 @@ public:
 
 		std::shared_ptr<ObjectType> ptrStorageObject = std::make_shared<ObjectType>(ptrCoreObject);
 
-		uidObject = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrStorageObject.get()));
+		ObjectUIDType uidTemp;
+		ObjectUIDType::createAddressFromVolatilePointer(uidTemp, Type::UID, reinterpret_cast<uintptr_t>(ptrStorageObject.get()));
+
+		uidObject = uidTemp;
 
 		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidObject, ptrStorageObject);
 
@@ -513,15 +516,15 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(&*uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[&*uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
 		}
 		else
 		{
-			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 			if (!m_ptrHead) 
 			{
 				m_ptrHead = ptrItem;
@@ -547,7 +550,10 @@ public:
 	{
 		ptrStorageObject = std::make_shared<ObjectType>(std::make_shared<Type>(args...));
 
-		uidObject = ObjectUIDType::createAddressFromVolatilePointer(Type::UID, reinterpret_cast<uintptr_t>(ptrStorageObject.get()));
+		ObjectUIDType uidTemp;
+		ObjectUIDType::createAddressFromVolatilePointer(uidTemp, Type::UID, reinterpret_cast<uintptr_t>(ptrStorageObject.get()));
+		
+		uidObject = uidTemp;
 
 		std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidObject, ptrStorageObject);
 
@@ -555,15 +561,15 @@ public:
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 #endif __CONCURRENT__
 
-		if (m_mpObjects.find(&*uidObject) != m_mpObjects.end())
+		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[&*uidObject];
+			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
 		}
 		else
 		{
-			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 			if (!m_ptrHead)
 			{
 				m_ptrHead = ptrItem;
@@ -884,7 +890,7 @@ private:
 
 			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
 
-			m_mpObjects.erase(&ptrItemToFlush->m_uidSelf);
+			m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
 
 			m_ptrTail = ptrItemToFlush->m_ptrPrev;
 
@@ -987,10 +993,10 @@ private:
 					throw new std::logic_error("should not occur!");
 				}
 
-				m_mpUIDUpdates[std::move(m_ptrTail->m_uidSelf)] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
+				m_mpUIDUpdates[m_ptrTail->m_uidSelf] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
 			}
 
-			m_mpObjects.erase(&m_ptrTail->m_uidSelf);
+			m_mpObjects.erase(m_ptrTail->m_uidSelf);
 
 			std::shared_ptr<Item> ptrTemp = m_ptrTail;
 
@@ -1055,8 +1061,8 @@ private:
 
 				m_mpUIDUpdates[ptrCurrentTail->m_uidSelf] = std::make_pair(uidUpdated, ptrCurrentTail->m_ptrObject);
 
-				m_mpObjects[&ptrCurrentTail->m_uidSelf] = ptrCurrentTail;
-				m_mpObjects.erase(&ptrCurrentTail->m_uidSelf);
+				m_mpObjects[ptrCurrentTail->m_uidSelf] = ptrCurrentTail;
+				m_mpObjects.erase(ptrCurrentTail->m_uidSelf);
 			}
 
 			//m_mpObjects.erase(m_ptrTail->m_uidSelf);
