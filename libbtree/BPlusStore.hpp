@@ -99,8 +99,20 @@ public:
         {
 #ifdef __TREE_WITH_CACHE__
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode, uidUpdated);    //TODO: lock
+            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode, uidUpdated);
+#else __TREE_WITH_CACHE__
+            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
+#endif __TREE_WITH_CACHE__
 
+            if (ptrCurrentNode == nullptr)
+            {
+                throw new std::logic_error("should not occur!");
+            }
+#ifdef __CONCURRENT__
+            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
+#endif __CONCURRENT__
+
+#ifdef __TREE_WITH_CACHE__
             if (uidUpdated != std::nullopt)
             {
                 if (ptrLastNode != nullptr)
@@ -117,20 +129,7 @@ public:
 
                 uidCurrentNode = *uidUpdated;
             }
-#else __TREE_WITH_CACHE__
-            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
-#endif __TREE_WITH_CACHE__
 
-#ifdef __CONCURRENT__
-            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
-#endif __CONCURRENT__
-
-            if (ptrCurrentNode == nullptr)
-            {
-                throw new std::logic_error("should not occur!");
-            }
-
-#ifdef __TREE_WITH_CACHE__
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
 #endif __TREE_WITH_CACHE__
 
@@ -184,11 +183,29 @@ public:
 
                     if (errCode != ErrorCode::Success)
                     {
-                        throw new std::logic_error("should not occur!");
+                        throw new std::logic_error(".....");
                     }
 
                     uidLHSChildNode = uidCurrentNode;
                     ptrLHSChildNode = ptrCurrentNode;
+
+#ifdef __TREE_WITH_CACHE__
+                    bool bTest = false;
+                    for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
+                    {
+                        if ((*itCurrent).first == uidCurrentNode)
+                        {
+                            bTest = true;
+                            vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
+                            break;
+                        }
+                    }
+
+                    if (!bTest)
+                    {
+                        throw new std::logic_error(".....");
+                    }
+#endif __TREE_WITH_CACHE__
                 }
                 else
                 {
@@ -208,24 +225,6 @@ public:
             ptrCurrentNode = vtNodes.back().second;
 
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->getInnerData());
-
-#ifdef __TREE_WITH_CACHE__
-            bool test = false;
-            for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
-            {
-                if ((*itCurrent).first == uidCurrentNode)
-                {
-                    test = true;
-                    vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
-                    break;
-                }
-            }
-
-            if (!test)
-            {
-                throw new std::logic_error("should not occur!");
-            }
-#endif __TREE_WITH_CACHE__
 
             if (ptrIndexNode->insert(pivotKey, *uidRHSChildNode) != ErrorCode::Success)
             {
@@ -250,6 +249,23 @@ public:
                     throw new std::logic_error("should not occur!"); // for the time being!
                 }
 
+#ifdef __TREE_WITH_CACHE__
+                bool test = false;
+                for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
+                {
+                    if ((*itCurrent).first == uidCurrentNode)
+                    {
+                        test = true;
+                        vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
+                        break;
+                    }
+                }
+
+                if (!test)
+                {
+                    throw new std::logic_error("should not occur!");
+                }
+#endif __TREE_WITH_CACHE__
             }
 
             uidLHSChildNode = uidCurrentNode;
@@ -270,43 +286,47 @@ public:
 #ifdef __TREE_WITH_CACHE__
             ptrCurrentNode->setDirtyFlag(true);
 
-            bool test = false;
+            bool bTest = false;
             for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
             {
                 if ((*itCurrent).first == uidCurrentNode)
                 {
-                    test = true;
+                    bTest = true;
                     vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
                     break;
                 }
             }
 
-            if (!test)
-            {
-                throw new std::logic_error("should not occur!");
-            }
-        } 
-        else if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
-        {
-            bool test = false;
-            for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
-            {
-                if ((*itCurrent).first == uidCurrentNode)
-                {
-                    test = true;
-                    vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
-                    break;
-                }
-            }
-
-            if (!test)
+            if (!bTest)
             {
                 throw new std::logic_error("should not occur!");
             }
         }
+        //else if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
+        //{
+        //    throw new std::logic_error("should not occur!");
+        //    
+        //    bool bTest = false;
+        //    for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
+        //    {
+        //        if ((*itCurrent).first == uidCurrentNode)
+        //        {
+        //            bTest = true;
+        //            vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
+        //            break;
+        //        }
+        //    }
+
+        //    if (!bTest)
+        //    {
+        //        throw new std::logic_error("should not occur!");
+        //    }
+        //}
 
         m_ptrCache->reorder(vtAccessedNodes);
         vtAccessedNodes.clear();
+#else __TREE_WITH_CACHE__
+        }
 #endif __TREE_WITH_CACHE__
 
         return ecResult;
@@ -333,7 +353,20 @@ public:
 #ifdef __TREE_WITH_CACHE__
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
             m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode, uidUpdated);
+#else __TREE_WITH_CACHE__
+            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
+#endif __TREE_WITH_CACHE__
 
+            if (ptrCurrentNode == nullptr)
+            {
+                throw new std::logic_error("Cache/Storage does not contain the requested object.");
+            }
+
+#ifdef __CONCURRENT__
+            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
+#endif __CONCURRENT__
+
+#ifdef __TREE_WITH_CACHE__
             if (uidUpdated != std::nullopt)
             {
                 ObjectTypePtr ptrLastNode = vtAccessedNodes.size() > 0 ? vtAccessedNodes[vtAccessedNodes.size() - 1].second : nullptr;
@@ -352,19 +385,11 @@ public:
 
                 uidCurrentNode = *uidUpdated;
             }
-#else __TREE_WITH_CACHE__
-            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
 #endif __TREE_WITH_CACHE__
 
 #ifdef __CONCURRENT__
-            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
             vtLocks.erase(vtLocks.begin());
 #endif __CONCURRENT__
-
-            if (ptrCurrentNode == nullptr)
-            {
-                throw new std::logic_error("Cache/Storage does not contain the requested object.");
-            }
 
 #ifdef __TREE_WITH_CACHE__
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
@@ -422,7 +447,20 @@ public:
 #ifdef __TREE_WITH_CACHE__
             std::optional<ObjectUIDType> uidUpdated = std::nullopt;
             m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode, uidUpdated);
+#else __TREE_WITH_CACHE__
+            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
+#endif __TREE_WITH_CACHE__
 
+            if (ptrCurrentNode == nullptr)
+            {
+                throw new std::logic_error("Cache/Storage does not contain the requested object.");
+            }
+
+#ifdef __CONCURRENT__
+            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
+#endif __CONCURRENT__
+
+#ifdef __TREE_WITH_CACHE__
             if (uidUpdated != std::nullopt)
             {
                 if (ptrLastNode != nullptr)
@@ -439,20 +477,9 @@ public:
 
                 uidCurrentNode = *uidUpdated;
             }
-#else __TREE_WITH_CACHE__
-            m_ptrCache->getObject(uidCurrentNode, ptrCurrentNode);
 #endif __TREE_WITH_CACHE__
 
-#ifdef __CONCURRENT__
-            vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
-#endif __CONCURRENT__
-
             vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidCurrentNode, ptrCurrentNode));
-
-            if (ptrCurrentNode == nullptr)
-            {
-                throw new std::logic_error("Cache/Storage does not contain the requested object.");
-            }
 
 #ifdef __TREE_WITH_CACHE__
             vtAccessedNodes.push_back(std::make_pair(uidCurrentNode, ptrCurrentNode));
@@ -516,18 +543,18 @@ public:
                         ptrLastNode->setDirtyFlag(true);
                         ptrCurrentNode->setDirtyFlag(true);
 
-                        bool test = false;
+                        bool bTest = false;
                         for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
                         {
                             if ((*itCurrent).first == uidLastNode)
                             {
-                                test = true;
+                                bTest = true;
                                 vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidAffectedNode, nullptr));
                                 break;
                             }
                         }
 
-                        if (!test)
+                        if (!bTest)
                         {
                             throw new std::logic_error("should not occur!");
                         }
@@ -594,18 +621,18 @@ public:
                     ptrCurrentNode->setDirtyFlag(true);
                     ptrChildNode->setDirtyFlag(true);
 
-                    bool test = false;
+                    bool bTest = false;
                     for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
                     {
                         if ((*itCurrent).first == uidCurrentNode)
                         {
-                            test = true;
+                            bTest = true;
                             vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidAffectedNode, nullptr));
                             break;
                         }
                     }
 
-                    if (!test)
+                    if (!bTest)
                     {
                         throw new std::logic_error("should not occur!");
                     }
@@ -664,16 +691,16 @@ public:
         return ecResult;
     }
 
-    void print(std::ofstream & out)
+    void print(std::ofstream & os)
     {
         int nSpace = 7;
 
         std::string prefix;
 
-        out << prefix << "|" << std::endl;
-        out << prefix << "|" << std::string(nSpace, '-').c_str() << "(root)";
+        os << prefix << "|" << std::endl;
+        os << prefix << "|" << std::string(nSpace, '-').c_str() << "(root)";
 
-        out << std::endl;
+        os << std::endl;
 
         ObjectTypePtr ptrRootNode = nullptr;
 
@@ -693,19 +720,19 @@ public:
         {
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrRootNode->getInnerData());
 
-            ptrIndexNode->template print<CacheType, ObjectTypePtr>(out, m_ptrCache, 0, prefix);
+            ptrIndexNode->template print<CacheType, ObjectTypePtr>(os, m_ptrCache, 0, prefix);
         }
         else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRootNode->getInnerData()))
         {
             std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrRootNode->getInnerData());
 
-            ptrDataNode->print(out, 0, prefix);
+            ptrDataNode->print(os, 0, prefix);
         }
     }
 
-    void getCacheState(size_t& lru, size_t& map)
+    void getCacheState(size_t& nObjectsLinkedList, size_t& nObjectsInMap)
     {
-        return m_ptrCache->getCacheState(lru, map);
+        return m_ptrCache->getCacheState(nObjectsLinkedList, nObjectsInMap);
     }
 
 #ifdef __TREE_WITH_CACHE__
@@ -781,7 +808,7 @@ public:
     }
 
     void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::Media nMediaType)
+        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
     {
         nNewOffset = nOffset;
 
@@ -834,7 +861,7 @@ public:
 
                 size_t nNodeSize = ptrIndexNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nNewOffset, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, IndexNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 
@@ -862,7 +889,7 @@ public:
 
                 size_t nNodeSize = ptrDataNode->getSize();
 
-                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nNewOffset, nBlockSize, nNodeSize);
+                ObjectUIDType uidUpdated = ObjectUIDType::createAddressFromArgs(nMediaType, DataNodeType::UID, nNewOffset * nBlockSize, nNodeSize);
 
                 vtNodes[idx].second.first = uidUpdated;
 

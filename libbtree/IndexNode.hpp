@@ -68,20 +68,20 @@ public:
 			nOffset += sizeof(uint16_t);
 
 			m_vtPivots.resize(nKeyCount);
-			//m_vtChildren.resize(nValueCount);
+			m_vtChildren.resize(nValueCount);
 
 			uint32_t nKeysSize = nKeyCount * sizeof(KeyType);
 			memcpy(m_vtPivots.data(), szData + nOffset, nKeysSize);
 			nOffset += nKeysSize;
 
-			for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
-			{
-				m_vtChildren.push_back(szData + nOffset);
-				nOffset += sizeof(typename ObjectUIDType::NodeUID);
-			}
+			//for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
+			//{
+			//	m_vtChildren.push_back(szData + nOffset);
+			//	nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			//}
 
-			//uint32_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-			//memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
+			uint32_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
 		}
 		else
 		{
@@ -94,7 +94,7 @@ public:
 		}
 	}
 
-	IndexNode(std::fstream& is)
+	IndexNode(std::fstream& fs)
 	{
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -102,23 +102,22 @@ public:
 			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value)
 		{
 			uint16_t nKeyCount, nValueCount;
-			is.read(reinterpret_cast<char*>(&nKeyCount), sizeof(uint16_t));
-			is.read(reinterpret_cast<char*>(&nValueCount), sizeof(uint16_t));
+			fs.read(reinterpret_cast<char*>(&nKeyCount), sizeof(uint16_t));
+			fs.read(reinterpret_cast<char*>(&nValueCount), sizeof(uint16_t));
 
 			m_vtPivots.resize(nKeyCount);
-			//m_vtChildren.resize(nValueCount);
+			m_vtChildren.resize(nValueCount);
 
-			is.read(reinterpret_cast<char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			
-			
-			for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
-			{
-				ObjectUIDType uid;
-				is.read(reinterpret_cast<char*>(&uid), sizeof(typename ObjectUIDType::NodeUID));
-				m_vtChildren.push_back(uid);
-				//nOffset += sizeof(typename ObjectUIDType::NodeUID);
-			}
-			//is.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
+			fs.read(reinterpret_cast<char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
+						
+			//for (uint16_t nChild = 0; nChild < nValueCount; nChild++)
+			//{
+			//	ObjectUIDType uid;
+			//	is.read(reinterpret_cast<char*>(&uid), sizeof(typename ObjectUIDType::NodeUID));
+			//	m_vtChildren.push_back(uid);
+			//	//nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			//}
+			fs.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
 		}
 		else
 		{
@@ -445,12 +444,12 @@ public:
 		return nChildIdx;
 	}
 
-	inline ObjectUIDType getChildAt(size_t nIdx) const 
+	inline const ObjectUIDType& getChildAt(size_t nIdx) const 
 	{
 		return m_vtChildren[nIdx];
 	}
 
-	inline ObjectUIDType getChild(const KeyType& key) const
+	inline const ObjectUIDType& getChild(const KeyType& key) const
 	{
 		return m_vtChildren[getChildNodeIdx(key)];
 	}
@@ -584,11 +583,12 @@ public:
 			os.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(uint16_t));
 			os.write(reinterpret_cast<const char*>(&nValueCount), sizeof(uint16_t));
 			os.write(reinterpret_cast<const char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			
-			for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
-			{
-				os.write(reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));	// fix it!
-			}
+			os.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+
+			//for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
+			//{
+			//	os.write(reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+			//}
 
 			auto it = m_vtChildren.begin();
 			while (it != m_vtChildren.end())
@@ -657,15 +657,15 @@ public:
 			memcpy(szBuffer + nOffset, m_vtPivots.data(), nKeysSize);
 			nOffset += nKeysSize;
 
-			for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
-			{
-				memcpy(szBuffer + nOffset, reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));
-				nOffset += sizeof(typename ObjectUIDType::NodeUID);
-			}
+			//for (auto itChild = m_vtChildren.begin(); itChild != m_vtChildren.end(); itChild++)
+			//{
+			//	memcpy(szBuffer + nOffset, reinterpret_cast<const char*>(&(*itChild).m_uid), sizeof(typename ObjectUIDType::NodeUID));
+			//	nOffset += sizeof(typename ObjectUIDType::NodeUID);
+			//}
 
-			//size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
-			//memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
-			//nOffset += nValuesSize;
+			size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
+			nOffset += nValuesSize;
 
 			//assert(nBufferSize == nOffset);
 

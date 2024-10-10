@@ -4,13 +4,12 @@
 #include <string>
 #include <cstring>
 #include <stdexcept>
-
-//#pragma pack(1)
+#include <optional>
 
 class ObjectFatUID
 {
 public:
-	enum Media
+	enum StorageMedia
 	{
 		None = 0,
 		Volatile,
@@ -36,9 +35,9 @@ public:
 		} FATPOINTER;
 	};
 
-public:
+private:
 	NodeUID m_uid;
-	size_t m_hash;
+	//size_t m_hash;
 
 public:
 	inline uint8_t getObjectType() const
@@ -61,18 +60,19 @@ public:
 		return m_uid.FATPOINTER.m_ptrFile.m_nOffset;
 	}
 
-	inline uint32_t getPersistentBytesSize() const
+	inline uint32_t getPersistentObjectSize() const
 	{
 		return m_uid.FATPOINTER.m_ptrFile.m_nSize;
 	}
 
+public:
 	template <typename... Args>
-	static ObjectFatUID createAddressFromArgs(Media nMediaType, Args... args)
+	static ObjectFatUID createAddressFromArgs(StorageMedia nMediaType, Args... args)
 	{
 		switch (nMediaType)
 		{
 		case None:
-			throw new std::logic_error("should not occur!");
+			throw new std::logic_error(".....");
 			break;
 		case Volatile:
 			return createAddressFromVolatilePointer(args...);
@@ -87,39 +87,39 @@ public:
 			break;
 		}
 
-		throw new std::logic_error("should not occur!");
+		throw new std::logic_error(".....");
 	}
 
-	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nPos, uint16_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromFileOffset(uint8_t nType, uint32_t nOffset, uint32_t nSize)
 	{
-		ObjectFatUID key;
-		key.m_uid.m_nType = nType;
-		key.m_uid.m_nMediaType = File;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
+		ObjectFatUID uid;
+		uid.m_uid.m_nType = nType;
+		uid.m_uid.m_nMediaType = File;
+		uid.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nOffset;
+		uid.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
 
-		return key;
+		return std::move(uid);
 	}
 
 	static ObjectFatUID createAddressFromVolatilePointer(uint8_t nType, uintptr_t ptr, ...)
 	{
-		ObjectFatUID key;
-		key.m_uid.m_nType = nType;
-		key.m_uid.m_nMediaType = Volatile;
-		key.m_uid.FATPOINTER.m_ptrVolatile = ptr;
+		ObjectFatUID uid;
+		uid.m_uid.m_nType = nType;
+		uid.m_uid.m_nMediaType = Volatile;
+		uid.m_uid.FATPOINTER.m_ptrVolatile = ptr;
 
-		return key;
+		return std::move(uid);
 	}
 
-	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nPos, uint16_t nBlockSize, uint32_t nSize)
+	static ObjectFatUID createAddressFromDRAMCacheCounter(uint8_t nType, uint32_t nOffset, uint32_t nSize)
 	{
-		ObjectFatUID key;
-		key.m_uid.m_nType = nType;
-		key.m_uid.m_nMediaType = DRAM;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nPos * nBlockSize;
-		key.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
+		ObjectFatUID uid;
+		uid.m_uid.m_nType = nType;
+		uid.m_uid.m_nMediaType = DRAM;
+		uid.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nOffset;
+		uid.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
 
-		return key;
+		return std::move(uid);
 	}
 
 	bool operator==(const ObjectFatUID& rhs) const
@@ -185,32 +185,30 @@ public:
 		//return memcmp(&m_uid, &rhs.m_uid, sizeof(NodeUID)) < 0;
 	}
 
-	inline size_t gethash() const
+	size_t gethash() const
 	{
-		return m_hash;
-	}
-
-	void recalculateHash()
-	{
-		m_hash = std::hash<uint8_t>()(m_uid.m_nType);
-		m_hash ^= std::hash<uint8_t>()(m_uid.m_nMediaType);
+		size_t hashValue = 0;
+		hashValue ^= std::hash<uint8_t>()(m_uid.m_nType);
+		hashValue ^= std::hash<uint8_t>()(m_uid.m_nMediaType);
 
 		switch (m_uid.m_nMediaType)
 		{
-		case ObjectFatUID::Media::None:
+		case ObjectFatUID::StorageMedia::None:
 			break;
-		case ObjectFatUID::Media::Volatile:
-			m_hash ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
+		case ObjectFatUID::StorageMedia::Volatile:
+			hashValue ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
 			break;
-		case ObjectFatUID::Media::DRAM:
-			m_hash ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
+		case ObjectFatUID::StorageMedia::DRAM:
+			hashValue ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
 			break;
-		case ObjectFatUID::Media::File:
+		case ObjectFatUID::StorageMedia::File:
 			size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 			size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
-			m_hash ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
+			hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
 			break;
 		}
+
+		return hashValue;
 	}
 
 	bool compare(const ObjectFatUID& rhs) const
@@ -218,6 +216,7 @@ public:
 		return *this == rhs;
 	}
 
+/*
 	struct HashFunction
 	{
 	public:
@@ -269,7 +268,7 @@ public:
 			//return memcmp(&lhs.m_uid, &rhs.m_uid, sizeof(NodeUID)) == 0;
 		}
 	};
-
+*/
 
 public:
 	~ObjectFatUID()
@@ -280,14 +279,14 @@ public:
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
 
-		m_hash = 0;
+		//m_hash = 0;
 	}
 
 	ObjectFatUID(const char* uid)
 	{
 		const NodeUID* i = reinterpret_cast<const NodeUID*>(uid);
 		m_uid = *i;
-		m_hash = 0;
+		//m_hash = 0;
 	}
 
 	ObjectFatUID()
@@ -298,7 +297,7 @@ public:
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = 0;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = 0;
 
-		m_hash = 0;
+		//m_hash = 0;
 	}
 
 	ObjectFatUID(const ObjectFatUID& other)
@@ -309,19 +308,44 @@ public:
 		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
 		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
 
-		recalculateHash();
+		//m_hash = 0;
 	}
 
-	ObjectFatUID(ObjectFatUID& other)
+	ObjectFatUID& operator=(const ObjectFatUID& other)
 	{
-		m_uid.m_nType = other.m_uid.m_nType;
-		m_uid.m_nMediaType = other.m_uid.m_nMediaType;
-		m_uid.FATPOINTER.m_ptrVolatile = other.m_uid.FATPOINTER.m_ptrVolatile;
-		m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.m_uid.FATPOINTER.m_ptrFile.m_nOffset;
-		m_uid.FATPOINTER.m_ptrFile.m_nSize = other.m_uid.FATPOINTER.m_ptrFile.m_nSize;
-
-		recalculateHash();
+		m_uid = other.m_uid;
+		return *this;
 	}
+
+	ObjectFatUID(ObjectFatUID&& other) noexcept
+	{
+		m_uid = std::move(other.m_uid);
+	}
+
+	ObjectFatUID& operator=(ObjectFatUID&& other) noexcept {
+		
+		if (this == &other) 
+			return *this;
+		
+		m_uid = std::move(other.m_uid);
+
+		return *this;
+	}
+
+
+	//ObjectFatUID(std::optional<ObjectFatUID>& other) noexcept
+	//{
+	//	m_uid.m_nType = other.value().m_uid.m_nType;
+	//	m_uid.m_nMediaType = other.value().m_uid.m_nMediaType;
+	//	m_uid.FATPOINTER.m_ptrVolatile = other.value().m_uid.FATPOINTER.m_ptrVolatile;
+	//	m_uid.FATPOINTER.m_ptrFile.m_nOffset = other.value().m_uid.FATPOINTER.m_ptrFile.m_nOffset;
+	//	m_uid.FATPOINTER.m_ptrFile.m_nSize = other.value().m_uid.FATPOINTER.m_ptrFile.m_nSize;
+
+	//	//m_hash = 0;
+	//}
+
+	//ObjectFatUID(const ObjectFatUID&) = delete;
+	//ObjectFatUID& operator=(const ObjectFatUID&) = delete;
 
 	std::string toString() const
 	{
@@ -358,6 +382,46 @@ namespace std {
 		size_t operator()(const ObjectFatUID& rhs) const
 		{
 			return rhs.gethash();
+		}
+	};
+
+	template <>
+	struct hash<const ObjectFatUID*> {
+		size_t operator()(const ObjectFatUID* rhs) const
+		{
+			return rhs->gethash();
+		}
+	};
+
+	template <>
+	struct hash<const std::shared_ptr<ObjectFatUID>> {
+		size_t operator()(const std::shared_ptr<ObjectFatUID> rhs) const
+		{
+			return rhs->gethash();
+		}
+	};
+
+	template <>
+	struct equal_to<ObjectFatUID> {
+		bool operator()(const ObjectFatUID& lhs, const ObjectFatUID& rhs) const
+		{
+			return lhs.compare(rhs);
+		}
+	};
+
+	template <>
+	struct equal_to<const ObjectFatUID*> {
+		bool operator()(const ObjectFatUID* lhs, const ObjectFatUID* rhs) const
+		{
+			return lhs->compare(*rhs);
+		}
+	};
+
+	template <>
+	struct equal_to<const std::shared_ptr<ObjectFatUID>> {
+		bool operator()(const std::shared_ptr<ObjectFatUID> lhs, const std::shared_ptr<ObjectFatUID> rhs) const
+		{
+			return lhs->compare(*rhs);
 		}
 	};
 }

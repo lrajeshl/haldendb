@@ -34,15 +34,15 @@ private:
 	std::fstream m_fsStorage;
 
 	size_t m_nNextBlock;
-	std::vector<bool> m_vtAllocationTable;
 
 	ICallback* m_ptrCallback;
+
+	std::vector<bool> m_vtAllocationTable;
 
 #ifdef __CONCURRENT__
 	bool m_bStopFlush;
 	std::thread m_threadBatchFlush;
 
-	mutable std::shared_mutex m_mtxFile;
 	mutable std::shared_mutex m_mtxStorage;
 
 	std::unordered_map<ObjectUIDType, std::shared_ptr<ObjectType>> m_mpObjects;
@@ -89,6 +89,23 @@ public:
 #endif __CONCURRENT__
 	}
 
+public:
+	inline size_t getNextAvailableBlockOffset()
+	{
+		return m_nNextBlock;
+	}
+
+	inline size_t getBlockSize()
+	{
+		return m_nBlockSize;
+	}
+
+	inline ObjectUIDType::StorageMedia getStorageType()
+	{
+		return ObjectUIDType::File;
+	}
+
+public:
 	template <typename... InitArgs>
 	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
 	{
@@ -134,22 +151,24 @@ public:
 		//char* szBuffer = NULL;
 		//ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
 
+		size_t nOffset = m_nNextBlock * m_nBlockSize;
+
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
-		m_fsStorage.seekp(m_nNextBlock * m_nBlockSize);
+		m_fsStorage.seekp(nOffset);
 		ptrObject->serialize(m_fsStorage, uidObjectType, nBufferSize);
 		//m_fsStorage.write(szBuffer, nBufferSize);
 		m_fsStorage.flush();	// how about flushing after enough bytes are written?
 
-		size_t nNextBlockOld = m_nNextBlock;
+		//size_t nNextBlockOld = m_nNextBlock;
 		//size_t nRequiredBlocks = std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);
 		//for (int idx = 0; idx < nRequiredBlocks; idx++)
 		//{
 		//	m_vtAllocationTable[m_nNextBlock++] = true;
 		//}
-		m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
+		m_nNextBlock += std::ceil(nBufferSize / (float)m_nBlockSize);;
 
 #ifdef __CONCURRENT__
 		lock_file_storage.unlock();
@@ -157,24 +176,9 @@ public:
 
 		//delete[] szBuffer;
 
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
+		uidUpdated = std::move(ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nOffset, nBufferSize));
 
 		return CacheErrorCode::Success;
-	}
-
-	inline size_t getWritePos()
-	{
-		return m_nNextBlock;
-	}
-
-	inline size_t getBlockSize()
-	{
-		return m_nBlockSize;
-	}
-
-	inline ObjectUIDType::Media getMediaType()
-	{
-		return ObjectUIDType::File;
 	}
 
 	CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects, size_t nNewOffset)

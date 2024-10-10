@@ -29,12 +29,13 @@ public:
 private:
 	char* m_szStorage;
 	size_t m_nStorageSize;
+	
 	size_t m_nBlockSize;
-
 	size_t m_nNextBlock;
-	std::vector<bool> m_vtAllocationTable;
 
 	ICallback* m_ptrCallback;
+
+	std::vector<bool> m_vtAllocationTable;
 
 #ifdef __CONCURRENT__
 	mutable std::shared_mutex m_mtxStorage;
@@ -57,71 +58,14 @@ public:
 
 		if (m_szStorage == nullptr)
 		{
-			throw new std::logic_error("should not occur!"); // TODO: critical log.
+			throw new std::logic_error(".....");
 		}
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 	}
 
-	template <typename... InitArgs>
-	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
-	{
-		m_ptrCallback = ptrCallback;// getNthElement<0>(args...);
-		return CacheErrorCode::Success;
-	}
-
-	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
-	{
-		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1];
-		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1);
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_szStorage + uidObject.getPersistentPointerValue());
-
-		//ptrObject->setDirtyFlag(false);
-		//delete[] szBuffer;
-
-		return ptrObject;
-	}
-
-	CacheErrorCode remove(const ObjectUIDType& ptrKey)
-	{
-		//throw new std::logic_error("no implementation!");
-		return CacheErrorCode::Success;
-	}
-
-	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
-	{
-		uint32_t nBufferSize = 0;
-		uint8_t uidObjectType = 0;
-
-		char* szBuffer = NULL;
-		ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
-
-#ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_dram_storage(m_mtxStorage);
-#endif __CONCURRENT__
-
-		memcpy(m_szStorage + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize);
-
-		size_t nNextBlockOld = m_nNextBlock;
-		//size_t nRequiredBlocks = std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);
-		//for (int idx = 0; idx < nRequiredBlocks; idx++)
-		//{
-		//	m_vtAllocationTable[m_nNextBlock++] = true;
-		//}
-		m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
-
-#ifdef __CONCURRENT__
-		lock_dram_storage.unlock();
-#endif __CONCURRENT__
-
-		delete[] szBuffer;
-
-		uidUpdated = ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nNextBlockOld, m_nBlockSize, nBufferSize + sizeof(uint8_t));
-
-		return CacheErrorCode::Success;
-	}
-
-	inline size_t getWritePos() const
+public:
+	inline size_t getNextAvailableBlockOffset() const
 	{
 		return m_nNextBlock;
 	}
@@ -131,9 +75,65 @@ public:
 		return m_nBlockSize;
 	}
 
-	inline ObjectUIDType::Media getMediaType()
+	inline ObjectUIDType::StorageMedia getStorageType()
 	{
 		return ObjectUIDType::DRAM;
+	}
+
+public:
+	template <typename... InitArgs>
+	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
+	{
+		m_ptrCallback = ptrCallback;	// getNthElement<0>(args...);
+		
+		return CacheErrorCode::Success;
+	}
+
+	CacheErrorCode remove(const ObjectUIDType& uidObject)
+	{
+		//throw new std::logic_error(".....");
+
+		return CacheErrorCode::Success;
+	}
+
+	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
+	{
+		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1];
+		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1);
+		//ptrObject->setDirtyFlag(false);
+		//delete[] szBuffer;
+
+		return std::make_shared<ObjectType>(m_szStorage + uidObject.getPersistentPointerValue());
+	}
+
+	CacheErrorCode addObject(const ObjectUIDType& uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
+	{
+		uint32_t nBufferSize = 0;
+		uint8_t uidObjectType = 0;
+
+		char* szBuffer = NULL;
+		ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
+
+		size_t nOffset = m_nNextBlock * m_nBlockSize;
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+#endif __CONCURRENT__
+
+		memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
+
+		//m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
+		m_nNextBlock += std::ceil(nBufferSize / (float)m_nBlockSize);
+
+#ifdef __CONCURRENT__
+		lock_storage.unlock();
+#endif __CONCURRENT__
+
+		delete[] szBuffer;
+
+		uidUpdated = std::move(ObjectUIDType::createAddressFromFileOffset(uidObject.getObjectType(), nOffset, nBufferSize));
+
+		return CacheErrorCode::Success;
 	}
 
 	CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects, size_t nNewOffset)
