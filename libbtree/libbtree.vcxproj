@@ -750,9 +750,11 @@
   <ItemGroup>
     <ClInclude Include="BPlusStore.hpp" />
     <ClInclude Include="DataNode.hpp" />
+    <ClInclude Include="DataNodeROpt.hpp" />
     <ClInclude Include="ErrorCodes.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="IndexNode.hpp" />
+    <ClInclude Include="IndexNodeROpt.hpp" />
     <ClInclude Include="NVMRODataNode.hpp" />
     <ClInclude Include="NVMROIndexNode.hpp" />
     <ClInclude Include="pch.h" />
