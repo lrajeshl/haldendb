@@ -61,6 +61,7 @@ private:
 
 	std::unique_ptr<StorageType> m_ptrStorage;
 
+	size_t m_nCacheFootprint;
 	size_t m_nCacheCapacity;
 	std::unordered_map<ObjectUIDType, std::shared_ptr<Item>> m_mpObjects;
 	std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, ObjectTypePtr>> m_mpUIDUpdates;
@@ -89,11 +90,14 @@ public:
 		m_ptrStorage.reset();
 
 		m_mpObjects.clear();
+
+		std::cout << "Cache size: " << m_nCacheFootprint << " bytes" << std::endl;
 	}
 
 	template <typename... StorageArgs>
 	LRUCache(size_t nCapacity, StorageArgs... args)
 		: m_nCacheCapacity(nCapacity)
+		, m_nCacheFootprint(0)
 		, m_ptrHead(nullptr)
 		, m_ptrTail(nullptr)
 	{
@@ -103,6 +107,15 @@ public:
 		m_bStop = false;
 		m_threadCacheFlush = std::thread(handlerCacheFlush, this);
 #endif __CONCURRENT__
+	}
+
+	void updateMemoryFootprint(size_t nMemoryFootprint)
+	{
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
+
+		m_nCacheFootprint += nMemoryFootprint;
 	}
 
 	template <typename... InitArgs>
@@ -197,6 +210,11 @@ public:
 
 			if (m_mpObjects.find(uidTemp) != m_mpObjects.end())
 			{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+				m_nCacheFootprint -= m_mpObjects[uidTemp]->m_ptrObject->getMemoryFootprint();
+				m_nCacheFootprint += ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 				std::shared_ptr<Item> ptrItem = m_mpObjects[uidTemp];
 				moveToFront(ptrItem);
 				return CacheErrorCode::Success;
@@ -204,6 +222,10 @@ public:
 #endif __CONCURRENT__
 
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
 
 			if (!m_ptrHead)
 			{
@@ -351,6 +373,11 @@ public:
 
 			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
 			{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
+				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
 				moveToFront(ptrItem);
 
@@ -365,6 +392,10 @@ public:
 #endif __CONCURRENT__
 
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
 
 			if (!m_ptrHead)
 			{
@@ -454,6 +485,13 @@ public:
 
 			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
 			{
+				// TODO: case where other threads might were accessing the same node and added it to the cache.
+				// but need to adjust memory_footprint.
+#ifdef __TRACK_CACHE_FOOTPRINT__
+				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
+				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
 				moveToFront(ptrItem);
 
@@ -468,6 +506,10 @@ public:
 #endif __CONCURRENT__
 
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
 
 			if (!m_ptrHead)
 			{
@@ -518,6 +560,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
+			throw new std::logic_error(".....");
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -525,6 +568,11 @@ public:
 		else
 		{
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			if (!m_ptrHead) 
 			{
 				m_ptrHead = ptrItem;
@@ -563,6 +611,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
+			throw new std::logic_error(".....");
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -570,6 +619,11 @@ public:
 		else
 		{
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			if (!m_ptrHead)
 			{
 				m_ptrHead = ptrItem;
@@ -607,6 +661,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
+			throw new std::logic_error(".....");
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -614,6 +669,11 @@ public:
 		else
 		{
 			m_mpObjects[&ptrItem->m_uidSelf] = ptrItem;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			if (!m_ptrHead)
 			{
 				m_ptrHead = ptrItem;
@@ -856,8 +916,19 @@ private:
 
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
+		//// Calculate the total size
+		//size_t totalSize = sizeof(m_mpObjects) + (m_mpObjects.bucket_count() * sizeof(void*)); // Size of the map structure
+
+		//for (const auto& pair : m_mpObjects) {
+		//	totalSize += sizeof(pair.first) + sizeof(pair.second) + sizeof(*pair.second); // Size of each key, pointer, and object
+		//}
+
+		//std::cout << "Total size: " << totalSize << " bytes" << std::endl;
+
 		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
+
+		//std::cout << "Cache size: " << m_nCacheFootprint << " bytes" << std::endl;
 
 		uint16_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
 

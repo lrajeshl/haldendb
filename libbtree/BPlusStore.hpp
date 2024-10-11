@@ -77,6 +77,8 @@ public:
         ErrorCode ecResult = ErrorCode::Error;
 
 #ifdef __TREE_WITH_CACHE__
+        size_t nMemoryFootprint = 0;
+
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtAccessedNodes;
 #endif __TREE_WITH_CACHE__
 
@@ -159,7 +161,11 @@ public:
             {
                 std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrCurrentNode->getInnerData());
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                if (ptrDataNode->insert(key, value, nMemoryFootprint) != ErrorCode::Success)
+#else __TRACK_CACHE_FOOTPRINT__
                 if (ptrDataNode->insert(key, value) != ErrorCode::Success)
+#endif __TRACK_CACHE_FOOTPRINT__
                 {
 #ifdef __CONCURRENT__
                     vtLocks.clear();
@@ -180,7 +186,11 @@ public:
 
                 if (ptrDataNode->requireSplit(m_nDegree))
                 {
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                    ErrorCode errCode = ptrDataNode->template split<CacheType, ObjectTypePtr>(m_ptrCache, uidRHSChildNode, ptrRHSChildNode, pivotKey, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                     ErrorCode errCode = ptrDataNode->template split<CacheType, ObjectTypePtr>(m_ptrCache, uidRHSChildNode, ptrRHSChildNode, pivotKey);
+#endif __TRACK_CACHE_FOOTPRINT__
 
                     if (errCode != ErrorCode::Success)
                     {
@@ -227,7 +237,11 @@ public:
 
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrCurrentNode->getInnerData());
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+            if (ptrIndexNode->insert(pivotKey, *uidRHSChildNode, nMemoryFootprint) != ErrorCode::Success)
+#else __TRACK_CACHE_FOOTPRINT__
             if (ptrIndexNode->insert(pivotKey, *uidRHSChildNode) != ErrorCode::Success)
+#endif __TRACK_CACHE_FOOTPRINT__
             {
                 // TODO: Should update be performed on cloned objects first?
                 throw new std::logic_error("should not occur!"); // for the time being!
@@ -242,7 +256,11 @@ public:
 
             if (ptrIndexNode->requireSplit(m_nDegree))
             {
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                ErrorCode errCode = ptrIndexNode->template split<CacheType>(m_ptrCache, uidRHSChildNode, ptrRHSChildNode, pivotKey, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                 ErrorCode errCode = ptrIndexNode->template split<CacheType>(m_ptrCache, uidRHSChildNode, ptrRHSChildNode, pivotKey);
+#endif __TRACK_CACHE_FOOTPRINT__
 
                 if (errCode != ErrorCode::Success)
                 {
@@ -330,6 +348,14 @@ public:
         }
 #endif __TREE_WITH_CACHE__
 
+        vtLocks.clear();
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        if (nMemoryFootprint != 0)
+        {
+            m_ptrCache->updateMemoryFootprint(nMemoryFootprint);
+        }
+#endif __TRACK_CACHE_FOOTPRINT__
         return ecResult;
     }
 

@@ -440,9 +440,41 @@ public:
 		return m_vtChildren.end();
 	}
 
-public:
-	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling)
+	inline size_t getMemoryFootprint() const
 	{
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			return 
+				sizeof(*this) 
+				+ (m_vtPivots.capacity() * sizeof(KeyType)) 
+				+ (m_vtChildren.capacity() * sizeof(ObjectUIDType));
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly provide functionality to calculate size.");
+		}
+	}
+
+public:
+#ifdef __TRACK_CACHE_FOOTPRINT__
+	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling, size_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
+	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling)
+#endif __TRACK_CACHE_FOOTPRINT__
+	{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		uint32_t nPivotContainerCapacity = m_vtPivots.capacity();
+		uint32_t nChildrenContainerCapacity = m_vtChildren.capacity();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 		auto it = std::lower_bound(m_vtPivots.begin(), m_vtPivots.end(), pivotKey);
 		auto nChildIdx = std::distance(m_vtPivots.begin(), it);
 
@@ -460,6 +492,35 @@ public:
 
 		m_vtPivots.insert(m_vtPivots.begin() + nChildIdx, pivotKey);
 		m_vtChildren.insert(m_vtChildren.begin() + nChildIdx + 1, uidSibling);
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			if (nPivotContainerCapacity != m_vtPivots.capacity())
+			{
+				nMemoryFootprint -= nPivotContainerCapacity * sizeof(KeyType);
+				nMemoryFootprint += m_vtPivots.capacity() * sizeof(KeyType);
+			}
+
+			if (nChildrenContainerCapacity != m_vtChildren.capacity())
+			{
+				nMemoryFootprint -= nChildrenContainerCapacity * sizeof(ObjectUIDType);
+				nMemoryFootprint += m_vtChildren.capacity() * sizeof(ObjectUIDType);
+			}
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly provide functionality to calculate size.");
+		}
+#endif __TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}
@@ -786,8 +847,17 @@ public:
 	}
 
 	template <typename CacheType, typename CacheObjectTypePtr>
+#ifdef __TRACK_CACHE_FOOTPRINT__
+	inline ErrorCode split(std::shared_ptr<CacheType> ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent, size_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode split(std::shared_ptr<CacheType> ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
+#endif __TRACK_CACHE_FOOTPRINT__
 	{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		uint32_t nPivotContainerCapacity = m_vtPivots.capacity();
+		uint32_t nChildrenContainerCapacity = m_vtChildren.capacity();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 		size_t nMid = m_vtPivots.size() / 2;
 
 		ptrCache->template createObjectOfType<SelfType>(uidSibling, ptrSibling,
@@ -803,6 +873,35 @@ public:
 
 		m_vtPivots.resize(nMid);
 		m_vtChildren.resize(nMid + 1);
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			if (nPivotContainerCapacity != m_vtPivots.capacity())
+			{
+				nMemoryFootprint -= nPivotContainerCapacity * sizeof(KeyType);
+				nMemoryFootprint += m_vtPivots.capacity() * sizeof(KeyType);
+			}
+
+			if (nChildrenContainerCapacity!= m_vtChildren.capacity())
+			{
+				nMemoryFootprint -= nChildrenContainerCapacity * sizeof(ValueType);
+				nMemoryFootprint += m_vtChildren.capacity() * sizeof(ValueType);
+			}
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly provide functionality to calculate size.");
+		}
+#endif __TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}

@@ -13,6 +13,18 @@
 #include "ErrorCodes.h"
 
 template <typename T>
+size_t getCoreObjectMemoryFootprint(const std::shared_ptr<T>& source) {
+	return source->getMemoryFootprint();
+}
+
+template <typename... Types>
+size_t getVariantMemoryFootprint(std::variant<std::shared_ptr<Types>...>& source) {
+	return std::visit([](const auto& ptr) -> size_t {
+		return getCoreObjectMemoryFootprint(ptr);
+		}, source);
+}
+
+template <typename T>
 std::shared_ptr<T> cloneSharedPtr(const std::shared_ptr<T>& source) {
 	return source ? std::make_shared<T>(*source) : nullptr;
 }
@@ -115,5 +127,10 @@ public:
 	inline void unlockObject()
 	{
 		m_mtx.unlock();
+	}
+
+	inline size_t getMemoryFootprint()
+	{
+		return sizeof(*this) + getVariantMemoryFootprint(m_objData);
 	}
 };

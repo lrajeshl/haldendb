@@ -373,6 +373,26 @@ public:
 		return m_vtChildren.end();
 	}
 
+	inline size_t getMemoryFootprint() const
+	{
+		if constexpr (std::is_trivial<KeyType>::value &&
+			std::is_standard_layout<KeyType>::value &&
+			std::is_trivial<ValueType>::value &&
+			std::is_standard_layout<ValueType>::value)
+		{
+			return sizeof(*this);// sizeof(m_vtKeys) + sizeof(m_vtValues) + sizeof(uint8_t);
+		}
+		else
+		{
+			static_assert(
+				std::is_trivial<KeyType>::value &&
+				std::is_standard_layout<KeyType>::value &&
+				std::is_trivial<ValueType>::value &&
+				std::is_standard_layout<ValueType>::value,
+				"Non-POD type is provided. Kindly provide functionality to calculate size.");
+		}
+	}
+
 public:
 	inline ErrorCode insert(const KeyType& pivotKey, const ObjectUIDType& uidSibling)
 	{
