@@ -16,6 +16,7 @@
 #include "VariadicNthType.h"
 
 #define FLUSH_COUNT 100
+#define MIN_CACHE_FOOTPRINT 10 * 1024 * 1024	// Safe check!
 
 using namespace std::chrono_literals;
 
@@ -85,6 +86,7 @@ public:
 		m_threadCacheFlush.join();
 #endif __CONCURRENT__
 
+		//presistCurrentCacheState();
 		flushAllItemsToStorage();
 
 		m_ptrHead.reset();
@@ -103,6 +105,10 @@ public:
 		, m_ptrHead(nullptr)
 		, m_ptrTail(nullptr)
 	{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		m_nCacheCapacity = m_nCacheCapacity < MIN_CACHE_FOOTPRINT ? MIN_CACHE_FOOTPRINT : m_nCacheCapacity;
+#endif __TRACK_CACHE_FOOTPRINT__
+
 		m_ptrStorage = std::make_unique<StorageType>(args...);
 		
 #ifdef __CONCURRENT__
@@ -717,7 +723,7 @@ public:
 
 	CacheErrorCode flush()
 	{
-		flushCacheToStorage();
+		presistCurrentCacheState();
 
 		return CacheErrorCode::Success;
 	}
@@ -923,23 +929,18 @@ private:
 
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
-		//// Calculate the total size
-		//size_t totalSize = sizeof(m_mpObjects) + (m_mpObjects.bucket_count() * sizeof(void*)); // Size of the map structure
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		if (m_nCacheFootprint <= m_nCacheCapacity)
+			return;
 
-		//for (const auto& pair : m_mpObjects) {
-		//	totalSize += sizeof(pair.first) + sizeof(pair.second) + sizeof(*pair.second); // Size of each key, pointer, and object
-		//}
-
-		//std::cout << "Total size: " << totalSize << " bytes" << std::endl;
-
+		while( m_nCacheFootprint >= m_nCacheCapacity)
+#else __TRACK_CACHE_FOOTPRINT__
 		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
 
-		//std::cout << "Cache size: " << m_nCacheFootprint << " bytes" << std::endl;
-
 		uint16_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
-
 		for (uint16_t idx = 0; idx < nFlushCount; idx++)
+#endif __TRACK_CACHE_FOOTPRINT__
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
@@ -1094,7 +1095,7 @@ private:
 #endif __CONCURRENT__
 	}
 
-	inline void flushAllItemsToStorage(bool bDeleteAfterFlush = true)
+	inline void flushAllItemsToStorage()
 	{
 		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
 
@@ -1195,69 +1196,141 @@ private:
 		vtObjects.clear();
 	}
 
-	inline void flushCacheToStorage()
+	inline void presistCurrentCacheState()
 	{
 #ifdef __CONCURRENT__
-		//The current implementation blocks the whole cache, should not be flush allowed at the node level!
-		//throw new std::logic_error("implementation missing!");
-		return; //fix this
-#else __CONCURRENT__
+		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
 
-		std::shared_ptr<Item> ptrCurrentTail = m_ptrTail;
-		int i = 0;
-		std::cout << m_mpObjects.size() << std::endl;
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
 
-		while (ptrCurrentTail)
+		std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
+
+		for (uint16_t idx = 0; idx < m_mpObjects.size(); idx++)
 		{
-			//std::cout << i++ << std::endl;
-			if (ptrCurrentTail->m_ptrObject.use_count() > 1)
+			if (ptrItemToFlush->m_ptrObject.use_count() > 1)
 			{
-				// Node in use.. technically this should not occur when flush is called.. anyhow abort the operation.. Also handle thsi case properly later!
 				/* Info:
 				 * Should proceed with the preceeding one?
 				 * But since each operation reorders the items at the end, therefore, the prceeding items would be in use as well!
 				 */
-				return;
+				break;
 			}
 
-			if (ptrCurrentTail->m_ptrObject->getDirtyFlag())
+			// Check if the object is in use
+			if (!ptrItemToFlush->m_ptrObject->tryLockObject())
 			{
-				if (m_mpUIDUpdates.size() > 0)
-				{
-					m_ptrCallback->applyExistingUpdates(ptrCurrentTail->m_ptrObject, m_mpUIDUpdates);
-				}
+				/* Info:
+				 * Should proceed with the preceeding one?
+				 * But since each operation reorders the items at the end, therefore, the prceeding items would be in use as well!
+				 */
+				break;
+			}
+			else
+			{
+				ptrItemToFlush->m_ptrObject->unlockObject();
+			}
+
+			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
+
+			ptrItemToFlush = ptrItemToFlush->m_ptrPrev;
+		}
+
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+
+		lock_cache.unlock();
+
+		if (m_mpUIDUpdates.size() > 0)
+		{
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
+		}
+
+		// TODO: ensure that no other thread should touch the storage related params..
+		size_t nNewOffset = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
+
+		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if ((*itObject).second.second.use_count() != 2)
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
+		}
+
+		
+		m_ptrStorage->addObjects(vtObjects, nNewOffset);
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
+		}
+		lock_storage.unlock();
+
+		m_cvUIDUpdates.notify_all();
+
+		vtObjects.clear();
+#else //__CONCURRENT__
+		while (m_mpObjects.size() > m_nCacheCapacity)
+		{
+			if (m_ptrTail->m_ptrObject.use_count() > 1)
+			{
+				/* Info:
+				 * Should proceed with the preceeding one?
+				 * But since each operation reorders the items at the end, therefore, the prceeding items would be in use as well!
+				 */
+				break;
+			}
+
+			if (m_mpUIDUpdates.size() > 0)
+			{
+				m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUIDUpdates);
+			}
+
+			if (m_ptrTail->m_ptrObject->getDirtyFlag())
+			{
 
 				ObjectUIDType uidUpdated;
-				if (m_ptrStorage->addObject(ptrCurrentTail->m_uidSelf, ptrCurrentTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
+				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
 					throw new std::logic_error("should not occur!");
 				}
 
-				if (m_mpUIDUpdates.find(ptrCurrentTail->m_uidSelf) != m_mpUIDUpdates.end())
+				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
 					throw new std::logic_error("should not occur!");
 				}
 
-				m_mpUIDUpdates[ptrCurrentTail->m_uidSelf] = std::make_pair(uidUpdated, ptrCurrentTail->m_ptrObject);
-
-				m_mpObjects[ptrCurrentTail->m_uidSelf] = ptrCurrentTail;
-				m_mpObjects.erase(ptrCurrentTail->m_uidSelf);
+				m_mpUIDUpdates[m_ptrTail->m_uidSelf] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
 			}
 
-			//m_mpObjects.erase(m_ptrTail->m_uidSelf);
+			m_mpObjects.erase(m_ptrTail->m_uidSelf);
 
-			//std::shared_ptr<Item> ptrTemp = m_ptrTail;
+			std::shared_ptr<Item> ptrTemp = m_ptrTail;
 
-			ptrCurrentTail = ptrCurrentTail->m_ptrPrev;
+			m_ptrTail = m_ptrTail->m_ptrPrev;
 
-			//if (m_ptrTail)
-			//{
-			//	m_ptrTail->m_ptrNext = nullptr;
-			//}
-			//else
-			//{
-			//	m_ptrHead = nullptr;
-			//}
+			if (m_ptrTail)
+			{
+				m_ptrTail->m_ptrNext = nullptr;
+			}
+			else
+			{
+				m_ptrHead = nullptr;
+			}
+
+			ptrTemp.reset();
 		}
 #endif __CONCURRENT__
 	}
