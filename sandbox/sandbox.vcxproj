@@ -489,7 +489,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__TREE_WITH_CACHE__;__CONCURRENT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;__TREE_WITH_CACHE__;__CONCURRENT__;__TRACK_CACHE_FOOTPRINT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\libglog\include;..\libbtree;..\libcache;..\libcista\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

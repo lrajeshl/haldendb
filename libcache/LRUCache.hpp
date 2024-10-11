@@ -85,6 +85,8 @@ public:
 		m_threadCacheFlush.join();
 #endif __CONCURRENT__
 
+		flushAllItemsToStorage();
+
 		m_ptrHead.reset();
 		m_ptrTail.reset();;
 		m_ptrStorage.reset();
@@ -142,6 +144,11 @@ public:
 		auto it = m_mpObjects.find(uidObject);
 		if (it != m_mpObjects.end()) 
 		{
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint -= (*it).second->m_ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			removeFromLRU((*it).second);
 			m_mpObjects.erase(((*it).first));
 			
@@ -961,6 +968,10 @@ private:
 
 			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint -= ptrItemToFlush->m_ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
 
 			m_ptrTail = ptrItemToFlush->m_ptrPrev;
@@ -997,7 +1008,6 @@ private:
 		
 		for(auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
 		{
-#ifdef VALIDITY_CHECKS
 			if ((*itObject).second.second.use_count() != 1)
 			{
 				throw new std::logic_error("should not occur!");
@@ -1007,7 +1017,6 @@ private:
 			{
 				throw new std::logic_error("should not occur!");
 			}
-#endif // VALIDITY_CHECKS
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
 		}
 
@@ -1019,12 +1028,10 @@ private:
 
 		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
 		{
-#ifdef VALIDITY_CHECKS
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
 				throw new std::logic_error("should not occur!");
 			}
-#endif VALIDITY_CHECKS
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
 		}
@@ -1085,6 +1092,107 @@ private:
 			ptrTemp.reset();
 		}
 #endif __CONCURRENT__
+	}
+
+	inline void flushAllItemsToStorage(bool bDeleteAfterFlush = true)
+	{
+		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
+
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+
+		for (uint16_t idx = 0; idx < m_mpObjects.size(); idx++)
+		{
+			if (m_ptrTail->m_ptrObject.use_count() > 1)
+			{
+				throw new std::logic_error(".....");
+			}
+
+			if (!m_ptrTail->m_ptrObject->tryLockObject())
+			{
+				throw new std::logic_error(".....");
+			}
+			else
+			{
+				m_ptrTail->m_ptrObject->unlockObject();
+			}
+
+			std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
+
+			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint -= ptrItemToFlush->m_ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
+			m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
+
+			m_ptrTail = ptrItemToFlush->m_ptrPrev;
+
+			ptrItemToFlush->m_ptrPrev = nullptr;
+			ptrItemToFlush->m_ptrNext = nullptr;
+
+			if (m_ptrTail)
+			{
+				m_ptrTail->m_ptrNext = nullptr;
+			}
+			else
+			{
+				m_ptrHead = nullptr;
+			}
+
+			ptrItemToFlush.reset();
+		}
+
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+
+		lock_cache.unlock();
+
+		if (m_mpUIDUpdates.size() > 0)
+		{
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
+		}
+
+		// TODO: ensure that no other thread should touch the storage related params..
+		size_t nNewOffset = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
+
+		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if ((*itObject).second.second.use_count() != 1)
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
+		}
+
+		lock_storage.unlock();
+
+		m_ptrStorage->addObjects(vtObjects, nNewOffset);
+
+		std::unique_lock<std::shared_mutex> relock_storage(m_mtxStorage);
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
+		}
+		relock_storage.unlock();
+
+		m_cvUIDUpdates.notify_all();
+
+		vtObjects.clear();
 	}
 
 	inline void flushCacheToStorage()

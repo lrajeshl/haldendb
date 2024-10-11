@@ -76,9 +76,11 @@ public:
     {
         ErrorCode ecResult = ErrorCode::Error;
 
-#ifdef __TREE_WITH_CACHE__
-        size_t nMemoryFootprint = 0;
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        int32_t nMemoryFootprint = 0;
+#endif __TRACK_CACHE_FOOTPRINT__
 
+#ifdef __TREE_WITH_CACHE__
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtAccessedNodes;
 #endif __TREE_WITH_CACHE__
 
@@ -452,6 +454,10 @@ public:
     {
         ErrorCode ecResult = ErrorCode::Success;
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        int32_t nMemoryFootprint = 0;
+#endif __TRACK_CACHE_FOOTPRINT__
+
         ObjectUIDType uidLastNode, uidCurrentNode;
         ObjectTypePtr ptrLastNode = nullptr, ptrCurrentNode = nullptr;
 
@@ -536,7 +542,11 @@ public:
             {
                 std::shared_ptr<DataNodeType> ptrDataNode = std::get<std::shared_ptr<DataNodeType>>(ptrCurrentNode->getInnerData());
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                if (ptrDataNode->remove(key, nMemoryFootprint) == ErrorCode::KeyDoesNotExist)
+#else __TRACK_CACHE_FOOTPRINT__
                 if (ptrDataNode->remove(key) == ErrorCode::KeyDoesNotExist)
+#endif __TRACK_CACHE_FOOTPRINT__
                 {
                     ecResult = ErrorCode::KeyDoesNotExist;
 
@@ -562,7 +572,15 @@ public:
 #ifdef __TREE_WITH_CACHE__
                         std::optional<ObjectUIDType> uidAffectedNode = std::nullopt;
                         ObjectTypePtr ptrAffectedNode = nullptr;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                        ptrParentNode->template rebalanceDataNode<CacheType>(m_ptrCache, uidCurrentNode, ptrDataNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                         ptrParentNode->template rebalanceDataNode<CacheType>(m_ptrCache, uidCurrentNode, ptrDataNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode);
+#endif __TRACK_CACHE_FOOTPRINT__
+
+
+
 #else __TREE_WITH_CACHE__
                         ptrParentNode->template rebalanceDataNode<CacheType>(m_ptrCache, uidCurrentNode, ptrDataNode, key, m_nDegree, uidToDelete);
 #endif __TREE_WITH_CACHE__
@@ -640,7 +658,13 @@ public:
                     std::optional<ObjectUIDType> uidAffectedNode = std::nullopt;
                     ObjectTypePtr ptrAffectedNode = nullptr;
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                    ptrParentIndexNode->template rebalanceIndexNode<CacheType>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                     ptrParentIndexNode->template rebalanceIndexNode<CacheType>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode);
+#endif __TRACK_CACHE_FOOTPRINT__
+
+
 #else __TREE_WITH_CACHE__
                     ptrParentIndexNode->template rebalanceIndexNode<CacheType>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete);
 #endif __TREE_WITH_CACHE__
@@ -715,6 +739,15 @@ public:
         m_ptrCache->reorder(vtAccessedNodes, false);
         vtAccessedNodes.clear();
 #endif __TREE_WITH_CACHE__
+
+        vtLocks.clear();
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        if (nMemoryFootprint != 0)
+        {
+            m_ptrCache->updateMemoryFootprint(nMemoryFootprint);
+        }
+#endif __TRACK_CACHE_FOOTPRINT__
 
         return ecResult;
     }
