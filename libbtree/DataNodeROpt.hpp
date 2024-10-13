@@ -754,6 +754,11 @@ public:
 			moveDataToDRAM(nMemoryFootprint);
 		}
 
+		if (ptrSibling->m_ptrRawData != nullptr)
+		{
+			ptrSibling->moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();

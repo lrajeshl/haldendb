@@ -154,6 +154,7 @@ public:
 #ifdef __CONCURRENT__
                     // Although lock to the last node is enough. 
                     // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
+                    //if( vtLocks.size() > 3)
                     vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
 #endif __CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);
@@ -432,7 +433,9 @@ public:
 #endif __TREE_WITH_CACHE__
 
 #ifdef __CONCURRENT__
-            vtLocks.erase(vtLocks.begin());
+            //if (vtLocks.size() > 3)
+            vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2); 
+            //vtLocks.erase(vtLocks.begin());
 #endif __CONCURRENT__
 
 #ifdef __TREE_WITH_CACHE__
@@ -557,6 +560,7 @@ public:
 #ifdef __CONCURRENT__
                     // Although lock to the last node is enough. 
                     // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
+                    //if (vtLocks.size() > 3)
                     vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
 #endif __CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);
@@ -580,9 +584,9 @@ public:
                     ecResult = ErrorCode::KeyDoesNotExist;
 
 #ifdef __CONCURRENT__
-                    vtLocks.pop_back();
+                    vtLocks.clear();
 #endif __CONCURRENT__
-                    vtNodes.pop_back();
+                    vtNodes.clear();
 
                     break;
                 }
@@ -748,13 +752,13 @@ public:
                     std::shared_ptr<IndexNodeType> ptrInnerNode = std::get<std::shared_ptr<IndexNodeType>>(ptrChildNode->getInnerData());
                     if (ptrInnerNode->getKeysCount() == 0)
                     {
-#ifdef __CONCURRENT__
-                        vtLocks.pop_back();
-#endif __CONCURRENT__
-
                         ObjectUIDType uidNewRootNode = ptrInnerNode->getChildAt(0);
                         m_ptrCache->remove(uidChildNode);
                         m_uidRootNode = uidNewRootNode;
+
+#ifdef __CONCURRENT__
+                        vtLocks.pop_back();
+#endif __CONCURRENT__
 
 #ifdef __TREE_WITH_CACHE__
                         // ptrChildNode->setDirtyFlag(true); Not needed!

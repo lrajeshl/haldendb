@@ -38,8 +38,11 @@ PACKED_STRUCT
 
 		~RAWDATA()
 		{
-			ptrPivots = nullptr;
-			ptrChildren = nullptr;
+			//delete ptrPivots;
+			//delete ptrChildren;
+
+			ptrPivots = NULL;
+			ptrChildren = NULL;
 		}
 
 		RAWDATA(const char* szData)
@@ -76,6 +79,7 @@ public:
 		m_vtChildren.clear();
 
 		delete m_ptrRawData;
+		m_ptrRawData = nullptr;
 	}
 
 	// Default constructor
@@ -108,7 +112,7 @@ public:
 
 			assert(UID == m_ptrRawData->nUID);
 
-			int32_t t = 0;
+			//int32_t t = 0;
 			//moveDataToDRAM(t);
 		}
 		else
@@ -188,6 +192,8 @@ public:
 			memcpy(m_vtPivots.data(), m_ptrRawData->ptrPivots, m_ptrRawData->nTotalPivots * sizeof(KeyType));
 			memcpy(m_vtChildren.data(), m_ptrRawData->ptrChildren, (m_ptrRawData->nTotalPivots + 1) * sizeof(typename ObjectUIDType::NodeUID));
 
+			assert(m_vtPivots.size() + 1 == m_vtChildren.size());
+
 			assert(m_ptrRawData->nUID == UID);
 			assert(m_ptrRawData->nTotalPivots == m_vtPivots.size());
 			for (int idx = 0, end = m_ptrRawData->nTotalPivots; idx < end; idx++)
@@ -256,6 +262,11 @@ public:
 	// Serializes the node's data into a char buffer
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, uint32_t& nBufferSize) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			throw new std::logic_error("There is not new data to be flushed!");
+		}
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
@@ -349,6 +360,8 @@ public:
 			//return std::distance(m_ptrRawData->ptrPivots, it);
 		}
 
+		assert(m_vtPivots.size() + 1 == m_vtChildren.size());
+
 		auto it = std::upper_bound(m_vtPivots.begin(), m_vtPivots.end(), key);
 		return std::distance(m_vtPivots.begin(), it);
 
@@ -381,6 +394,8 @@ public:
 		{
 			return m_ptrRawData->ptrChildren[getChildNodeIdx(key)];
 		}
+
+		assert(m_vtPivots.size() + 1 == m_vtChildren.size());
 
 		return m_vtChildren[getChildNodeIdx(key)];
 	}
@@ -1286,6 +1301,11 @@ public:
 			moveDataToDRAM(nMemoryFootprint);
 		}
 
+		if (ptrSibling->m_ptrRawData != nullptr)
+		{
+			ptrSibling->moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nPivotContainerCapacity = m_vtPivots.capacity();
 		uint32_t nChildrenContainerCapacity = m_vtChildren.capacity();
@@ -1331,6 +1351,7 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
+			throw new std::logic_error("fix...");
 			return printRONode(os, ptrCache, nLevel, stPrefix);
 		}
 
