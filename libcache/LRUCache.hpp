@@ -11,7 +11,7 @@
 #include  <algorithm>
 #include <tuple>
 #include <condition_variable>
-
+#include <assert.h>
 #include "IFlushCallback.h"
 #include "VariadicNthType.h"
 
@@ -62,8 +62,8 @@ private:
 
 	std::unique_ptr<StorageType> m_ptrStorage;
 
-	size_t m_nCacheFootprint;
-	size_t m_nCacheCapacity;
+	int64_t m_nCacheFootprint;
+	int64_t m_nCacheCapacity;
 	std::unordered_map<ObjectUIDType, std::shared_ptr<Item>> m_mpObjects;
 	std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, ObjectTypePtr>> m_mpUIDUpdates;
 
@@ -153,6 +153,8 @@ public:
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			m_nCacheFootprint -= (*it).second->m_ptrObject->getMemoryFootprint();
+
+			assert(m_nCacheFootprint >= 0);
 #endif __TRACK_CACHE_FOOTPRINT__
 
 			removeFromLRU((*it).second);
@@ -225,6 +227,9 @@ public:
 			{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 				m_nCacheFootprint -= m_mpObjects[uidTemp]->m_ptrObject->getMemoryFootprint();
+
+				assert(m_nCacheFootprint >= 0);
+
 				m_nCacheFootprint += ptrObject->getMemoryFootprint();
 #endif __TRACK_CACHE_FOOTPRINT__
 
@@ -388,6 +393,9 @@ public:
 			{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
+
+				;
+
 				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
 #endif __TRACK_CACHE_FOOTPRINT__
 
@@ -502,6 +510,9 @@ public:
 				// but need to adjust memory_footprint.
 #ifdef __TRACK_CACHE_FOOTPRINT__
 				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
+
+				assert(m_nCacheFootprint >= 0);
+					
 				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
 #endif __TRACK_CACHE_FOOTPRINT__
 
@@ -998,12 +1009,25 @@ private:
 
 		if (m_mpUIDUpdates.size() > 0)
 		{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			int32_t nMemoryFootprint = 0;
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates, nMemoryFootprint);
+			m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		// TODO: ensure that no other thread should touch the storage related params..
 		size_t nNewOffset = 0;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		int32_t nMemoryFootprint = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType(), nMemoryFootprint);
+		m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
+#endif __TRACK_CACHE_FOOTPRINT__
 
 		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
 		
@@ -1150,12 +1174,25 @@ private:
 
 		if (m_mpUIDUpdates.size() > 0)
 		{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			int32_t nMemoryFootprint = 0;
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates, nMemoryFootprint);
+			m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		// TODO: ensure that no other thread should touch the storage related params..
 		size_t nNewOffset = 0;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		int32_t nMemoryFootprint = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType(), nMemoryFootprint);
+		m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
+#endif __TRACK_CACHE_FOOTPRINT__
 
 		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
 
@@ -1350,6 +1387,22 @@ private:
 
 #ifdef __TREE_WITH_CACHE__
 public:
+#ifdef __TRACK_CACHE_FOOTPRINT__
+	void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUpdatedUIDs, int32_t& nMemoryFootprint)
+	{
+	}
+
+	void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
+		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUpdatedUIDs, int32_t& nMemoryFootprint)
+	{
+	}
+
+	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+		, size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType, int32_t& nMemoryFootprint)
+	{
+	}
+#else __TRACK_CACHE_FOOTPRINT__
 	void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
 		, std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUpdatedUIDs)
 	{
@@ -1364,5 +1417,6 @@ public:
 		, size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
 	{
 	}
+#endif __TRACK_CACHE_FOOTPRINT__
 #endif __TREE_WITH_CACHE__
 };

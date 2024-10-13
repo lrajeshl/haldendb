@@ -62,6 +62,7 @@ private:
 	std::vector<KeyType> m_vtKeys;
 	std::vector<ValueType> m_vtValues;
 
+public:
 	const RAWDATA* m_ptrRawData = nullptr;
 public:
 	// Destructor: Clears the keys and values vectors
@@ -70,7 +71,10 @@ public:
 		m_vtKeys.clear();
 		m_vtValues.clear();
 
-		delete m_ptrRawData;
+		if (m_ptrRawData != nullptr)
+		{
+			delete m_ptrRawData;
+		}
 	}
 
 	// Default constructor
@@ -91,6 +95,9 @@ public:
 	DataNodeROpt(const char* szData)
 		: m_ptrRawData(nullptr)
 	{
+		m_vtKeys.reserve(0);
+		m_vtValues.reserve(0);
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
@@ -100,7 +107,7 @@ public:
 
 			assert( UID == m_ptrRawData->nUID);
 
-			moveDataToDRAM();
+			//moveDataToDRAM();
 		}
 		else
 		{
@@ -157,7 +164,11 @@ public:
 	}
 
 public:
+#ifdef __TRACK_CACHE_FOOTPRINT__
+	inline void moveDataToDRAM(int32_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
 	inline void moveDataToDRAM()
+#endif __TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
@@ -177,6 +188,12 @@ public:
 
 			delete m_ptrRawData;
 			m_ptrRawData = nullptr;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint -= sizeof(RAWDATA);
+			nMemoryFootprint += getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 		}
 		else
 		{
@@ -187,6 +204,11 @@ public:
 	// Serializes the node's data into a char buffer
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, uint32_t& nBufferSize) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			throw new std::logic_error("There is not new data to be flushed!");
+		}
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
@@ -243,6 +265,11 @@ public:
 	// Writes the node's data to a file stream
 	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, uint32_t& nDataSize) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			throw new std::logic_error("There is not new data to be flushed!");
+		}
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
@@ -277,30 +304,80 @@ public:
 	// Determines if the node requires a split based on the given degree
 	inline bool requireSplit(size_t nDegree) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return m_ptrRawData->nTotalEntries > nDegree;
+		}
+
 		return m_vtKeys.size() > nDegree;
 	}
 
 	// Determines if the node requires merging based on the given degree
 	inline bool requireMerge(size_t nDegree) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return m_ptrRawData->nTotalEntries <= std::ceil(nDegree / 2.0f);
+		}
+
 		return m_vtKeys.size() <= std::ceil(nDegree / 2.0f);
 	}
 
 	// Retrieves the first key from the node
 	inline const KeyType& getFirstChild() const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return m_ptrRawData->ptrKeys[0];
+		}
+
 		return m_vtKeys[0];
 	}
 
 	// Returns the number of keys in the node
 	inline size_t getKeysCount() const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return m_ptrRawData->nTotalEntries;
+		}
+
 		return m_vtKeys.size();
 	}
 
 	// Retrieves the value for a given key
 	inline ErrorCode getValue(const KeyType& key, ValueType& value) const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			/*
+			size_t left = 0;
+			size_t right = size;
+
+			while (left < right) {
+				size_t mid = left + (right - left) / 2;
+
+				if (keys[mid] < key) {
+					left = mid + 1;
+				} else {
+					right = mid;
+				}
+			}
+
+			if (left < size && keys[left] == key) {
+				value = values[left];
+				return ErrorCode::Success;
+			}
+			*/
+
+			const KeyType* it = &(*std::lower_bound(m_ptrRawData->ptrKeys, m_ptrRawData->ptrKeys + m_ptrRawData->nTotalEntries, key));
+			if (it != m_ptrRawData->ptrKeys + m_ptrRawData->nTotalEntries && *it == key) {
+				value = m_ptrRawData->ptrValues[it - m_ptrRawData->ptrKeys];
+				return ErrorCode::Success;
+			}
+			return ErrorCode::KeyDoesNotExist;
+		}
+
 		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
 		if (it != m_vtKeys.end() && *it == key)
 		{
@@ -316,6 +393,11 @@ public:
 	// Returns the size of the serialized node
 	inline size_t getSize() const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return sizeof(RAWDATA);
+		}
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
@@ -340,6 +422,11 @@ public:
 
 	inline size_t getMemoryFootprint() const
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return sizeof(RAWDATA);
+		}
+
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
 			std::is_trivial<ValueType>::value &&
@@ -369,6 +456,11 @@ public:
 	inline ErrorCode remove(const KeyType& key)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
 		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
 
 		if (it != m_vtKeys.end() && *it == key)
@@ -423,6 +515,11 @@ public:
 	inline ErrorCode insert(const KeyType& key, const ValueType& value)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
@@ -481,6 +578,11 @@ public:
 	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
@@ -535,10 +637,15 @@ public:
 
 		return ErrorCode::Success;
 	}
-
+/*
 	// Splits the node and assigns the right half to the sibling node
 	inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM();
+		}
+
 		size_t nMid = m_vtKeys.size() / 2;
 
 		ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
@@ -551,7 +658,7 @@ public:
 
 		return ErrorCode::Success;
 	}
-
+*/
 	// Moves an entity from the left-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
@@ -559,6 +666,16 @@ public:
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
+		if (ptrLHSSibling->m_ptrRawData != nullptr)
+		{
+			ptrLHSSibling->moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
@@ -632,6 +749,11 @@ public:
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
@@ -678,6 +800,16 @@ public:
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent)
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			moveDataToDRAM(nMemoryFootprint);
+		}
+
+		if (ptrRHSSibling->m_ptrRawData != nullptr)
+		{
+			ptrRHSSibling->moveDataToDRAM(nMemoryFootprint);
+		}
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
@@ -748,6 +880,11 @@ public:
 	// Prints the node's keys and values to an output file stream
 	void print(std::ofstream& os, size_t nLevel, std::string stPrefix)
 	{
+		if (m_ptrRawData != nullptr)
+		{
+			return printRONode(os, nLevel, stPrefix);
+		}
+
 		uint8_t nSpaceCount = 7;
 
 		stPrefix.append(std::string(nSpaceCount - 1, ' '));
@@ -763,6 +900,28 @@ public:
 				<< m_vtKeys[nIndex]
 				<< ", V: "
 				<< m_vtValues[nIndex]
+				<< ")"
+				<< std::endl;
+		}
+	}
+
+	void printRONode(std::ofstream& os, size_t nLevel, std::string stPrefix)
+	{
+		uint8_t nSpaceCount = 7;
+
+		stPrefix.append(std::string(nSpaceCount - 1, ' '));
+		stPrefix.append("|");
+
+		for (size_t nIndex = 0; nIndex < m_ptrRawData->nTotalEntries; nIndex++)
+		{
+			os
+				<< " "
+				<< stPrefix
+				<< std::string(nSpaceCount, '-').c_str()
+				<< "(K: "
+				<< m_ptrRawData->ptrKeys[nIndex]
+				<< ", V: "
+				<< m_ptrRawData->ptrValues[nIndex]
 				<< ")"
 				<< std::endl;
 		}

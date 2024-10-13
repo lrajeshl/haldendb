@@ -122,7 +122,12 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
+#endif __TRACK_CACHE_FOOTPRINT__
                     //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
                     ptrLastNode->setDirtyFlag(true);
                 }
@@ -365,6 +370,10 @@ public:
     {
         ErrorCode ecResult = ErrorCode::Error;
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        int32_t nMemoryFootprint = 0;
+#endif __TRACK_CACHE_FOOTPRINT__
+
 #ifdef __TREE_WITH_CACHE__
         std::vector<std::pair<ObjectUIDType, ObjectTypePtr>> vtAccessedNodes;
 #endif __TREE_WITH_CACHE__
@@ -402,7 +411,12 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
+ 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
+#endif __TRACK_CACHE_FOOTPRINT__
                     //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
 
                     ptrLastNode->setDirtyFlag(true);
@@ -446,6 +460,15 @@ public:
         m_ptrCache->reorder(vtAccessedNodes);
         vtAccessedNodes.clear();
 #endif __TREE_WITH_CACHE__
+
+        vtLocks.clear();
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+        if (nMemoryFootprint != 0)
+        {
+            m_ptrCache->updateMemoryFootprint(nMemoryFootprint);
+        }
+#endif __TRACK_CACHE_FOOTPRINT__
 
         return ecResult;
     }
@@ -500,7 +523,13 @@ public:
                 if (ptrLastNode != nullptr)
                 {
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
+#endif __TRACK_CACHE_FOOTPRINT__
+
                     ptrLastNode->setDirtyFlag(true);
                 }
                 else
@@ -805,28 +834,43 @@ public:
         return ErrorCode::Success;
     }
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+    void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
+        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates, int32_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
     void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
+#endif __TRACK_CACHE_FOOTPRINT__
     {
         if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrObject->getInnerData()))
         {
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrObject->getInnerData());
 
-            auto it = ptrIndexNode->getChildrenBeginIterator();
-            while (it != ptrIndexNode->getChildrenEndIterator())
+#ifdef __TRACK_CACHE_FOOTPRINT__
+            bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
+            bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
+            if (bDirty)
             {
-                if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
-                {
-                    ObjectUIDType uidTemp = *it;
-
-                    *it = *(mpUIDUpdates[*it].first);
-
-                    mpUIDUpdates.erase(uidTemp);
-
-                    ptrObject->setDirtyFlag( true);
-                }
-                it++;
+                ptrObject->setDirtyFlag(true);
             }
+
+            //auto it = ptrIndexNode->getChildrenBeginIterator();
+            //while (it != ptrIndexNode->getChildrenEndIterator())
+            //{
+            //    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
+            //    {
+            //        ObjectUIDType uidTemp = *it;
+
+            //        *it = *(mpUIDUpdates[*it].first);
+
+            //        mpUIDUpdates.erase(uidTemp);
+
+            //        ptrObject->setDirtyFlag( true);
+            //    }
+            //    it++;
+            //}
         }
         else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrObject->getInnerData()))
         {
@@ -834,8 +878,13 @@ public:
         }
     }
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+    void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates, int32_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
     void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
+#endif __TRACK_CACHE_FOOTPRINT__
     {
         auto it = vtNodes.begin();
         while (it != vtNodes.end())
@@ -844,21 +893,30 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>((*it).second.second->getInnerData());
 
-                auto it_children = ptrIndexNode->getChildrenBeginIterator();
-                while (it_children != ptrIndexNode->getChildrenEndIterator())
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
+                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
+                if (bDirty)
                 {
-                    if (mpUIDUpdates.find(*it_children) != mpUIDUpdates.end())
-                    {
-                        ObjectUIDType uidTemp = *it_children;
-
-                        *it_children = *(mpUIDUpdates[*it_children].first);
-
-                        mpUIDUpdates.erase(uidTemp);
-
-                        (*it).second.second->setDirtyFlag( true);
-                    }
-                    it_children++;
+                    (*it).second.second->setDirtyFlag(true);
                 }
+                //auto it_children = ptrIndexNode->getChildrenBeginIterator();
+                //while (it_children != ptrIndexNode->getChildrenEndIterator())
+                //{
+                //    if (mpUIDUpdates.find(*it_children) != mpUIDUpdates.end())
+                //    {
+                //        ObjectUIDType uidTemp = *it_children;
+
+                //        *it_children = *(mpUIDUpdates[*it_children].first);
+
+                //        mpUIDUpdates.erase(uidTemp);
+
+                //        (*it).second.second->setDirtyFlag( true);
+                //    }
+                //    it_children++;
+                //}
             }
             else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>((*it).second.second->getInnerData()))
             {
@@ -868,8 +926,13 @@ public:
         }
     }
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
     void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
+        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType, int32_t& nMemoryFootprint)
+#else __TRACK_CACHE_FOOTPRINT__
+        void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+            , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
+#endif __TRACK_CACHE_FOOTPRINT__
     {
         nNewOffset = nOffset;
 
@@ -881,21 +944,31 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData());
 
-                auto it = ptrIndexNode->getChildrenBeginIterator();
-                while (it != ptrIndexNode->getChildrenEndIterator())
+#ifdef __TRACK_CACHE_FOOTPRINT__
+                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
+                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
+                if (bDirty)
                 {
-                    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
-                    {
-                        ObjectUIDType uidTemp = *it;
-
-                        *it = *(mpUIDUpdates[*it].first);
-
-                        mpUIDUpdates.erase(uidTemp);
-
-                        vtNodes[idx].second.second->setDirtyFlag(true);
-                    }
-                    it++;
+                    vtNodes[idx].second.second->setDirtyFlag(true);
                 }
+
+                //auto it = ptrIndexNode->getChildrenBeginIterator();
+                //while (it != ptrIndexNode->getChildrenEndIterator())
+                //{
+                //    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
+                //    {
+                //        ObjectUIDType uidTemp = *it;
+
+                //        *it = *(mpUIDUpdates[*it].first);
+
+                //        mpUIDUpdates.erase(uidTemp);
+
+                //        vtNodes[idx].second.second->setDirtyFlag(true);
+                //    }
+                //    it++;
+                //}
 
                 if (!vtNodes[idx].second.second->getDirtyFlag())
                 {
