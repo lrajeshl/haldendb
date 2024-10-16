@@ -165,9 +165,12 @@ public:
 
 	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
 	{
-		char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1]; //2
-		memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
-		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>((char*)hMemory + uidObject.m_uid.FATPOINTER.m_ptrFile.m_nOffset); //1
+		//return std::make_shared<ObjectType>(m_szStorage + uidObject.getPersistentPointerValue());
+
+		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1]; //2
+		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
+		return /*std::shared_ptr<ObjectType> ptrObject =*/ 
+			std::make_shared<ObjectType>((char*)hMemory + uidObject.getPersistentPointerValue()); //1
 
 /* COW!
 #ifdef __CONCURRENT__
@@ -185,11 +188,11 @@ public:
 
 		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer); //2
 
-		ptrObject->dirty = false;
+		//ptrObject->setDirtyFlag( false);
 
 		//delete[] szBuffer; //2
 
-		return ptrObject;
+		//return ptrObject;
 	}
 
 	CacheErrorCode remove(const ObjectUIDType& ptrKey)
@@ -198,7 +201,40 @@ public:
 		return CacheErrorCode::Success;
 	}
 
-	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
+	CacheErrorCode addObject(const ObjectUIDType& uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
+	{
+		uint32_t nBufferSize = 0;
+		uint8_t uidObjectType = 0;
+
+		char* szBuffer = NULL;
+		ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
+
+		size_t nOffset = m_nNextBlock * m_nBlockSize;
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+#endif __CONCURRENT__
+
+		//memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
+		if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
+		{
+			throw new std::logic_error("failed to write data!");
+		}
+		//m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
+		m_nNextBlock += std::ceil(nBufferSize / (float)m_nBlockSize);
+
+#ifdef __CONCURRENT__
+		lock_storage.unlock();
+#endif __CONCURRENT__
+
+		delete[] szBuffer;
+
+		ObjectUIDType::createAddressFromFileOffset(uidUpdated, uidObject.getObjectType(), nOffset, nBufferSize);
+
+		return CacheErrorCode::Success;
+	}
+
+	/*CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
 	{
 		size_t nBufferSize = 0;
 		uint8_t uidObjectType = 0;
@@ -239,24 +275,25 @@ public:
 		}
 
 		return CacheErrorCode::Success;
-	}
+	}*/
 
-	inline size_t getWritePos()
+	inline size_t getNextAvailableBlockOffset() const
 	{
 		return m_nNextBlock;
 	}
 
-	inline size_t getBlockSize()
+	inline size_t getBlockSize() const
 	{
 		return m_nBlockSize;
 	}
 
-	inline ObjectUIDType::Media getMediaType()
+	inline ObjectUIDType::StorageMedia getStorageType()
 	{
-		return ObjectUIDType::DRAM;
+		return ObjectUIDType::PMem;
 	}
 
 	CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects, size_t nNewOffset)
+	//CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects, size_t nNewOffset)
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
@@ -267,14 +304,14 @@ public:
 		auto it = vtObjects.begin();
 		while (it != vtObjects.end())
 		{
-			size_t nBufferSize = 0;
+			uint32_t nBufferSize = 0;
 			uint8_t uidObjectType = 0;
 
 			char* szBuffer = NULL; //2
 			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize); //2
 			
 			//memcpy(m_szStorage + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize);
-			if (!writeMMapFile(hMemory + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize))
+			//if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
 			{
 				throw new std::logic_error("failed to write data!");
 			}
@@ -296,6 +333,8 @@ public:
 			it++;
 		}
 		//m_fsStorage.flush();
+
+		m_nNextBlock = nNewOffset;
 
 		return CacheErrorCode::Success;
 	}
