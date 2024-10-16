@@ -341,7 +341,7 @@ public:
 	}
 
 public:
-	/*
+	
 	inline bool canAccessDataDirectly()
 	{
 		if (m_ptrRawData == nullptr)
@@ -366,8 +366,7 @@ public:
 		m_ptrRawData->tLastAccessTime = now;
 		return true;
 	}
-	*/
-
+	
 	// Returns the number of keys (pivots) in the node
 	inline size_t getKeysCount() const
 	{
@@ -380,18 +379,18 @@ public:
 	}
 
 	// Finds the index of the child node for the given key
-	inline size_t getChildNodeIdx(const KeyType& key) const
+	inline size_t getChildNodeIdx(const KeyType& key)
 	{
-		if (m_ptrRawData != nullptr)
+		if (canAccessDataDirectly())
 		{
-			size_t nChildIdx = 0;
+			/*size_t nChildIdx = 0;
 			while (nChildIdx < m_ptrRawData->nTotalPivots && key >= m_ptrRawData->ptrPivots[nChildIdx])
 			{
 				nChildIdx++;
 			}
-			return nChildIdx;
-			//auto it = std::upper_bound(m_ptrRawData->ptrPivots, m_ptrRawData->ptrPivots + m_ptrRawData->nTotalPivots, key);
-			//return std::distance(m_ptrRawData->ptrPivots, it);
+			return nChildIdx;*/
+			auto it = std::upper_bound(m_ptrRawData->ptrPivots, m_ptrRawData->ptrPivots + m_ptrRawData->nTotalPivots, key);
+			return std::distance(m_ptrRawData->ptrPivots, it);
 		}
 
 		assert(m_vtPivots.size() + 1 == m_vtChildren.size());
@@ -411,9 +410,9 @@ public:
 	}
 
 	// Gets the child at the given index
-	inline const ObjectUIDType& getChildAt(size_t nIdx) const
+	inline const ObjectUIDType& getChildAt(size_t nIdx)
 	{
-		if (m_ptrRawData != nullptr)
+		if( canAccessDataDirectly())
 		{
 			return m_ptrRawData->ptrChildren[nIdx];
 		}
@@ -422,9 +421,9 @@ public:
 	}
 
 	// Gets the child node corresponding to the given key
-	inline const ObjectUIDType& getChild(const KeyType& key) const
+	inline const ObjectUIDType& getChild(const KeyType& key)
 	{
-		if (m_ptrRawData != nullptr)
+		if (canAccessDataDirectly())
 		{
 			return m_ptrRawData->ptrChildren[getChildNodeIdx(key)];
 		}
@@ -435,9 +434,9 @@ public:
 	}
 
 	// Returns the first pivot key
-	inline const KeyType& getFirstChild() const
+	inline const KeyType& getFirstChild()
 	{
-		if (m_ptrRawData != nullptr)
+		if (canAccessDataDirectly())
 		{
 			return m_ptrRawData->ptrPivots[0];
 		}
