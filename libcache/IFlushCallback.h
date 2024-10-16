@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include "CacheErrorCodes.h"
+#include <optional>
 
 template <typename ObjectUIDType, typename ObjectType>
 class IFlushCallback

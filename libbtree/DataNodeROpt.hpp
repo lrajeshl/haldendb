@@ -34,7 +34,7 @@ PACKED_STRUCT
 		const ValueType* ptrValues;
 
 		uint8_t nCounter;
-		std::chrono::time_point<std::chrono::steady_clock> tLastAccessTime;
+		std::chrono::time_point<std::chrono::system_clock> tLastAccessTime;
 
 		~RAWDATA()
 		{

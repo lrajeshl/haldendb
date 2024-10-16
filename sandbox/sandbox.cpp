@@ -23,15 +23,15 @@
 #include "LRUCacheObject.hpp"
 #include "FileStorage.hpp"
 #include "TypeMarshaller.hpp"
-//#include "PMemStorage.hpp"
+#include "PMemStorage.hpp"
 
 #include "TypeUID.h"
 #include <iostream>
 
 #include "ObjectFatUID.h"
 #include "ObjectUID.h"
-#include "NVMRODataNode.hpp"
-#include "NVMROIndexNode.hpp"
+//#include "NVMRODataNode.hpp"
+//#include "NVMROIndexNode.hpp"
 
 #define VALIDITY_CHECKS
 
@@ -621,10 +621,10 @@ int main(int argc, char* argv[])
 {
     for (int i = 0; i < 100; i++) {
         //test_for_ints();
-        test_for_string();
-        test_for_threaded();
+        //test_for_string();
+        //test_for_threaded();
     }
-    return 0;
+    //return 0;
     typedef int KeyType;
     typedef int ValueType;
 
@@ -644,8 +644,10 @@ int main(int argc, char* argv[])
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
    // BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 512, 1024 * 1024 * 1024, "D:\\filestore.hdb");
     //ptrTree->init<DataNodeType>();
-    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 64, 1024 * 1024 * 1024);
+    
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    BPlusStoreType* ptrTree = new BPlusStoreType(24, 1000, 4096, 120 * 1024 * 1024 * 1024, "/mnt/tmpfs/datafile0");
     ptrTree->init<DataNodeType>();
 
 

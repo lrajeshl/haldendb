@@ -1,8 +1,10 @@
 add_library(libbtree
             BPlusStore.hpp
             DataNode.hpp
+	    DataNodeROpt.hpp
             ErrorCodes.h
             IndexNode.hpp
+	    IndexNodeROpt.hpp
             TypeMarshaller.hpp
             TypeUID.h
 )

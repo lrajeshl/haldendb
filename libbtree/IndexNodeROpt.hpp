@@ -37,7 +37,7 @@ PACKED_STRUCT
 		const ObjectUIDType* ptrChildren;
 
 		uint8_t nCounter;
-		std::chrono::time_point<std::chrono::steady_clock> tLastAccessTime;
+		std::chrono::time_point<std::chrono::system_clock> tLastAccessTime;
 
 		~RAWDATA()
 		{
@@ -733,7 +733,7 @@ public:
 #endif __TRACK_CACHE_FOOTPRINT__
 		}
 		
-		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+		typedef typename CacheType::ObjectTypePtr ObjectTypePtr;
 
 		ObjectTypePtr ptrLHSStorageObject = nullptr;
 		ObjectTypePtr ptrRHSStorageObject = nullptr;
@@ -936,7 +936,7 @@ public:
 //#endif __TRACK_CACHE_FOOTPRINT__
 //		}
 
-		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+		typedef typename CacheType::ObjectTypePtr ObjectTypePtr;
 
 		ObjectTypePtr ptrLHSStorageObject = nullptr;
 		ObjectTypePtr ptrRHSStorageObject = nullptr;

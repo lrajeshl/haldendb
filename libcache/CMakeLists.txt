@@ -6,12 +6,12 @@ add_library(libcache
             LRUCacheObject.hpp
             NoCache.hpp
             NoCacheObject.hpp
-            ObjectFatUID.cpp
             ObjectFatUID.h
             UnsortedMapUtil.hpp
             VariadicNthType.h
             VolatileStorage.hpp
             PMemStorage.hpp
 )
+set_target_properties(libcache PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries(libcache PUBLIC haldendb_compiler_flags)

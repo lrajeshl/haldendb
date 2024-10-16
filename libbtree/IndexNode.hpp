@@ -501,7 +501,7 @@ public:
 	inline ErrorCode rebalanceIndexNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<SelfType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 #endif __TREE_WITH_CACHE__
 	{
-		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+		typedef typename CacheType::ObjectTypePtr ObjectTypePtr;
 
 		ObjectTypePtr ptrLHSStorageObject = nullptr;
 		ObjectTypePtr ptrRHSStorageObject = nullptr;
@@ -686,7 +686,7 @@ public:
 	inline ErrorCode rebalanceDataNode(std::shared_ptr<CacheType>& ptrCache, const ObjectUIDType& uidChild, std::shared_ptr<DataNodeType>& ptrChild, const KeyType& key, size_t nDegree, std::optional<ObjectUIDType>& uidObjectToDelete)
 #endif __TREE_WITH_CACHE__
 	{
-		typedef CacheType::ObjectTypePtr ObjectTypePtr;
+		typedef typename CacheType::ObjectTypePtr ObjectTypePtr;
 
 		ObjectTypePtr ptrLHSStorageObject = nullptr;
 		ObjectTypePtr ptrRHSStorageObject = nullptr;
