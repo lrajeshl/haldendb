@@ -9,6 +9,8 @@
 #include <fstream>
 #include <assert.h>
 #include "ErrorCodes.h"
+#include <chrono>
+#include <atomic>
 
 #ifdef _MSC_VER
 #define PACKED_STRUCT __pragma(pack(push, 1))
@@ -31,6 +33,9 @@ PACKED_STRUCT
 		const KeyType* ptrKeys;
 		const ValueType* ptrValues;
 
+		uint8_t nCounter;
+		std::chrono::time_point<std::chrono::steady_clock> tLastAccessTime;
+
 		~RAWDATA()
 		{
 			ptrKeys = nullptr;
@@ -43,6 +48,9 @@ PACKED_STRUCT
 			nTotalEntries = *reinterpret_cast<const uint16_t*>(&szData[1]);
 			ptrKeys = reinterpret_cast<const KeyType*>(szData + sizeof(uint8_t) + sizeof(uint16_t));
 			ptrValues = reinterpret_cast<const ValueType*>(szData + sizeof(uint8_t) + sizeof(uint16_t) + (nTotalEntries * sizeof(KeyType)));
+
+			nCounter = 0;
+			tLastAccessTime = std::chrono::high_resolution_clock::now();
 		}
 	};
 END_PACKED_STRUCT
@@ -63,7 +71,7 @@ private:
 	std::vector<ValueType> m_vtValues;
 
 public:
-	const RAWDATA* m_ptrRawData = nullptr;
+	RAWDATA* m_ptrRawData = nullptr;
 public:
 	// Destructor: Clears the keys and values vectors
 	~DataNodeROpt()
@@ -165,13 +173,18 @@ public:
 
 public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
-	inline void moveDataToDRAM(int32_t& nMemoryFootprint)
+	inline int32_t moveDataToDRAM()
 #else __TRACK_CACHE_FOOTPRINT__
 	inline void moveDataToDRAM()
 #endif __TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			int32_t nMemoryFootprint = 0;
+			nMemoryFootprint -= getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
 			m_vtKeys.resize(m_ptrRawData->nTotalEntries);
 			m_vtValues.resize(m_ptrRawData->nTotalEntries);
 
@@ -190,8 +203,8 @@ public:
 			m_ptrRawData = nullptr;
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-			nMemoryFootprint -= sizeof(RAWDATA);
 			nMemoryFootprint += getMemoryFootprint();
+			return nMemoryFootprint;
 #endif __TRACK_CACHE_FOOTPRINT__
 
 		}
@@ -218,7 +231,8 @@ public:
 
 			uint16_t nTotalEntries = m_vtKeys.size();
 
-			nBufferSize = sizeof(uint8_t)				// UID
+			nBufferSize 
+				= sizeof(uint8_t)						// UID
 				+ sizeof(uint16_t)						// Total entries
 				+ (nTotalEntries * sizeof(KeyType))		// Size of all keys
 				+ (nTotalEntries * sizeof(ValueType));	// Size of all values
@@ -279,7 +293,8 @@ public:
 
 			uint16_t nTotalEntries = m_vtKeys.size();
 
-			nDataSize = sizeof(uint8_t)					// UID
+			nDataSize 
+				= sizeof(uint8_t)						// UID
 				+ sizeof(uint16_t)						// Total entries
 				+ (nTotalEntries * sizeof(KeyType))		// Size of all keys
 				+ (nTotalEntries * sizeof(ValueType));	// Size of all values
@@ -301,6 +316,32 @@ public:
 	}
 
 public:
+	
+	inline bool canAccessDataDirectly()
+	{
+		if (m_ptrRawData == nullptr)
+			return false;
+
+		auto now = std::chrono::high_resolution_clock::now();
+		auto duration = now - m_ptrRawData->tLastAccessTime;
+
+		if(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() < 100)
+		//if (duration.count() < 100)
+		{
+			m_ptrRawData->nCounter++;
+
+			if (m_ptrRawData->nCounter >= 100)
+			{
+				moveDataToDRAM();
+				return false;
+			}
+		}
+
+		m_ptrRawData->nCounter = 0; // reset counter if more than 100 nanoseconds have passed		
+		m_ptrRawData->tLastAccessTime = now;
+		return true;
+	}	
+
 	// Determines if the node requires a split based on the given degree
 	inline bool requireSplit(size_t nDegree) const
 	{
@@ -346,9 +387,10 @@ public:
 	}
 
 	// Retrieves the value for a given key
-	inline ErrorCode getValue(const KeyType& key, ValueType& value) const
+	inline ErrorCode getValue(const KeyType& key, ValueType& value)
 	{
-		if (m_ptrRawData != nullptr)
+		//if (m_ptrRawData != nullptr)
+		if( canAccessDataDirectly())
 		{
 			/*
 			size_t left = 0;
@@ -395,7 +437,8 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			return sizeof(RAWDATA);
+			throw new std::logic_error(".....");
+			//return sizeof(RAWDATA);
 		}
 
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -404,7 +447,6 @@ public:
 			std::is_standard_layout<ValueType>::value)
 		{
 			return sizeof(uint8_t)
-				+ sizeof(size_t)
 				+ sizeof(size_t)
 				+ (m_vtKeys.size() * sizeof(KeyType))
 				+ (m_vtValues.size() * sizeof(ValueType));
@@ -424,7 +466,9 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			return sizeof(RAWDATA);
+			return	
+				sizeof(*this)
+				+ sizeof(RAWDATA);
 		}
 
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -458,7 +502,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
@@ -517,7 +565,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -580,7 +632,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -637,28 +693,7 @@ public:
 
 		return ErrorCode::Success;
 	}
-/*
-	// Splits the node and assigns the right half to the sibling node
-	inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
-	{
-		if (m_ptrRawData != nullptr)
-		{
-			moveDataToDRAM();
-		}
 
-		size_t nMid = m_vtKeys.size() / 2;
-
-		ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
-		ptrSibling->m_vtValues.assign(m_vtValues.begin() + nMid, m_vtValues.end());
-
-		pivotKeyForParent = m_vtKeys[nMid];
-
-		m_vtKeys.resize(nMid);
-		m_vtValues.resize(nMid);
-
-		return ErrorCode::Success;
-	}
-*/
 	// Moves an entity from the left-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
@@ -668,12 +703,20 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrLHSSibling->m_ptrRawData != nullptr)
 		{
-			ptrLHSSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrLHSSibling->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrLHSSibling->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -751,12 +794,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
-		}
-
-		if (ptrSibling->m_ptrRawData != nullptr)
-		{
-			ptrSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -764,8 +806,27 @@ public:
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
 #endif __TRACK_CACHE_FOOTPRINT__
 
-		m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_vtKeys.begin(), ptrSibling->m_vtKeys.end());
-		m_vtValues.insert(m_vtValues.end(), ptrSibling->m_vtValues.begin(), ptrSibling->m_vtValues.end());
+		if (ptrSibling->m_ptrRawData != nullptr)
+		{
+			m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_ptrRawData->ptrKeys, ptrSibling->m_ptrRawData->ptrKeys + ptrSibling->m_ptrRawData->nTotalEntries);
+			m_vtValues.insert(m_vtValues.end(), ptrSibling->m_ptrRawData->ptrValues, ptrSibling->m_ptrRawData->ptrValues + ptrSibling->m_ptrRawData->nTotalEntries);
+
+			//memcpy(m_vtKeys.data() + m_vtKeys.size(), ptrSibling->m_ptrRawData->ptrKeys, ptrSibling->m_ptrRawData->nTotalEntries * sizeof(KeyType));
+			//memcpy(m_vtValues.data() + m_vtValues.size(), ptrSibling->m_ptrRawData->ptrValues, ptrSibling->m_ptrRawData->nTotalEntries * sizeof(ValueType));
+/*
+			// TODO: Can be bypassed!
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrSibling->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrSibling->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
+*/
+		}
+		else
+		{
+			m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_vtKeys.begin(), ptrSibling->m_vtKeys.end());
+			m_vtValues.insert(m_vtValues.end(), ptrSibling->m_vtValues.begin(), ptrSibling->m_vtValues.end());
+		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -807,12 +868,20 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrRHSSibling->m_ptrRawData != nullptr)
 		{
-			ptrRHSSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrRHSSibling->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrRHSSibling->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__

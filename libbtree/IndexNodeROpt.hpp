@@ -36,6 +36,9 @@ PACKED_STRUCT
 		const KeyType* ptrPivots;
 		const ObjectUIDType* ptrChildren;
 
+		uint8_t nCounter;
+		std::chrono::time_point<std::chrono::steady_clock> tLastAccessTime;
+
 		~RAWDATA()
 		{
 			//delete ptrPivots;
@@ -51,6 +54,9 @@ PACKED_STRUCT
 			nTotalPivots = *reinterpret_cast<const uint16_t*>(&szData[1]);
 			ptrPivots = reinterpret_cast<const KeyType*>(szData + sizeof(uint8_t) + sizeof(uint16_t));
 			ptrChildren = reinterpret_cast<const ObjectUIDType*>(szData + sizeof(uint8_t) + sizeof(uint16_t) + (nTotalPivots * sizeof(KeyType)));
+
+			nCounter = 0;
+			tLastAccessTime = std::chrono::high_resolution_clock::now();
 		}
 	};
 END_PACKED_STRUCT
@@ -70,7 +76,7 @@ private:
 	std::vector<KeyType> m_vtPivots;
 	std::vector<ObjectUIDType> m_vtChildren;
 
-	const RAWDATA* m_ptrRawData = nullptr;
+	RAWDATA* m_ptrRawData = nullptr;
 public:
 	// Destructor: Clears pivot and child vectors
 	~IndexNodeROpt()
@@ -112,8 +118,7 @@ public:
 
 			assert(UID == m_ptrRawData->nUID);
 
-			//int32_t t = 0;
-			//moveDataToDRAM(t);
+			//moveDataToDRAM();
 		}
 		else
 		{
@@ -175,7 +180,7 @@ public:
 
 public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
-	inline void moveDataToDRAM(int32_t& nMemoryFootprint)
+	inline int32_t moveDataToDRAM()
 #else __TRACK_CACHE_FOOTPRINT__
 	inline void moveDataToDRAM()
 #endif __TRACK_CACHE_FOOTPRINT__
@@ -183,6 +188,7 @@ public:
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
+			int32_t nMemoryFootprint = 0;
 			nMemoryFootprint -= getMemoryFootprint();
 #endif __TRACK_CACHE_FOOTPRINT__
 
@@ -208,6 +214,7 @@ public:
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += getMemoryFootprint();
+			return nMemoryFootprint;
 #endif __TRACK_CACHE_FOOTPRINT__
 		}
 		else
@@ -334,6 +341,33 @@ public:
 	}
 
 public:
+	/*
+	inline bool canAccessDataDirectly()
+	{
+		if (m_ptrRawData == nullptr)
+			return false;
+
+		auto now = std::chrono::high_resolution_clock::now();
+		auto duration = now - m_ptrRawData->tLastAccessTime;
+
+		if (std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() < 100)
+			//if (duration.count() < 100)
+		{
+			m_ptrRawData->nCounter++;
+
+			if (m_ptrRawData->nCounter >= 100)
+			{
+				moveDataToDRAM();
+				return false;
+			}
+		}
+
+		m_ptrRawData->nCounter = 0; // reset counter if more than 100 nanoseconds have passed		
+		m_ptrRawData->tLastAccessTime = now;
+		return true;
+	}
+	*/
+
 	// Returns the number of keys (pivots) in the node
 	inline size_t getKeysCount() const
 	{
@@ -454,7 +488,7 @@ public:
 
 	inline size_t getSize() const
 	{
-		if (m_ptrRawData != nullptr)
+		if( m_ptrRawData != nullptr)
 		{
 			throw new std::logic_error("should not occur!");
 			return sizeof(RAWDATA);
@@ -465,8 +499,8 @@ public:
 			std::is_trivial<ValueType>::value &&
 			std::is_standard_layout<ValueType>::value)
 		{
-			return sizeof(uint8_t)
-				+ sizeof(size_t)
+			return 
+				sizeof(uint8_t)
 				+ sizeof(size_t)
 				+ (m_vtPivots.size() * sizeof(KeyType))
 				+ (m_vtChildren.size() * sizeof(typename ObjectUIDType::NodeUID));
@@ -491,7 +525,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		const KeyType* key = nullptr;
@@ -540,7 +578,11 @@ public:
 
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		for (auto it = m_vtChildren.begin(), itend = m_vtChildren.end(); it != itend; it++)
@@ -599,7 +641,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -672,12 +718,20 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrChild->m_ptrRawData != nullptr)
 		{
-			ptrChild->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrChild->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrChild->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 		
 		typedef CacheType::ObjectTypePtr ObjectTypePtr;
@@ -867,13 +921,21 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
-		if (ptrChild->m_ptrRawData != nullptr)
-		{
-			ptrChild->moveDataToDRAM(nMemoryFootprint);
-		}
+//		if (ptrChild->m_ptrRawData != nullptr)
+//		{
+//#ifdef __TRACK_CACHE_FOOTPRINT__
+//			nMemoryFootprint += ptrChild->moveDataToDRAM();
+//#else __TRACK_CACHE_FOOTPRINT__
+//			ptrChild->moveDataToDRAM();
+//#endif __TRACK_CACHE_FOOTPRINT__
+//		}
 
 		typedef CacheType::ObjectTypePtr ObjectTypePtr;
 
@@ -1053,7 +1115,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -1109,23 +1175,6 @@ public:
 		return ErrorCode::Success;
 	}
 
-/*
-	inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
-	{
-		size_t nMid = m_vtPivots.size() / 2;
-
-		ptrSibling->m_vtPivots.assign(m_vtPivots.begin() + nMid + 1, m_vtPivots.end());
-		ptrSibling->m_vtChildren.assign(m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
-
-		pivotKeyForParent = m_vtPivots[nMid];
-
-		m_vtPivots.resize(nMid);
-		m_vtChildren.resize(nMid + 1);
-
-		return ErrorCode::Success;
-	}
-*/
-
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
 #else __TRACK_CACHE_FOOTPRINT__
@@ -1134,12 +1183,20 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrLHSSibling->m_ptrRawData != nullptr)
 		{
-			ptrLHSSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrLHSSibling->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrLHSSibling->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -1216,12 +1273,20 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrRHSSibling->m_ptrRawData != nullptr)
 		{
-			ptrRHSSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += ptrRHSSibling->moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			ptrRHSSibling->moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -1298,12 +1363,11 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			moveDataToDRAM(nMemoryFootprint);
-		}
-
-		if (ptrSibling->m_ptrRawData != nullptr)
-		{
-			ptrSibling->moveDataToDRAM(nMemoryFootprint);
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			nMemoryFootprint += moveDataToDRAM();
+#else __TRACK_CACHE_FOOTPRINT__
+			moveDataToDRAM();
+#endif __TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -1311,9 +1375,27 @@ public:
 		uint32_t nChildrenContainerCapacity = m_vtChildren.capacity();
 #endif __TRACK_CACHE_FOOTPRINT__
 
-		m_vtPivots.push_back(pivotKey);
-		m_vtPivots.insert(m_vtPivots.end(), ptrSibling->m_vtPivots.begin(), ptrSibling->m_vtPivots.end());
-		m_vtChildren.insert(m_vtChildren.end(), ptrSibling->m_vtChildren.begin(), ptrSibling->m_vtChildren.end());
+		if (ptrSibling->m_ptrRawData != nullptr)
+		{
+			m_vtPivots.push_back(pivotKey);
+			m_vtPivots.insert(m_vtPivots.end(), ptrSibling->m_ptrRawData->ptrPivots, ptrSibling->m_ptrRawData->ptrPivots + ptrSibling->m_ptrRawData->nTotalPivots);
+			m_vtChildren.insert(m_vtChildren.end(), ptrSibling->m_ptrRawData->ptrChildren, ptrSibling->m_ptrRawData->ptrChildren + ptrSibling->m_ptrRawData->nTotalPivots + 1);
+
+			//memcpy(m_vtPivots.data() + m_vtPivots.size(), ptrSibling->m_ptrRawData->ptrPivots, ptrSibling->m_ptrRawData->nTotalPivots * sizeof(KeyType));
+			//memcpy(m_vtChildren.data() + m_vtChildren.size(), ptrSibling->m_ptrRawData->ptrChildren, ptrSibling->m_ptrRawData->nTotalPivots * sizeof(typename ObjectUIDType::NodeUID));
+
+//#ifdef __TRACK_CACHE_FOOTPRINT__
+//			nMemoryFootprint += ptrSibling->moveDataToDRAM();
+//#else __TRACK_CACHE_FOOTPRINT__
+//			ptrSibling->moveDataToDRAM();
+//#endif __TRACK_CACHE_FOOTPRINT__
+		}
+		else
+		{
+			m_vtPivots.push_back(pivotKey);
+			m_vtPivots.insert(m_vtPivots.end(), ptrSibling->m_vtPivots.begin(), ptrSibling->m_vtPivots.end());
+			m_vtChildren.insert(m_vtChildren.end(), ptrSibling->m_vtChildren.begin(), ptrSibling->m_vtChildren.end());
+		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		if constexpr (std::is_trivial<KeyType>::value &&

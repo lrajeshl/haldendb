@@ -356,7 +356,9 @@ public:
         }
 #endif __TREE_WITH_CACHE__
 
+#ifdef __CONCURRENT__
         vtLocks.clear();
+#endif __CONCURRENT__
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
         if (nMemoryFootprint != 0)
@@ -464,7 +466,9 @@ public:
         vtAccessedNodes.clear();
 #endif __TREE_WITH_CACHE__
 
+#ifdef __CONCURRENT__
         vtLocks.clear();
+#endif __CONCURRENT__
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
         if (nMemoryFootprint != 0)
@@ -773,7 +777,9 @@ public:
         vtAccessedNodes.clear();
 #endif __TREE_WITH_CACHE__
 
+#ifdef __CONCURRENT__
         vtLocks.clear();
+#endif __CONCURRENT__
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
         if (nMemoryFootprint != 0)

@@ -631,8 +631,8 @@ int main(int argc, char* argv[])
 #ifdef __TREE_WITH_CACHE__
     typedef ObjectFatUID ObjectUIDType;
 
-    typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
-    typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+    typedef DataNodeROpt<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+    typedef IndexNodeROpt<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
     //typedef DataNodeROpt<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     //typedef IndexNodeROpt<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
@@ -645,7 +645,7 @@ int main(int argc, char* argv[])
    // BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 512, 1024 * 1024 * 1024, "D:\\filestore.hdb");
     //ptrTree->init<DataNodeType>();
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 1024, 1024 * 1024 * 1024);
+    BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 64, 1024 * 1024 * 1024);
     ptrTree->init<DataNodeType>();
 
 
@@ -690,7 +690,7 @@ int main(int argc, char* argv[])
 #endif __TREE_WITH_CACHE__
 
 
-/*    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
@@ -699,17 +699,24 @@ int main(int argc, char* argv[])
     {
         ptrTree->insert(nCntr, nCntr);
     }
-*/
 
-    for (size_t nCntr = 0; nCntr < 10000; nCntr++)
+
+    /*for (size_t nCntr = 0; nCntr < 100000; nCntr++)
     {
         ptrTree->insert(nCntr, nCntr);
-    }
+    }*/
 
 #ifdef __TREE_WITH_CACHE__    
-    //ptrTree->flush();
+    ptrTree->flush();
 #endif __TREE_WITH_CACHE__
-    for (size_t nCntr = 0; nCntr < 10000; nCntr++)
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    //for (size_t nCntr = 0; nCntr <= 999999; nCntr = nCntr + 2)
+    //{
+    //    ptrTree->insert(nCntr, nCntr);
+    //}
+
+    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
     {
         int nValue = 0;
         ErrorCode code = ptrTree->search(nCntr, nValue);
@@ -717,6 +724,19 @@ int main(int argc, char* argv[])
         assert(nValue == nCntr);
     }
 
+    for (size_t nCntr = 0 + 1; nCntr <= 99999; nCntr = nCntr + 2)
+    {
+        int nValue = 0;
+        ErrorCode code = ptrTree->search(nCntr, nValue);
+
+        assert(nValue == nCntr);
+    }
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[�s]" << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+    delete ptrTree;
+    char ch0 = getchar();
+    return 0;
 #ifdef __TREE_WITH_CACHE__
     //ptrTree->flush();
 #endif __TREE_WITH_CACHE__

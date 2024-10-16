@@ -13,6 +13,18 @@
 #include "ErrorCodes.h"
 
 template <typename T>
+size_t doesCoreObjectContainIndex(const std::shared_ptr<T>& source) {
+	return source->isIndexNode();
+}
+
+template <typename... Types>
+size_t doesVariantContainIndex(std::variant<std::shared_ptr<Types>...>& source) {
+	return std::visit([](const auto& ptr) -> size_t {
+		return doesCoreObjectContainIndex(ptr);
+		}, source);
+}
+
+template <typename T>
 size_t getCoreObjectMemoryFootprint(const std::shared_ptr<T>& source) {
 	return source->getMemoryFootprint();
 }
@@ -132,5 +144,10 @@ public:
 	inline size_t getMemoryFootprint()
 	{
 		return sizeof(*this) + getVariantMemoryFootprint(m_objData);
+	}
+
+	inline bool isIndexNode()
+	{
+		return sizeof(*this) + doesVariantContainIndex(m_objData);
 	}
 };

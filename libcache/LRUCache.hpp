@@ -16,7 +16,7 @@
 #include "VariadicNthType.h"
 
 #define FLUSH_COUNT 100
-#define MIN_CACHE_FOOTPRINT 10 * 1024 * 1024	// Safe check!
+#define MIN_CACHE_FOOTPRINT 256 * 1024	// Safe check!
 
 using namespace std::chrono_literals;
 
@@ -96,6 +96,8 @@ public:
 		m_mpObjects.clear();
 
 		std::cout << "Cache size: " << m_nCacheFootprint << " bytes" << std::endl;
+
+		assert(m_nCacheFootprint == 0);
 	}
 
 	template <typename... StorageArgs>
@@ -117,7 +119,7 @@ public:
 #endif __CONCURRENT__
 	}
 
-	void updateMemoryFootprint(size_t nMemoryFootprint)
+	void updateMemoryFootprint(int32_t nMemoryFootprint)
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
@@ -734,7 +736,8 @@ public:
 
 	CacheErrorCode flush()
 	{
-		presistCurrentCacheState();
+		flushDataItemsToStorage();
+		//presistCurrentCacheState();
 
 		return CacheErrorCode::Success;
 	}
@@ -1012,7 +1015,7 @@ private:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			int32_t nMemoryFootprint = 0;
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates, nMemoryFootprint);
-			m_nCacheFootprint += nMemoryFootprint;
+			//m_nCacheFootprint += nMemoryFootprint;
 #else __TRACK_CACHE_FOOTPRINT__
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
 #endif __TRACK_CACHE_FOOTPRINT__
@@ -1024,7 +1027,7 @@ private:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		int32_t nMemoryFootprint = 0;
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType(), nMemoryFootprint);
-		m_nCacheFootprint += nMemoryFootprint;
+		//m_nCacheFootprint += nMemoryFootprint;
 #else __TRACK_CACHE_FOOTPRINT__
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
 #endif __TRACK_CACHE_FOOTPRINT__
@@ -1079,7 +1082,12 @@ private:
 
 			if (m_mpUIDUpdates.size() > 0)
 			{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+				int32_t nMemoryFootprint = 0;
+				m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUIDUpdates, nMemoryFootprint);
+#else __TRACK_CACHE_FOOTPRINT__
 				m_ptrCallback->applyExistingUpdates(m_ptrTail->m_ptrObject, m_mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
 			}
 
 			if (m_ptrTail->m_ptrObject->getDirtyFlag())
@@ -1123,9 +1131,11 @@ private:
 	{
 		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
 
+#ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
 
-		for (uint16_t idx = 0; idx < m_mpObjects.size(); idx++)
+		for (uint32_t idx = 0, idxend = m_mpObjects.size(); idx < idxend; idx++)
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
@@ -1168,16 +1178,18 @@ private:
 			ptrItemToFlush.reset();
 		}
 
+#ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
 
 		lock_cache.unlock();
+#endif __CONCURRENT__
 
 		if (m_mpUIDUpdates.size() > 0)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			int32_t nMemoryFootprint = 0;
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates, nMemoryFootprint);
-			m_nCacheFootprint += nMemoryFootprint;
+			//m_nCacheFootprint += nMemoryFootprint;
 #else __TRACK_CACHE_FOOTPRINT__
 			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
 #endif __TRACK_CACHE_FOOTPRINT__
@@ -1189,7 +1201,7 @@ private:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		int32_t nMemoryFootprint = 0;
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType(), nMemoryFootprint);
-		m_nCacheFootprint += nMemoryFootprint;
+		//m_nCacheFootprint += nMemoryFootprint;
 #else __TRACK_CACHE_FOOTPRINT__
 		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
 #endif __TRACK_CACHE_FOOTPRINT__
@@ -1211,11 +1223,15 @@ private:
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
 		}
 
+#ifdef __CONCURRENT__
 		lock_storage.unlock();
+#endif __CONCURRENT__
 
 		m_ptrStorage->addObjects(vtObjects, nNewOffset);
 
+#ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> relock_storage(m_mtxStorage);
+#endif __CONCURRENT__
 
 		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
 		{
@@ -1226,9 +1242,161 @@ private:
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
 		}
+
+#ifdef __CONCURRENT__
 		relock_storage.unlock();
 
 		m_cvUIDUpdates.notify_all();
+#endif __CONCURRENT__
+
+		vtObjects.clear();
+	}
+
+	inline void flushDataItemsToStorage()
+	{
+		std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>> vtObjects;
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+#endif __CONCURRENT__
+
+		std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
+
+		for (uint32_t idx = 0, idxend = m_mpObjects.size(); idx < idxend; idx++)
+		{
+			if (ptrItemToFlush->m_ptrObject.use_count() > 1)
+			{
+				throw new std::logic_error(".....");
+			}
+
+			if (!ptrItemToFlush->m_ptrObject->tryLockObject())
+			{
+				throw new std::logic_error(".....");
+			}
+			else
+			{
+				ptrItemToFlush->m_ptrObject->unlockObject();
+			}
+
+			vtObjects.push_back(std::make_pair(ptrItemToFlush->m_uidSelf, std::make_pair(std::nullopt, ptrItemToFlush->m_ptrObject)));
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			m_nCacheFootprint -= ptrItemToFlush->m_ptrObject->getMemoryFootprint();
+#endif __TRACK_CACHE_FOOTPRINT__
+
+			auto objectType = ptrItemToFlush->m_uidSelf.getObjectType();
+
+			if (objectType == 101)
+			{
+				ptrItemToFlush = ptrItemToFlush->m_ptrPrev;
+			}
+			else
+			{
+				std::shared_ptr<Item> ptrTemp = ptrItemToFlush->m_ptrPrev;
+
+				m_mpObjects.erase(ptrItemToFlush->m_uidSelf);
+
+				if (m_ptrTail == ptrItemToFlush)
+				{
+					m_ptrTail = ptrItemToFlush->m_ptrPrev;
+
+					ptrItemToFlush->m_ptrPrev = nullptr;
+					ptrItemToFlush->m_ptrNext = nullptr;
+
+					if (m_ptrTail)
+					{
+						m_ptrTail->m_ptrNext = nullptr;
+					}
+					else
+					{
+						m_ptrHead = nullptr;
+					}
+
+					ptrItemToFlush.reset();
+				}
+				else
+				{
+
+					ptrItemToFlush->m_ptrNext->m_ptrPrev = ptrItemToFlush->m_ptrPrev;
+					ptrItemToFlush->m_ptrPrev->m_ptrNext = ptrItemToFlush->m_ptrPrev;
+
+					ptrItemToFlush.reset();
+				}
+
+				ptrItemToFlush = ptrTemp;
+			}
+		}
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+
+		lock_cache.unlock();
+#endif __CONCURRENT__
+
+		if (m_mpUIDUpdates.size() > 0)
+		{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+			int32_t nMemoryFootprint = 0;
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates, nMemoryFootprint);
+			//m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
+			m_ptrCallback->applyExistingUpdates(vtObjects, m_mpUIDUpdates);
+#endif __TRACK_CACHE_FOOTPRINT__
+		}
+
+		// TODO: ensure that no other thread should touch the storage related params..
+		size_t nNewOffset = 0;
+
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		int32_t nMemoryFootprint = 0;
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType(), nMemoryFootprint);
+		//m_nCacheFootprint += nMemoryFootprint;
+#else __TRACK_CACHE_FOOTPRINT__
+		m_ptrCallback->prepareFlush(vtObjects, m_ptrStorage->getNextAvailableBlockOffset(), nNewOffset, m_ptrStorage->getBlockSize(), m_ptrStorage->getStorageType());
+#endif __TRACK_CACHE_FOOTPRINT__
+
+		//m_ptrCallback->prepareFlush(vtObjects, nPos, m_ptrStorage->getBlockSize(), m_ptrStorage->getMediaType());
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if ((*itObject).second.second.use_count() != 1)
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
+		}
+
+#ifdef __CONCURRENT__
+		lock_storage.unlock();
+#endif __CONCURRENT__
+
+		m_ptrStorage->addObjects(vtObjects, nNewOffset);
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> relock_storage(m_mtxStorage);
+#endif __CONCURRENT__
+
+		for (auto itObject = vtObjects.begin(); itObject != vtObjects.end(); itObject++)
+		{
+			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
+			{
+				throw new std::logic_error("should not occur!");
+			}
+
+			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
+		}
+
+#ifdef __CONCURRENT__
+		relock_storage.unlock();
+
+		m_cvUIDUpdates.notify_all();
+#endif __CONCURRENT__
 
 		vtObjects.clear();
 	}
@@ -1242,7 +1410,7 @@ private:
 
 		std::shared_ptr<Item> ptrItemToFlush = m_ptrTail;
 
-		for (uint16_t idx = 0; idx < m_mpObjects.size(); idx++)
+		for (uint32_t idx = 0, idxend = m_mpObjects.size(); idx < idxend; idx++)
 		{
 			if (ptrItemToFlush->m_ptrObject.use_count() > 1)
 			{
