@@ -87,7 +87,9 @@ public:
 #endif __CONCURRENT__
 
 		//presistCurrentCacheState();
+		std::cout << "." << std::endl;
 		flushAllItemsToStorage();
+		std::cout << ".x." << std::endl;
 
 		m_ptrHead.reset();
 		m_ptrTail.reset();;
@@ -956,6 +958,7 @@ private:
 		for (uint16_t idx = 0; idx < nFlushCount; idx++)
 #endif __TRACK_CACHE_FOOTPRINT__
 		{
+			std::cout << "..going to flush.." << std::endl;
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
 				/* Info: 
@@ -1139,11 +1142,13 @@ private:
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
+				std::cout << "excp -1" << std::endl;
 				throw new std::logic_error(".....");
 			}
 
 			if (!m_ptrTail->m_ptrObject->tryLockObject())
 			{
+				std::cout << "excp -2" << std::endl;
 				throw new std::logic_error(".....");
 			}
 			else
@@ -1212,11 +1217,13 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
+				std::cout << "excp 1" << std::endl;
 				throw new std::logic_error("should not occur!");
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
+				std::cout << "excp 2" << std::endl;
 				throw new std::logic_error("should not occur!");
 			}
 
@@ -1237,6 +1244,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
+				std::cout << "excp 3" << std::endl;
 				throw new std::logic_error("should not occur!");
 			}
 
@@ -1545,6 +1553,7 @@ private:
 	{
 		do
 		{
+			std::cout << "thread..." << std::endl;
 			ptrSelf->flushItemsToStorage();
 
 			std::this_thread::sleep_for(1ms);

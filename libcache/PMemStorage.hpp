@@ -126,11 +126,14 @@ public:
 		, hMemory (nullptr)
 		, m_ptrCallback(NULL)
 	{
+		nStorageSize = 10ULL *1024*1024*1024;
+		m_nStorageSize = 10ULL*1024*1024*1024;
 		std::cout << "1.." << std::endl;
 		if( !openMMapFile(hMemory, stFilename.c_str(), nMappedLen, nIsPMem))
 		{
 			std::cout << "1.1..." << std::endl;
 			std::cout << stFilename.c_str() << std::endl;
+			std::cout << nStorageSize << std::endl;
 			if( !createMMapFile(hMemory, stFilename.c_str(), nStorageSize, nMappedLen, nIsPMem))
 			{
 				throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
@@ -140,16 +143,19 @@ public:
 
 		if (hMemory == nullptr)
 		{
+			std::cout << "a" << std::endl;
 			throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
 		}
 
 		if (nMappedLen != nStorageSize)
 		{
+			std::cout << "b" << std::endl;
 			throw new std::logic_error("Size mismatch!"); // TODO: critical log.
 		}
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 
+		std::cout << "c" << std::endl;
 #ifdef __CONCURRENT__
 		m_bStopFlush = false;
 		//m_threadBatchFlush = std::thread(handlerBatchFlush, this);

@@ -642,12 +642,14 @@ int main(int argc, char* argv[])
     typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-   // BPlusStoreType* ptrTree = new BPlusStoreType(3, 100, 512, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+    //BPlusStoreType* ptrTree = new BPlusStoreType(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, "/mnt/tmpfs/filestore.hdb");
     //ptrTree->init<DataNodeType>();
     
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType* ptrTree = new BPlusStoreType(24, 1024, 4096, 10ULL * 1024 * 1024 * 1024);
+
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(24, 1000, 4096, 120 * 1024 * 1024 * 1024, "/mnt/tmpfs/datafile0");
+    BPlusStoreType* ptrTree = new BPlusStoreType(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, "/mnt/tmpfs/datafile1");
     ptrTree->init<DataNodeType>();
 
 
@@ -690,10 +692,11 @@ int main(int argc, char* argv[])
     ptrTree->template init<DataNodeType>();
 
 #endif __TREE_WITH_CACHE__
-
+    std::cout << "a." << std::endl;
 
     for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
     {
+	    std::cout << nCntr << std::endl;
         ptrTree->insert(nCntr, nCntr);
     }
 
@@ -702,14 +705,14 @@ int main(int argc, char* argv[])
         ptrTree->insert(nCntr, nCntr);
     }
 
-
+	std::cout << "b." << std::endl;
     /*for (size_t nCntr = 0; nCntr < 100000; nCntr++)
     {
         ptrTree->insert(nCntr, nCntr);
     }*/
 
 #ifdef __TREE_WITH_CACHE__    
-    ptrTree->flush();
+    //ptrTree->flush();
 #endif __TREE_WITH_CACHE__
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 

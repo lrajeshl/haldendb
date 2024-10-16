@@ -17,7 +17,7 @@ target_compile_features(haldendb_compiler_flags  INTERFACE cxx_std_20)
 #configure_file(TutorialConfig.h.in TutorialConfig.h)
 
 add_compile_definitions(__TRACK_CACHE_FOOTPRINT__)
-add_compile_definitions(__CONCURRENT__)
+#add_compile_definitions(__CONCURRENT__)
 add_compile_definitions(__TREE_WITH_CACHE__)
 
 add_subdirectory(../libcache ${PROJECT_BINARY_DIR}/libcache)

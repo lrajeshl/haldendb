@@ -118,7 +118,7 @@ public:
 
 			assert(UID == m_ptrRawData->nUID);
 
-			//moveDataToDRAM();
+			moveDataToDRAM();
 		}
 		else
 		{
