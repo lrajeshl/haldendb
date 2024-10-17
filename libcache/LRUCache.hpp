@@ -87,9 +87,9 @@ public:
 #endif __CONCURRENT__
 
 		//presistCurrentCacheState();
-		std::cout << "." << std::endl;
+		//std::cout << "." << std::endl;
 		flushAllItemsToStorage();
-		std::cout << ".x." << std::endl;
+		//std::cout << ".x." << std::endl;
 
 		m_ptrHead.reset();
 		m_ptrTail.reset();;
@@ -293,7 +293,8 @@ public:
 			{
 				if (bEnsure)
 				{
-					throw new std::logic_error("Fatal Error. The expected item is missing in cache.");
+					std::cout << "Critical State: " << __LINE__ << std::endl;
+					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 			}
 
@@ -588,7 +589,8 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -639,7 +641,8 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -689,7 +692,8 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
 			moveToFront(ptrItem);
@@ -958,7 +962,7 @@ private:
 		for (uint16_t idx = 0; idx < nFlushCount; idx++)
 #endif __TRACK_CACHE_FOOTPRINT__
 		{
-			std::cout << "..going to flush.." << std::endl;
+			//std::cout << "..going to flush.." << std::endl;
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
 				/* Info: 
@@ -1041,12 +1045,14 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
 		}
@@ -1061,7 +1067,8 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
@@ -1099,12 +1106,14 @@ private:
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
-					throw new std::logic_error("should not occur!");
+					std::cout << "Critical State: " << __LINE__ << std::endl;
+					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
-					throw new std::logic_error("should not occur!");
+					std::cout << "Critical State: " << __LINE__ << std::endl;
+					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				m_mpUIDUpdates[m_ptrTail->m_uidSelf] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
@@ -1142,14 +1151,14 @@ private:
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
-				std::cout << "excp -1" << std::endl;
-				throw new std::logic_error(".....");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (!m_ptrTail->m_ptrObject->tryLockObject())
 			{
-				std::cout << "excp -2" << std::endl;
-				throw new std::logic_error(".....");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			else
 			{
@@ -1217,14 +1226,14 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				std::cout << "excp 1" << std::endl;
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "excp 2" << std::endl;
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1244,8 +1253,8 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "excp 3" << std::endl;
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
@@ -1274,12 +1283,14 @@ private:
 		{
 			if (ptrItemToFlush->m_ptrObject.use_count() > 1)
 			{
-				throw new std::logic_error(".....");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (!ptrItemToFlush->m_ptrObject->tryLockObject())
 			{
-				throw new std::logic_error(".....");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			else
 			{
@@ -1369,12 +1380,14 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1394,7 +1407,8 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
@@ -1467,12 +1481,14 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 2)
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
 		}
@@ -1484,7 +1500,8 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_mpUIDUpdates[(*itObject).first].first = (*itObject).second.first;
@@ -1517,12 +1534,14 @@ private:
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
-					throw new std::logic_error("should not occur!");
+					std::cout << "Critical State: " << __LINE__ << std::endl;
+					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
-					throw new std::logic_error("should not occur!");
+					std::cout << "Critical State: " << __LINE__ << std::endl;
+					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				m_mpUIDUpdates[m_ptrTail->m_uidSelf] = std::make_pair(uidUpdated, m_ptrTail->m_ptrObject);
@@ -1553,7 +1572,7 @@ private:
 	{
 		do
 		{
-			std::cout << "thread..." << std::endl;
+			//std::cout << "thread..." << std::endl;
 			ptrSelf->flushItemsToStorage();
 
 			std::this_thread::sleep_for(1ms);

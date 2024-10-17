@@ -34,7 +34,12 @@ PACKED_STRUCT
 		const ValueType* ptrValues;
 
 		uint8_t nCounter;
+
+#ifdef _MSC_VER
+		std::chrono::time_point<std::chrono::steady_clock> tLastAccessTime;
+#else
 		std::chrono::time_point<std::chrono::system_clock> tLastAccessTime;
+#endif
 
 		~RAWDATA()
 		{
@@ -210,7 +215,8 @@ public:
 		}
 		else
 		{
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 	}
 
@@ -219,7 +225,8 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			throw new std::logic_error("There is not new data to be flushed!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -281,6 +288,8 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 			throw new std::logic_error("There is not new data to be flushed!");
 		}
 
@@ -437,8 +446,8 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			throw new std::logic_error(".....");
-			//return sizeof(RAWDATA);
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -735,7 +744,8 @@ public:
 
 		if (ptrLHSSibling->m_vtKeys.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtKeys.insert(m_vtKeys.begin(), key);
@@ -900,7 +910,8 @@ public:
 
 		if (ptrRHSSibling->m_vtKeys.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtKeys.push_back(key);

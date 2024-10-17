@@ -58,7 +58,8 @@ public:
 
 		if (m_szStorage == nullptr)
 		{
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);

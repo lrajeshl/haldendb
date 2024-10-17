@@ -80,7 +80,8 @@ public:
 
 		if (!m_fsStorage.is_open())
 		{
-			throw new std::logic_error("should not occur!");   // TODO: critical log.
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 #ifdef __CONCURRENT__
@@ -139,7 +140,6 @@ public:
 
 	CacheErrorCode remove(const ObjectUIDType& ptrKey)
 	{
-		//throw new std::logic_error("no implementation!");
 		return CacheErrorCode::Success;
 	}
 

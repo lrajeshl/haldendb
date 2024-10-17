@@ -7,61 +7,61 @@
 #include <fstream>
 #include <variant>
 #include <cmath>
-#include <libpmem.h>
+//#include <libpmem.h>
 
 bool createMMapFile(void*& hMemory, const char* szPath, size_t nFileSize, size_t& nMappedLen, int& bIsPMem)
 {
-	if ((hMemory = pmem_map_file(szPath,
-		nFileSize,
-		PMEM_FILE_CREATE | PMEM_FILE_EXCL,
-		0666, &nMappedLen, &bIsPMem)) == NULL)
-	{
-		return false;
-	}
+	//if ((hMemory = pmem_map_file(szPath,
+	//	nFileSize,
+	//	PMEM_FILE_CREATE | PMEM_FILE_EXCL,
+	//	0666, &nMappedLen, &bIsPMem)) == NULL)
+	//{
+	//	return false;
+	//}
 
 	return true;
 }
 
 bool openMMapFile(void*& hMemory, const char* szPath, size_t& nMappedLen, int& bIsPMem)
 {
-	if ((hMemory = pmem_map_file(szPath,
-		0,
-		0,
-		0666, &nMappedLen, &bIsPMem)) == NULL)
-	{
-		return false;
-	}
+	//if ((hMemory = pmem_map_file(szPath,
+	//	0,
+	//	0,
+	//	0666, &nMappedLen, &bIsPMem)) == NULL)
+	//{
+	//	return false;
+	//}
 
 	return true;
 }
 
 bool writeMMapFile(void* hMemory, const char* szBuf, size_t nLen)
 {
-	void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
+	//void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
 
-	if (hDestBuf == NULL)
-	{
-		return false;
-	}
+	//if (hDestBuf == NULL)
+	//{
+	//	return false;
+	//}
 
 	return true;
 }
 
 bool readMMapFile(const void* hMemory, char* szBuf, size_t nLen)
 {
-	void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
+	//void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
 
-	if (hDestBuf == NULL)
-	{
-		return false;
-	}
+	//if (hDestBuf == NULL)
+	//{
+	//	return false;
+	//}
 
 	return true;
 }
 
 void closeMMapFile(void* hMemory, size_t nMappedLen)
 {
-	pmem_unmap(hMemory, nMappedLen);
+	//pmem_unmap(hMemory, nMappedLen);
 }
 
 template<
@@ -128,34 +128,32 @@ public:
 	{
 		nStorageSize = 10ULL *1024*1024*1024;
 		m_nStorageSize = 10ULL*1024*1024*1024;
-		std::cout << "1.." << std::endl;
+
 		if( !openMMapFile(hMemory, stFilename.c_str(), nMappedLen, nIsPMem))
 		{
-			std::cout << "1.1..." << std::endl;
 			std::cout << stFilename.c_str() << std::endl;
 			std::cout << nStorageSize << std::endl;
 			if( !createMMapFile(hMemory, stFilename.c_str(), nStorageSize, nMappedLen, nIsPMem))
 			{
-				throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 		}
-		std::cout << "2.." << std::endl;
 
 		if (hMemory == nullptr)
 		{
-			std::cout << "a" << std::endl;
-			throw new std::logic_error("Failed open or create mmap file on PMem!"); // TODO: critical log.
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		if (nMappedLen != nStorageSize)
 		{
-			std::cout << "b" << std::endl;
-			throw new std::logic_error("Size mismatch!"); // TODO: critical log.
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 
-		std::cout << "c" << std::endl;
 #ifdef __CONCURRENT__
 		m_bStopFlush = false;
 		//m_threadBatchFlush = std::thread(handlerBatchFlush, this);
@@ -177,6 +175,8 @@ public:
 		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1); //2
 		return /*std::shared_ptr<ObjectType> ptrObject =*/ 
 			std::make_shared<ObjectType>((char*)hMemory + uidObject.getPersistentPointerValue()); //1
+
+
 
 /* COW!
 #ifdef __CONCURRENT__
@@ -222,9 +222,10 @@ public:
 #endif __CONCURRENT__
 
 		//memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
-		if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
+		//if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
 		{
-			throw new std::logic_error("failed to write data!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 		//m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
 		m_nNextBlock += std::ceil(nBufferSize / (float)m_nBlockSize);
@@ -319,7 +320,8 @@ public:
 			//memcpy(m_szStorage + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize);
 			//if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
 			{
-				throw new std::logic_error("failed to write data!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			//m_fsStorage.seekp((*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset);

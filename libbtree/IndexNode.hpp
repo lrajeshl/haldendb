@@ -564,7 +564,8 @@ public:
 			uidObjectToDelete = m_vtChildren[nChildIdx];
 			if (uidObjectToDelete != uidChild)
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
@@ -670,7 +671,8 @@ public:
 		//			return ErrorCode::Success;
 		//		}
 
-		throw new logic_error("should not occur!"); // TODO: critical log entry.
+		std::cout << "Critical State: " << __LINE__ << std::endl;
+		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
 	template <typename CacheType>
@@ -750,7 +752,8 @@ public:
 			uidObjectToDelete = m_vtChildren[nChildIdx];
 			if (uidObjectToDelete != uidChild)
 			{
-				throw new std::logic_error("should not occur!");
+				std::cout << "Critical State: " << __LINE__ << std::endl;
+				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
@@ -852,7 +855,8 @@ public:
 		//			return ErrorCode::Success;
 		//		}
 
-		throw new logic_error("should not occur!"); // TODO: critical log entry.
+		std::cout << "Critical State: " << __LINE__ << std::endl;
+		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
 	template <typename CacheType, typename CacheObjectTypePtr>
@@ -954,7 +958,8 @@ public:
 
 		if (ptrLHSSibling->m_vtPivots.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtPivots.insert(m_vtPivots.begin(), pivotKeyForEntity);
@@ -1026,7 +1031,8 @@ public:
 
 		if (ptrRHSSibling->m_vtPivots.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtPivots.push_back(pivotKeyForEntity);

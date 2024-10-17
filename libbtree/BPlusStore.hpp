@@ -110,7 +110,8 @@ public:
 
             if (ptrCurrentNode == nullptr)
             {
-                throw new std::logic_error("should not occur!");
+                std::cout << "Critical State: " << __LINE__ << std::endl;
+                throw new std::logic_error(".....");   // TODO: critical log.
             }
 #ifdef __CONCURRENT__
             vtLocks.emplace_back(std::unique_lock<std::shared_mutex>(ptrCurrentNode->getMutex()));
@@ -202,7 +203,8 @@ public:
 
                     if (errCode != ErrorCode::Success)
                     {
-                        throw new std::logic_error(".....");
+                        std::cout << "Critical State: " << __LINE__ << std::endl;
+                        throw new std::logic_error(".....");   // TODO: critical log.
                     }
 
                     uidLHSChildNode = uidCurrentNode;
@@ -222,7 +224,8 @@ public:
 
                     if (!bTest)
                     {
-                        throw new std::logic_error(".....");
+                        std::cout << "Critical State: " << __LINE__ << std::endl;
+                        throw new std::logic_error(".....");   // TODO: critical log.
                     }
 #endif __TREE_WITH_CACHE__
                 }
@@ -252,7 +255,8 @@ public:
 #endif __TRACK_CACHE_FOOTPRINT__
             {
                 // TODO: Should update be performed on cloned objects first?
-                throw new std::logic_error("should not occur!"); // for the time being!
+                std::cout << "Critical State: " << __LINE__ << std::endl;
+                throw new std::logic_error(".....");   // TODO: critical log.
             }
 
 #ifdef __TREE_WITH_CACHE__
@@ -273,7 +277,8 @@ public:
                 if (errCode != ErrorCode::Success)
                 {
                     // TODO: Should update be performed on cloned objects first?
-                    throw new std::logic_error("should not occur!"); // for the time being!
+                    std::cout << "Critical State: " << __LINE__ << std::endl;
+                    throw new std::logic_error(".....");   // TODO: critical log.
                 }
 
 #ifdef __TREE_WITH_CACHE__
@@ -290,7 +295,8 @@ public:
 
                 if (!test)
                 {
-                    throw new std::logic_error("should not occur!");
+                    std::cout << "Critical State: " << __LINE__ << std::endl;
+                    throw new std::logic_error(".....");   // TODO: critical log.
                 }
 #endif __TREE_WITH_CACHE__
             }
@@ -326,7 +332,8 @@ public:
 
             if (!bTest)
             {
-                throw new std::logic_error("should not occur!");
+                std::cout << "Critical State: " << __LINE__ << std::endl;
+                throw new std::logic_error(".....");   // TODO: critical log.
             }
         }
         //else if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
@@ -400,6 +407,8 @@ public:
 
             if (ptrCurrentNode == nullptr)
             {
+                std::cout << "Critical State: " << __LINE__ << std::endl;
+                throw new std::logic_error(".....");   // TODO: critical log.
                 throw new std::logic_error("Cache/Storage does not contain the requested object.");
             }
 
@@ -517,6 +526,8 @@ public:
 
             if (ptrCurrentNode == nullptr)
             {
+                std::cout << "Critical State: " << __LINE__ << std::endl;
+                throw new std::logic_error(".....");   // TODO: critical log.
                 throw new std::logic_error("Cache/Storage does not contain the requested object.");
             }
 
@@ -639,7 +650,8 @@ public:
 
                         if (!bTest)
                         {
-                            throw new std::logic_error("should not occur!");
+                            std::cout << "Critical State: " << __LINE__ << std::endl;
+                            throw new std::logic_error(".....");   // TODO: critical log.
                         }
 #endif __TREE_WITH_CACHE__
 
@@ -723,7 +735,8 @@ public:
 
                     if (!bTest)
                     {
-                        throw new std::logic_error("should not occur!");
+                        std::cout << "Critical State: " << __LINE__ << std::endl;
+                        throw new std::logic_error(".....");   // TODO: critical log.
                     }
 #endif __TREE_WITH_CACHE__
 
@@ -997,7 +1010,8 @@ public:
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {
-                    throw new std::logic_error("should not occur!");
+                    std::cout << "Critical State: " << __LINE__ << std::endl;
+                    throw new std::logic_error(".....");   // TODO: critical log.
                 }
                 else
                 {
@@ -1025,7 +1039,8 @@ public:
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {
-                    throw new std::logic_error("should not occur!");
+                    std::cout << "Critical State: " << __LINE__ << std::endl;
+                    throw new std::logic_error(".....");   // TODO: critical log.
                 }
                 else
                 {

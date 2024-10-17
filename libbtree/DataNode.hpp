@@ -503,7 +503,8 @@ public:
 
 		if (ptrLHSSibling->m_vtKeys.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtKeys.insert(m_vtKeys.begin(), key);
@@ -622,7 +623,8 @@ public:
 
 		if (ptrRHSSibling->m_vtKeys.size() == 0)
 		{
-			throw new std::logic_error("should not occur!");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		m_vtKeys.push_back(key);

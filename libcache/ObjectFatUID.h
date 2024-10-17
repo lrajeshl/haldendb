@@ -71,7 +71,8 @@ public:
 		switch (nMediaType)
 		{
 		case None:
-			throw new std::logic_error(".....");
+			std::cout << "Critical State: " << __LINE__ << std::endl;
+			throw new std::logic_error(".....");   // TODO: critical log.
 			break;
 		case Volatile:
 			return createAddressFromVolatilePointer(uid, args...);
@@ -86,7 +87,8 @@ public:
 			break;
 		}
 
-		throw new std::logic_error(".....");
+		std::cout << "Critical State: " << __LINE__ << std::endl;
+		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
 	static void createAddressFromFileOffset(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
