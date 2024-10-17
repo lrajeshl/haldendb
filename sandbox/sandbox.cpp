@@ -174,18 +174,18 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
     std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
 }
 
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 template <typename BPlusStoreType, typename IndexNodeType, typename DataNodeType>
 void int_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 {
-	std::cout << degree << ".";
+    //std::cout << degree << ".";
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     int i = 0;
     while (i++ < 10) 
     {
-        //std::cout << i << ",";;
+        std::cout << i << ",";;
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 1)
         {
             //std::cout << nCntr << ",";
@@ -286,7 +286,7 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
     int i = 0;
 
     while (i++ < 10) {
-        std::cout << i << ",";;
+        //std::cout << i << ",";;
         for (size_t nCntr = 0; nCntr < total_entries; nCntr = nCntr + 2)
         {
             ptrTree->insert(to_string(nCntr), to_string(nCntr));
@@ -379,7 +379,6 @@ void test_for_ints()
         std::cout << "test_for_ints idx:" << idx << "| ";
         {
 #ifndef __TREE_WITH_CACHE__
-	std::cout << "....";
             typedef int KeyType;
             typedef int ValueType;
             typedef uintptr_t ObjectUIDType;
@@ -392,7 +391,7 @@ void test_for_ints()
             ptrTree.template init<DataNodeType>();
 
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000);
-#endif __TREE_WITH_CACHE__
+#endif //__TREE_WITH_CACHE__
         }
         {
 #ifdef __TREE_WITH_CACHE__
@@ -427,7 +426,7 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "/mnt/tmpfs/filestore.hdb");
             ptrTree->init<DataNodeType>();
 
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 100000);
@@ -466,7 +465,7 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "D:\\filestore.hdb");
+            BPlusStoreType* ptrTree = new BPlusStoreType(idx, 100, 1024, 1024 * 1024 * 1024, "/mnt/tmpfs/filestore.hdb");
             ptrTree->init<DataNodeType>(); 
             
             int_test<BPlusStoreType, IndexNodeType, DataNodeType>(ptrTree, idx, 100000);
@@ -593,7 +592,7 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "/mnt/tmpfs/filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);
@@ -632,7 +631,7 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "C:\\filestore.hdb");
+            BPlusStoreType ptrTree(idx, 100, 1024, 1024 * 1024 * 1024, "/mnt/tmpfs/filestore.hdb");
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType, IndexNodeType, DataNodeType>(&ptrTree, idx, 100000, 6);
@@ -645,11 +644,11 @@ void test_for_threaded()
 int main(int argc, char* argv[])
 {
     for (int i = 0; i < 100; i++) {
-        test_for_ints();
-        test_for_string();
-        test_for_threaded();
+        //test_for_ints();
+        //test_for_string();
+        //test_for_threaded();
     }
-    return 0;
+    //return 0;
     typedef int KeyType;
     typedef int ValueType;
 

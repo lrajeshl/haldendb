@@ -7,61 +7,61 @@
 #include <fstream>
 #include <variant>
 #include <cmath>
-//#include <libpmem.h>
+#include <libpmem.h>
 
 bool createMMapFile(void*& hMemory, const char* szPath, size_t nFileSize, size_t& nMappedLen, int& bIsPMem)
 {
-	//if ((hMemory = pmem_map_file(szPath,
-	//	nFileSize,
-	//	PMEM_FILE_CREATE | PMEM_FILE_EXCL,
-	//	0666, &nMappedLen, &bIsPMem)) == NULL)
-	//{
-	//	return false;
-	//}
+	if ((hMemory = pmem_map_file(szPath,
+		nFileSize,
+		PMEM_FILE_CREATE | PMEM_FILE_EXCL,
+		0666, &nMappedLen, &bIsPMem)) == NULL)
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool openMMapFile(void*& hMemory, const char* szPath, size_t& nMappedLen, int& bIsPMem)
 {
-	//if ((hMemory = pmem_map_file(szPath,
-	//	0,
-	//	0,
-	//	0666, &nMappedLen, &bIsPMem)) == NULL)
-	//{
-	//	return false;
-	//}
+	if ((hMemory = pmem_map_file(szPath,
+		0,
+		0,
+		0666, &nMappedLen, &bIsPMem)) == NULL)
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool writeMMapFile(void* hMemory, const char* szBuf, size_t nLen)
 {
-	//void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
+	void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
 
-	//if (hDestBuf == NULL)
-	//{
-	//	return false;
-	//}
+	if (hDestBuf == NULL)
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool readMMapFile(const void* hMemory, char* szBuf, size_t nLen)
 {
-	//void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
+	void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
 
-	//if (hDestBuf == NULL)
-	//{
-	//	return false;
-	//}
+	if (hDestBuf == NULL)
+	{
+		return false;
+	}
 
 	return true;
 }
 
 void closeMMapFile(void* hMemory, size_t nMappedLen)
 {
-	//pmem_unmap(hMemory, nMappedLen);
+	pmem_unmap(hMemory, nMappedLen);
 }
 
 template<
@@ -222,7 +222,7 @@ public:
 #endif __CONCURRENT__
 
 		//memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
-		//if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
+		if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
 		{
 			std::cout << "Critical State: " << __LINE__ << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
@@ -318,7 +318,7 @@ public:
 			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize); //2
 			
 			//memcpy(m_szStorage + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize);
-			//if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
+			if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
 			{
 				std::cout << "Critical State: " << __LINE__ << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
