@@ -23,7 +23,7 @@
 #include "LRUCacheObject.hpp"
 #include "FileStorage.hpp"
 #include "TypeMarshaller.hpp"
-//#include "PMemStorage.hpp"
+#include "PMemStorage.hpp"
 
 #include "TypeUID.h"
 #include <iostream>
@@ -673,7 +673,7 @@ int main(int argc, char* argv[])
     //BPlusStoreType* ptrTree = new BPlusStoreType(24, 1024, 4096, 10ULL * 1024 * 1024 * 1024);
 
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType* ptrTree = new BPlusStoreType(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, "/mnt/tmpfs/datafile1");
+    BPlusStoreType* ptrTree = new BPlusStoreType(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, "/mnt/tmpfs/datafile1");
     ptrTree->init<DataNodeType>();
 
 
@@ -716,27 +716,27 @@ int main(int argc, char* argv[])
     ptrTree->template init<DataNodeType>();
 
 #endif __TREE_WITH_CACHE__
-    std::cout << "a." << std::endl;
+//    std::cout << "a." << std::endl;
 
-    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr <= 50000000; nCntr = nCntr + 2)
     {
-	    std::cout << nCntr << std::endl;
+	//    std::cout << nCntr << std::endl;
         ptrTree->insert(nCntr, nCntr);
     }
 
-    for (size_t nCntr = 0 + 1; nCntr <= 99999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0 + 1; nCntr <= 50000000; nCntr = nCntr + 2)
     {
         ptrTree->insert(nCntr, nCntr);
     }
 
-	std::cout << "b." << std::endl;
+//	std::cout << "b." << std::endl;
     /*for (size_t nCntr = 0; nCntr < 100000; nCntr++)
     {
         ptrTree->insert(nCntr, nCntr);
     }*/
 
 #ifdef __TREE_WITH_CACHE__    
-    //ptrTree->flush();
+    ptrTree->flush();
 #endif __TREE_WITH_CACHE__
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
@@ -745,15 +745,15 @@ int main(int argc, char* argv[])
     //    ptrTree->insert(nCntr, nCntr);
     //}
 
-    for (size_t nCntr = 0; nCntr <= 99999; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr <= 50000000; nCntr = nCntr + 2)
     {
         int nValue = 0;
         ErrorCode code = ptrTree->search(nCntr, nValue);
 
         assert(nValue == nCntr);
     }
-
-    for (size_t nCntr = 0 + 1; nCntr <= 99999; nCntr = nCntr + 2)
+  //  std::cout << "d." << std::endl;
+    for (size_t nCntr = 0 + 1; nCntr <= 50000000; nCntr = nCntr + 2)
     {
         int nValue = 0;
         ErrorCode code = ptrTree->search(nCntr, nValue);

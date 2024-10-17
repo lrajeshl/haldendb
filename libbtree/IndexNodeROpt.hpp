@@ -355,6 +355,7 @@ public:
 		if (m_ptrRawData == nullptr)
 			return false;
 
+		//std::cout << "xxxxx" << std::endl;
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - m_ptrRawData->tLastAccessTime;
 
@@ -363,8 +364,9 @@ public:
 		{
 			m_ptrRawData->nCounter++;
 
-			if (m_ptrRawData->nCounter >= 100)
+			if (m_ptrRawData->nCounter >= 10)
 			{
+				std::cout << "....." << std::endl;
 				moveDataToDRAM();
 				return false;
 			}

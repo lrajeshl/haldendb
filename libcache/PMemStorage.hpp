@@ -222,7 +222,7 @@ public:
 #endif __CONCURRENT__
 
 		//memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
-		if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
+		if (!writeMMapFile(hMemory + nOffset, szBuffer, nBufferSize))
 		{
 			std::cout << "Critical State: " << ".30." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
@@ -236,7 +236,7 @@ public:
 
 		delete[] szBuffer;
 
-		ObjectUIDType::createAddressFromFileOffset(uidUpdated, uidObject.getObjectType(), nOffset, nBufferSize);
+		ObjectUIDType::createAddressFromPMemOffset(uidUpdated, uidObject.getObjectType(), nOffset, nBufferSize);
 
 		return CacheErrorCode::Success;
 	}
@@ -306,7 +306,7 @@ public:
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
 #endif __CONCURRENT__
 
-		m_nNextBlock = nNewOffset;
+		//m_nNextBlock = nNewOffset;
 
 		auto it = vtObjects.begin();
 		while (it != vtObjects.end())

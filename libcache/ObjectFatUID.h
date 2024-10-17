@@ -81,6 +81,7 @@ public:
 			return createAddressFromDRAMCacheCounter(uid, args...);
 			break;
 		case PMem:
+			return createAddressFromPMemOffset(uid, args...);
 			break;
 		case File:
 			return createAddressFromFileOffset(uid, args...);
@@ -90,6 +91,14 @@ public:
 		std::cout << "Critical State: " << ".26." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
+
+        static void createAddressFromPMemOffset(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
+        {
+                uid.m_uid.m_nType = nType;
+                uid.m_uid.m_nMediaType = PMem;
+                uid.m_uid.FATPOINTER.m_ptrFile.m_nOffset = nOffset;
+                uid.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
+        }
 
 	static void createAddressFromFileOffset(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
 	{
@@ -129,7 +138,8 @@ public:
 		case DRAM:
 			return m_uid.FATPOINTER.m_ptrVolatile == rhs.m_uid.FATPOINTER.m_ptrVolatile;
 		case PMem:
-			return false;
+                        return m_uid.FATPOINTER.m_ptrFile.m_nOffset == rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset &&
+                                m_uid.FATPOINTER.m_ptrFile.m_nSize == rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
 		case File:
 			return m_uid.FATPOINTER.m_ptrFile.m_nOffset == rhs.m_uid.FATPOINTER.m_ptrFile.m_nOffset &&
 				m_uid.FATPOINTER.m_ptrFile.m_nSize == rhs.m_uid.FATPOINTER.m_ptrFile.m_nSize;
@@ -162,10 +172,19 @@ public:
 		case ObjectFatUID::StorageMedia::DRAM:
 			hashValue ^= std::hash<uintptr_t>()(m_uid.FATPOINTER.m_ptrVolatile);
 			break;
+                case ObjectFatUID::StorageMedia::PMem:
+			{
+                        size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+                        size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
+                        hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
+			}
+                        break;
 		case ObjectFatUID::StorageMedia::File:
+			{
 			size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 			size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
 			hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
+			}
 			break;
 		}
 
@@ -238,6 +257,9 @@ public:
 			break;
 		case PMem:
 			szData.append("P:");
+                        szData.append(std::to_string(m_uid.FATPOINTER.m_ptrFile.m_nOffset));
+                        szData.append(":");
+                        szData.append(std::to_string(m_uid.FATPOINTER.m_ptrFile.m_nSize));
 			break;
 		case File:
 			szData.append("F:");
