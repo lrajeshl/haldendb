@@ -293,7 +293,7 @@ public:
 			{
 				if (bEnsure)
 				{
-					std::cout << "Critical State: " << __LINE__ << std::endl;
+					std::cout << "Critical State: " << ".1." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 			}
@@ -589,7 +589,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".2." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
@@ -641,7 +641,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".3." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
@@ -692,7 +692,7 @@ public:
 
 		if (m_mpObjects.find(*uidObject) != m_mpObjects.end())
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".4." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 			std::shared_ptr<Item> ptrItem = m_mpObjects[*uidObject];
 			ptrItem->m_ptrObject = ptrStorageObject;
@@ -1045,13 +1045,13 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".5." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".6." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1067,7 +1067,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".7." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1106,13 +1106,13 @@ private:
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
-					std::cout << "Critical State: " << __LINE__ << std::endl;
+					std::cout << "Critical State: " << ".8." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
-					std::cout << "Critical State: " << __LINE__ << std::endl;
+					std::cout << "Critical State: " << ".9." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
@@ -1151,13 +1151,13 @@ private:
 		{
 			if (m_ptrTail->m_ptrObject.use_count() > 1)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".10." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (!m_ptrTail->m_ptrObject->tryLockObject())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".11." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			else
@@ -1226,13 +1226,13 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".12." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".13." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1253,7 +1253,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".14." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1283,13 +1283,13 @@ private:
 		{
 			if (ptrItemToFlush->m_ptrObject.use_count() > 1)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".15." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (!ptrItemToFlush->m_ptrObject->tryLockObject())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".16." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			else
@@ -1380,13 +1380,13 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 1)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".17." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".18." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1407,7 +1407,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".19." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1481,13 +1481,13 @@ private:
 		{
 			if ((*itObject).second.second.use_count() != 2)
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".20." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".21." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1500,7 +1500,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".22." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1534,13 +1534,13 @@ private:
 				ObjectUIDType uidUpdated;
 				if (m_ptrStorage->addObject(m_ptrTail->m_uidSelf, m_ptrTail->m_ptrObject, uidUpdated) != CacheErrorCode::Success)
 				{
-					std::cout << "Critical State: " << __LINE__ << std::endl;
+					std::cout << "Critical State: " << ".23." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
 				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
-					std::cout << "Critical State: " << __LINE__ << std::endl;
+					std::cout << "Critical State: " << ".24." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 

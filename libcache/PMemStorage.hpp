@@ -135,20 +135,20 @@ public:
 			std::cout << nStorageSize << std::endl;
 			if( !createMMapFile(hMemory, stFilename.c_str(), nStorageSize, nMappedLen, nIsPMem))
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".27." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 		}
 
 		if (hMemory == nullptr)
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".28." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
 		if (nMappedLen != nStorageSize)
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".29." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
@@ -224,7 +224,7 @@ public:
 		//memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
 		if (!writeMMapFile(hMemory + (m_nNextBlock * m_nBlockSize), szBuffer, nBufferSize))
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".30." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 		//m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
@@ -320,7 +320,7 @@ public:
 			//memcpy(m_szStorage + (*(*it).second.first).m_uid.FATPOINTER.m_ptrFile.m_nOffset, szBuffer, nBufferSize);
 			if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
 			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
+				std::cout << "Critical State: " << ".31." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 

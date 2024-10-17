@@ -23,7 +23,7 @@
 #include "LRUCacheObject.hpp"
 #include "FileStorage.hpp"
 #include "TypeMarshaller.hpp"
-#include "PMemStorage.hpp"
+//#include "PMemStorage.hpp"
 
 #include "TypeUID.h"
 #include <iostream>

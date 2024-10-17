@@ -71,7 +71,7 @@ public:
 		switch (nMediaType)
 		{
 		case None:
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".25." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 			break;
 		case Volatile:
@@ -87,7 +87,7 @@ public:
 			break;
 		}
 
-		std::cout << "Critical State: " << __LINE__ << std::endl;
+		std::cout << "Critical State: " << ".26." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 

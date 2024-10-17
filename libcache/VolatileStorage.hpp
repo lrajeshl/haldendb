@@ -58,7 +58,7 @@ public:
 
 		if (m_szStorage == nullptr)
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Critical State: " << ".32." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 
