@@ -241,7 +241,7 @@ public:
 #endif //__CONCURRENT__
 
 #ifndef _MSC_VER
-		if (!writeMMapFile(hMemory + nOffset, szBuffer, nBufferSize))
+		if (!writeMMapFile(m_hMemory + nOffset, szBuffer, nBufferSize))
 #endif //_MSC_VER
 		{
 			std::cout << "Critical State: Failed to write object to PMemStorage." << std::endl;
@@ -319,7 +319,7 @@ public:
 			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize);
 			
 #ifndef _MSC_VER
-			if (!writeMMapFile(hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
+			if (!writeMMapFile(m_hMemory + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize))
 #endif //_MSC_VER
 			{
 				std::cout << "Critical State: Failed to write objects to PMemStorage." << std::endl;
