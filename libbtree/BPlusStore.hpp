@@ -125,7 +125,7 @@ public:
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+                    nMemoryFootprint += ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #endif //__TRACK_CACHE_FOOTPRINT__
@@ -424,7 +424,7 @@ public:
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
  
 #ifdef __TRACK_CACHE_FOOTPRINT__
-                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+                    nMemoryFootprint += ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #endif //__TRACK_CACHE_FOOTPRINT__
@@ -541,7 +541,7 @@ public:
                     std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrLastNode->getInnerData());
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-                    ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated, nMemoryFootprint);
+                    nMemoryFootprint += ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #endif //__TRACK_CACHE_FOOTPRINT__
@@ -857,23 +857,15 @@ public:
         return ErrorCode::Success;
     }
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-    void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
-        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates, int32_t& nMemoryFootprint)
-#else //__TRACK_CACHE_FOOTPRINT__
     void applyExistingUpdates(std::shared_ptr<ObjectType> ptrObject
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
-#endif //__TRACK_CACHE_FOOTPRINT__
     {
         if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(ptrObject->getInnerData()))
         {
             std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(ptrObject->getInnerData());
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-            bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
-#else //__TRACK_CACHE_FOOTPRINT__
             bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
-#endif //__TRACK_CACHE_FOOTPRINT__
+
             if (bDirty)
             {
                 ptrObject->setDirtyFlag(true);
@@ -901,13 +893,8 @@ public:
         }
     }
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-    void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates, int32_t& nMemoryFootprint)
-#else //__TRACK_CACHE_FOOTPRINT__
     void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
-#endif //__TRACK_CACHE_FOOTPRINT__
     {
         auto it = vtNodes.begin();
         while (it != vtNodes.end())
@@ -916,11 +903,8 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>((*it).second.second->getInnerData());
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
-#else //__TRACK_CACHE_FOOTPRINT__
                 bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
-#endif //__TRACK_CACHE_FOOTPRINT__
+
                 if (bDirty)
                 {
                     (*it).second.second->setDirtyFlag(true);
@@ -949,13 +933,8 @@ public:
         }
     }
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-    void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType, int32_t& nMemoryFootprint)
-#else //__TRACK_CACHE_FOOTPRINT__
         void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
             , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
-#endif //__TRACK_CACHE_FOOTPRINT__
     {
         nNewOffset = nOffset;
 
@@ -967,11 +946,8 @@ public:
             {
                 std::shared_ptr<IndexNodeType> ptrIndexNode = std::get<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData());
 
-#ifdef __TRACK_CACHE_FOOTPRINT__
-                bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates, nMemoryFootprint);
-#else //__TRACK_CACHE_FOOTPRINT__
                 bool bDirty = ptrIndexNode->updateChildrenUIDs(mpUIDUpdates);
-#endif //__TRACK_CACHE_FOOTPRINT__
+
                 if (bDirty)
                 {
                     vtNodes[idx].second.second->setDirtyFlag(true);

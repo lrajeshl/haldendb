@@ -183,35 +183,35 @@ public:
 	inline void moveDataToDRAM()
 #endif //__TRACK_CACHE_FOOTPRINT__
 	{
-		assert(m_ptrRawData == nullptr);
+		assert(m_ptrRawData != nullptr);
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-			int32_t nMemoryFootprint = 0;
-			nMemoryFootprint -= getMemoryFootprint();
+		int32_t nMemoryFootprint = 0;
+		nMemoryFootprint -= getMemoryFootprint();
 #endif //__TRACK_CACHE_FOOTPRINT__
 
-			m_vtKeys.resize(m_ptrRawData->nTotalEntries);
-			m_vtValues.resize(m_ptrRawData->nTotalEntries);
+		m_vtKeys.resize(m_ptrRawData->nTotalEntries);
+		m_vtValues.resize(m_ptrRawData->nTotalEntries);
 
-			memcpy(m_vtKeys.data(), m_ptrRawData->ptrKeys, m_ptrRawData->nTotalEntries * sizeof(KeyType));
-			memcpy(m_vtValues.data(), m_ptrRawData->ptrValues, m_ptrRawData->nTotalEntries * sizeof(ValueType));
+		memcpy(m_vtKeys.data(), m_ptrRawData->ptrKeys, m_ptrRawData->nTotalEntries * sizeof(KeyType));
+		memcpy(m_vtValues.data(), m_ptrRawData->ptrValues, m_ptrRawData->nTotalEntries * sizeof(ValueType));
 
 #ifdef __VALIDITY_CHECK__
-			assert(m_ptrRawData->nUID == UID);
-			assert(m_ptrRawData->nTotalEntries == m_vtKeys.size());
-			for (int idx = 0, end = m_ptrRawData->nTotalEntries; idx < end; idx++)
-			{
-				assert(*(m_ptrRawData->ptrKeys + idx) == m_vtKeys[idx]);
-				assert(*(m_ptrRawData->ptrValues + idx) == m_vtValues[idx]);
-			}
+		assert(m_ptrRawData->nUID == UID);
+		assert(m_ptrRawData->nTotalEntries == m_vtKeys.size());
+		for (int idx = 0, end = m_ptrRawData->nTotalEntries; idx < end; idx++)
+		{
+			assert(*(m_ptrRawData->ptrKeys + idx) == m_vtKeys[idx]);
+			assert(*(m_ptrRawData->ptrValues + idx) == m_vtValues[idx]);
+		}
 #endif //__VALIDITY_CHECK__
 
-			delete m_ptrRawData;
-			m_ptrRawData = nullptr;
+		delete m_ptrRawData;
+		m_ptrRawData = nullptr;
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-			nMemoryFootprint += getMemoryFootprint();
-			return nMemoryFootprint;
+		nMemoryFootprint += getMemoryFootprint();
+		return nMemoryFootprint;
 #endif //__TRACK_CACHE_FOOTPRINT__
 	}
 

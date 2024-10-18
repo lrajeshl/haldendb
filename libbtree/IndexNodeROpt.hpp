@@ -514,11 +514,15 @@ public:
 
 	template <typename CacheObjectType>
 #ifdef __TRACK_CACHE_FOOTPRINT__
-	void updateChildUID(std::shared_ptr<CacheObjectType> ptrChildNode, const ObjectUIDType& uidOld, const ObjectUIDType& uidNew, int32_t& nMemoryFootprint)
+	int32_t updateChildUID(std::shared_ptr<CacheObjectType> ptrChildNode, const ObjectUIDType& uidOld, const ObjectUIDType& uidNew)
 #else //__TRACK_CACHE_FOOTPRINT__
 	void updateChildUID(std::shared_ptr<CacheObjectType> ptrChildNode, const ObjectUIDType& uidOld, const ObjectUIDType& uidNew)
 #endif //__TRACK_CACHE_FOOTPRINT__
 	{
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		int32_t nMemoryFootprint = 0;
+#endif //__TRACK_CACHE_FOOTPRINT__
+
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -547,7 +551,11 @@ public:
 
 		m_vtChildren[index] = uidNew;
 
+#ifdef __TRACK_CACHE_FOOTPRINT__
+		return nMemoryFootprint;
+#else //__TRACK_CACHE_FOOTPRINT__
 		return;
+#endif //__TRACK_CACHE_FOOTPRINT__
 		//int idx = 0;
 		//auto it = m_vtChildren.begin();
 		//while (it != m_vtChildren.end())
@@ -564,21 +572,13 @@ public:
 	}
 
 	template <typename CacheObjectType>
-#ifdef __TRACK_CACHE_FOOTPRINT__
-	bool updateChildrenUIDs(std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<CacheObjectType>>>& mpUIDUpdates, int32_t& nMemoryFootprint)
-#else //__TRACK_CACHE_FOOTPRINT__
 	bool updateChildrenUIDs(std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<CacheObjectType>>>& mpUIDUpdates)
-#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		bool bDirty = false;
 
 		if (m_ptrRawData != nullptr)
 		{
-#ifdef __TRACK_CACHE_FOOTPRINT__
-			nMemoryFootprint += moveDataToDRAM();
-#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 		for (auto it = m_vtChildren.begin(), itend = m_vtChildren.end(); it != itend; it++)

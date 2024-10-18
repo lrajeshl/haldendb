@@ -156,7 +156,7 @@ public:
 
 		assert(m_hMemory != nullptr);
 
-		assert(nMappedLen == nStorageSize);
+		assert(m_nMappedLen == nStorageSize);
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 
