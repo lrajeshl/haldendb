@@ -318,6 +318,6 @@ namespace BPlusStore_NoCache_Suite
             std::make_tuple(16, 10, 199999),
             std::make_tuple(32, 10, 199999),
             std::make_tuple(64, 10, 199999)));
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 }
-#endif __TREE_WITH_CACHE__
+#endif //__TREE_WITH_CACHE__

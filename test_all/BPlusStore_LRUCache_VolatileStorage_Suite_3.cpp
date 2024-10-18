@@ -327,6 +327,6 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
             std::make_tuple(16, 2, 199999, 100, 1024, 20000000),
             std::make_tuple(32, 2, 199999, 100, 1024, 20000000),
             std::make_tuple(64, 2, 199999, 100, 1024, 20000000)));
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 }
-#endif __TREE_WITH_CACHE__
+#endif //__TREE_WITH_CACHE__

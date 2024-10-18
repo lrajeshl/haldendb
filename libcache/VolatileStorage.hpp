@@ -39,7 +39,7 @@ private:
 
 #ifdef __CONCURRENT__
 	mutable std::shared_mutex m_mtxStorage;
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 public:
 	~VolatileStorage()
@@ -56,11 +56,7 @@ public:
 		m_szStorage = new(std::nothrow) char[m_nStorageSize];
 		memset(m_szStorage, 0, m_nStorageSize);
 
-		if (m_szStorage == nullptr)
-		{
-			std::cout << "Critical State: " << ".32." << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(m_szStorage != nullptr);
 
 		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 	}
@@ -119,7 +115,7 @@ public:
 
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
 
@@ -128,7 +124,7 @@ public:
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		delete[] szBuffer;
 
@@ -141,7 +137,7 @@ public:
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_dram_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{

@@ -616,7 +616,6 @@
     <ClInclude Include="NoCacheObject.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PMemStorage.hpp" />
-    <ClInclude Include="UnsortedMapUtil.hpp" />
     <ClInclude Include="VariadicNthType.h" />
     <ClInclude Include="VolatileStorage.hpp" />
   </ItemGroup>

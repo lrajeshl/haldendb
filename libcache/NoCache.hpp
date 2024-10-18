@@ -102,10 +102,4 @@ public:
 		key = reinterpret_cast<ObjectUIDType>(ptrObject);
 		return CacheErrorCode::Success;
 	}
-
-	void getCacheState(size_t& lru, size_t& map)
-	{
-		lru = 1;
-		map = 1;
-	}
 };

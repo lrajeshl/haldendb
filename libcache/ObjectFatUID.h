@@ -70,10 +70,6 @@ public:
 	{
 		switch (nMediaType)
 		{
-		case None:
-			std::cout << "Critical State: " << ".25." << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-			break;
 		case Volatile:
 			return createAddressFromVolatilePointer(uid, args...);
 			break;
@@ -88,7 +84,7 @@ public:
 			break;
 		}
 
-		std::cout << "Critical State: " << ".26." << std::endl;
+		std::cout << "Critical State: UID is requested for an invalid UID." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 

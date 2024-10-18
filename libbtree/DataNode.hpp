@@ -293,9 +293,9 @@ public:
 	// Removes a key-value pair from the node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode remove(const KeyType& key, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode remove(const KeyType& key)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
 
@@ -304,7 +304,7 @@ public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 			uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 			int index = it - m_vtKeys.begin();
 			m_vtKeys.erase(it);
@@ -337,7 +337,7 @@ public:
 					std::is_standard_layout<ValueType>::value,
 					"Non-POD type is provided. Kindly provide functionality to calculate size.");
 			}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 			return ErrorCode::Success;
 		}
@@ -347,14 +347,14 @@ public:
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode insert(const KeyType& key, const ValueType& value, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode insert(const KeyType& key, const ValueType& value)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		size_t nChildIdx = m_vtKeys.size();
 		for (int nIdx = 0; nIdx < m_vtKeys.size(); ++nIdx)
@@ -396,7 +396,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}
@@ -405,14 +405,14 @@ public:
 	template <typename CacheType, typename CacheObjectTypePtr>
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		size_t nMid = m_vtKeys.size() / 2;
 
@@ -459,7 +459,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}
@@ -483,9 +483,9 @@ public:
 	// Moves an entity from the left-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
@@ -493,7 +493,7 @@ public:
 
 		uint32_t nLHSKeyContainerCapacity = ptrLHSSibling->m_vtKeys.capacity();
 		uint32_t nLHSValueContainerCapacity = ptrLHSSibling->m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		KeyType key = ptrLHSSibling->m_vtKeys.back();
 		ValueType value = ptrLHSSibling->m_vtValues.back();
@@ -551,20 +551,20 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	}
 
 	// Merges the sibling node with the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_vtKeys.begin(), ptrSibling->m_vtKeys.end());
 		m_vtValues.insert(m_vtValues.end(), ptrSibling->m_vtValues.begin(), ptrSibling->m_vtValues.end());
@@ -596,16 +596,16 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 	}
 
 	// Moves an entity from the right-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
@@ -613,7 +613,7 @@ public:
 
 		uint32_t nRHSKeyContainerCapacity = ptrRHSSibling->m_vtKeys.capacity();
 		uint32_t nRHSValueContainerCapacity = ptrRHSSibling->m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		KeyType key = ptrRHSSibling->m_vtKeys.front();
 		ValueType value = ptrRHSSibling->m_vtValues.front();
@@ -671,7 +671,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	}
 
 public:

@@ -42,14 +42,4 @@ public:
 	{
 		return m_mtx;
 	}
-
-	//inline bool tryLockObject() const
-	//{
-	//	return m_mtx.try_lock();
-	//}
-
-	//inline void unlockObject() const
-	//{
-	//	m_mtx.unlock();
-	//}
 };

@@ -8,7 +8,6 @@
 #include <variant>
 #include <cmath>
 
-#include "ErrorCodes.h"
 #include "IFlushCallback.h"
 
 template<
@@ -46,7 +45,7 @@ private:
 	mutable std::shared_mutex m_mtxStorage;
 
 	std::unordered_map<ObjectUIDType, std::shared_ptr<ObjectType>> m_mpObjects;
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 public:
 	~FileStorage()
@@ -56,7 +55,7 @@ public:
 		//m_threadBatchFlush.join();
 
 		m_mpObjects.clear();
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		m_fsStorage.close();
 	}
@@ -87,7 +86,7 @@ public:
 #ifdef __CONCURRENT__
 		m_bStopFlush = false;
 		//m_threadBatchFlush = std::thread(handlerBatchFlush, this);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 	}
 
 public:
@@ -121,7 +120,7 @@ public:
 
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		m_fsStorage.seekg(uidObject.getPersistentPointerValue());
 		std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(m_fsStorage);
@@ -129,7 +128,7 @@ public:
 
 #ifdef __CONCURRENT__
 		lock_file_storage.unlock();
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		//ptrObject->setDirtyFlag(false);
 		//std::shared_ptr<ObjectType> ptrObject = std::make_shared<ObjectType>(szBuffer);
@@ -155,7 +154,7 @@ public:
 
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		m_fsStorage.seekp(nOffset);
 		ptrObject->serialize(m_fsStorage, uidObjectType, nBufferSize);
@@ -172,7 +171,7 @@ public:
 
 #ifdef __CONCURRENT__
 		lock_file_storage.unlock();
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		//delete[] szBuffer;
 
@@ -185,7 +184,7 @@ public:
 	{
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{
@@ -214,7 +213,7 @@ public:
 		std::unordered_map<ObjectUIDType, ObjectUIDType> mpUpdatedUIDs;
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 
 		auto it = m_mpObjects.begin();
 		while (it != m_mpObjects.end())
@@ -250,6 +249,6 @@ public:
 
 		} while (!ptrSelf->m_bStopFlush);
 	}
-#endif __CONCURRENT__
+#endif //__CONCURRENT__
 };
 

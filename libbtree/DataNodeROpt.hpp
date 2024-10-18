@@ -120,7 +120,7 @@ public:
 
 			assert( UID == m_ptrRawData->nUID);
 
-			moveDataToDRAM();
+			//moveDataToDRAM();
 		}
 		else
 		{
@@ -179,16 +179,16 @@ public:
 public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline int32_t moveDataToDRAM()
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void moveDataToDRAM()
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
-		if (m_ptrRawData != nullptr)
-		{
+		assert(m_ptrRawData == nullptr);
+
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			int32_t nMemoryFootprint = 0;
 			nMemoryFootprint -= getMemoryFootprint();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 			m_vtKeys.resize(m_ptrRawData->nTotalEntries);
 			m_vtValues.resize(m_ptrRawData->nTotalEntries);
@@ -196,6 +196,7 @@ public:
 			memcpy(m_vtKeys.data(), m_ptrRawData->ptrKeys, m_ptrRawData->nTotalEntries * sizeof(KeyType));
 			memcpy(m_vtValues.data(), m_ptrRawData->ptrValues, m_ptrRawData->nTotalEntries * sizeof(ValueType));
 
+#ifdef __VALIDITY_CHECK__
 			assert(m_ptrRawData->nUID == UID);
 			assert(m_ptrRawData->nTotalEntries == m_vtKeys.size());
 			for (int idx = 0, end = m_ptrRawData->nTotalEntries; idx < end; idx++)
@@ -203,6 +204,7 @@ public:
 				assert(*(m_ptrRawData->ptrKeys + idx) == m_vtKeys[idx]);
 				assert(*(m_ptrRawData->ptrValues + idx) == m_vtValues[idx]);
 			}
+#endif //__VALIDITY_CHECK__
 
 			delete m_ptrRawData;
 			m_ptrRawData = nullptr;
@@ -210,24 +212,13 @@ public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += getMemoryFootprint();
 			return nMemoryFootprint;
-#endif __TRACK_CACHE_FOOTPRINT__
-
-		}
-		else
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+#endif //__TRACK_CACHE_FOOTPRINT__
 	}
 
 	// Serializes the node's data into a char buffer
 	inline void serialize(char*& szBuffer, uint8_t& uidObjectType, uint32_t& nBufferSize) const
 	{
-		if (m_ptrRawData != nullptr)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(m_ptrRawData == nullptr);
 
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -262,6 +253,7 @@ public:
 			memcpy(szBuffer + nOffset, m_vtValues.data(), nValuesSize);
 			nOffset += nValuesSize;
 
+#ifdef __VALIDITY_CHECK__
 			const RAWDATA* ptrRawData = new RAWDATA(szBuffer);
 
 			assert( ptrRawData->nUID == UID);
@@ -271,6 +263,7 @@ public:
 				assert(*(ptrRawData->ptrKeys + idx) == m_vtKeys[idx]);
 				assert(*(ptrRawData->ptrValues + idx) == m_vtValues[idx]);
 			}
+#endif //__VALIDITY_CHECK__
 		}
 		else
 		{
@@ -286,12 +279,7 @@ public:
 	// Writes the node's data to a file stream
 	inline void writeToStream(std::fstream& os, uint8_t& uidObjectType, uint32_t& nDataSize) const
 	{
-		if (m_ptrRawData != nullptr)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-			throw new std::logic_error("There is not new data to be flushed!");
-		}
+		assert(m_ptrRawData == nullptr);
 
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -444,11 +432,7 @@ public:
 	// Returns the size of the serialized node
 	inline size_t getSize() const
 	{
-		if (m_ptrRawData != nullptr)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(m_ptrRawData == nullptr);
 
 		if constexpr (std::is_trivial<KeyType>::value &&
 			std::is_standard_layout<KeyType>::value &&
@@ -505,17 +489,17 @@ public:
 	// Removes a key-value pair from the node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode remove(const KeyType& key, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode remove(const KeyType& key)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 		KeyTypeIterator it = std::lower_bound(m_vtKeys.begin(), m_vtKeys.end(), key);
@@ -525,7 +509,7 @@ public:
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 			uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 			int index = it - m_vtKeys.begin();
 			m_vtKeys.erase(it);
@@ -558,7 +542,7 @@ public:
 					std::is_standard_layout<ValueType>::value,
 					"Non-POD type is provided. Kindly provide functionality to calculate size.");
 			}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 			return ErrorCode::Success;
 		}
@@ -568,23 +552,23 @@ public:
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode insert(const KeyType& key, const ValueType& value, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode insert(const KeyType& key, const ValueType& value)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		size_t nChildIdx = m_vtKeys.size();
 		for (int nIdx = 0; nIdx < m_vtKeys.size(); ++nIdx)
@@ -626,7 +610,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}
@@ -635,23 +619,23 @@ public:
 	template <typename CacheType, typename CacheObjectTypePtr>
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline ErrorCode split(std::shared_ptr<CacheType>& ptrCache, std::optional<ObjectUIDType>& uidSibling, CacheObjectTypePtr& ptrSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		size_t nMid = m_vtKeys.size() / 2;
 
@@ -698,7 +682,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		return ErrorCode::Success;
 	}
@@ -706,26 +690,26 @@ public:
 	// Moves an entity from the left-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrLHSSibling->m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += ptrLHSSibling->moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			ptrLHSSibling->moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -734,7 +718,7 @@ public:
 
 		uint32_t nLHSKeyContainerCapacity = ptrLHSSibling->m_vtKeys.capacity();
 		uint32_t nLHSValueContainerCapacity = ptrLHSSibling->m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		KeyType key = ptrLHSSibling->m_vtKeys.back();
 		ValueType value = ptrLHSSibling->m_vtValues.back();
@@ -742,11 +726,7 @@ public:
 		ptrLHSSibling->m_vtKeys.pop_back();
 		ptrLHSSibling->m_vtValues.pop_back();
 
-		if (ptrLHSSibling->m_vtKeys.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrLHSSibling->m_vtKeys.size() > 0);
 
 		m_vtKeys.insert(m_vtKeys.begin(), key);
 		m_vtValues.insert(m_vtValues.begin(), value);
@@ -792,29 +772,29 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	}
 
 	// Merges the sibling node with the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void mergeNode(std::shared_ptr<SelfType> ptrSibling)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		uint32_t nKeyContainerCapacity = m_vtKeys.capacity();
 		uint32_t nValueContainerCapacity = m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		if (ptrSibling->m_ptrRawData != nullptr)
 		{
@@ -827,9 +807,9 @@ public:
 			// TODO: Can be bypassed!
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += ptrSibling->moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			ptrSibling->moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 */
 		}
 		else
@@ -865,33 +845,33 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 	}
 
 	// Moves an entity from the right-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromRHSSibling(std::shared_ptr<SelfType> ptrRHSSibling, KeyType& pivotKeyForParent)
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	{
 		if (m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 		if (ptrRHSSibling->m_ptrRawData != nullptr)
 		{
 #ifdef __TRACK_CACHE_FOOTPRINT__
 			nMemoryFootprint += ptrRHSSibling->moveDataToDRAM();
-#else __TRACK_CACHE_FOOTPRINT__
+#else //__TRACK_CACHE_FOOTPRINT__
 			ptrRHSSibling->moveDataToDRAM();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
@@ -900,7 +880,7 @@ public:
 
 		uint32_t nRHSKeyContainerCapacity = ptrRHSSibling->m_vtKeys.capacity();
 		uint32_t nRHSValueContainerCapacity = ptrRHSSibling->m_vtValues.capacity();
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 
 		KeyType key = ptrRHSSibling->m_vtKeys.front();
 		ValueType value = ptrRHSSibling->m_vtValues.front();
@@ -908,11 +888,7 @@ public:
 		ptrRHSSibling->m_vtKeys.erase(ptrRHSSibling->m_vtKeys.begin());
 		ptrRHSSibling->m_vtValues.erase(ptrRHSSibling->m_vtValues.begin());
 
-		if (ptrRHSSibling->m_vtKeys.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrRHSSibling->m_vtKeys.size() > 0);
 
 		m_vtKeys.push_back(key);
 		m_vtValues.push_back(value);
@@ -958,7 +934,7 @@ public:
 				std::is_standard_layout<ValueType>::value,
 				"Non-POD type is provided. Kindly provide functionality to calculate size.");
 		}
-#endif __TRACK_CACHE_FOOTPRINT__
+#endif //__TRACK_CACHE_FOOTPRINT__
 	}
 
 public:
