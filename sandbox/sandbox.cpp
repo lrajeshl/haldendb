@@ -37,6 +37,7 @@
 #define FILE_STORAGE_PATH "c:\\filestore.hdb"
 #else
 #define FILE_STORAGE_PATH "/mnt/tmpfs/filestore.hdb"
+#define PMEM_STORAGE_PATH "/mnt/tmpfs/datafile1"
 #endif
 
 
@@ -563,7 +564,7 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(nDegree, 100, 1024, 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
             ptrTree.init<DataNodeType>();
 
             int_test<BPlusStoreType>(&ptrTree, 100000);
@@ -614,7 +615,7 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(nDegree, 100, 1024, 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
             ptrTree.init<DataNodeType>();
 
             int_test<BPlusStoreType>(&ptrTree, 100000);
@@ -724,7 +725,7 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(nDegree, 100, 1024, 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType>(&ptrTree, nDegree, 100000, 6);
@@ -776,7 +777,7 @@ void test_for_threaded()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(nDegree, 100, 1024, 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
             ptrTree.template init<DataNodeType>();
 
             threaded_test<BPlusStoreType>(&ptrTree, nDegree, 100000, 6);
@@ -903,13 +904,13 @@ void fptree_bm()
     typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
 
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(24, 1024, 4096, 10ULL * 1024 * 1024 * 1024);
 
-    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 
     // Single-threaded test
     {
@@ -935,8 +936,8 @@ void fptree_bm()
 
             for (size_t nCntr = 0; nCntr < 5; nCntr++)
             {
-
-	        BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+		BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+	        //BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
         	ptrTree.init<DataNodeType>();
 
                 std::cout << "Iteration = " << nCntr + 1 << std::endl;
@@ -972,7 +973,8 @@ void fptree_bm()
 
             for (size_t nCntr = 0; nCntr < 5; nCntr++)
             {
-            	BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+		BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+            	//BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
             	ptrTree.init<DataNodeType>();
 
                 std::cout << "Iteration = " << nCntr + 1 << std::endl;
@@ -988,8 +990,8 @@ void fptree_bm()
 
 int main(int argc, char* argv[])
 {
-    //fptree_bm();
-    //return 0;
+    fptree_bm();
+    return 0;
 
     quick_test();
     return 0;
