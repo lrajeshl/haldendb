@@ -7,7 +7,6 @@ add_library(libcache
             NoCache.hpp
             NoCacheObject.hpp
             ObjectFatUID.h
-            UnsortedMapUtil.hpp
             VariadicNthType.h
             VolatileStorage.hpp
             PMemStorage.hpp

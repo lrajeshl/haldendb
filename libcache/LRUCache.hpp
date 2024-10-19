@@ -204,9 +204,9 @@ public:
 
 			uidUpdated = m_mpUIDUpdates[uidObject].first;
 
-#ifdef VALIDITY_CHECKS
+#ifdef __VALIDITY_CHECK__
 			assert(uidUpdated != std::nullopt);
-#endif //VALIDITY_CHECKS
+#endif //__VALIDITY_CHECK__
 
 			m_mpUIDUpdates.erase(uidObject);
 			uidTemp = *uidUpdated;
@@ -371,9 +371,9 @@ public:
 
 			uidUpdated = m_mpUIDUpdates[uidObject].first;
 
-#ifdef VALIDITY_CHECKS
+#ifdef __VALIDITY_CHECK__
 			assert(uidUpdated != std::nullopt);
-#endif //VALIDITY_CHECKS
+#endif //__VALIDITY_CHECK__
 
 			m_mpUIDUpdates.erase(uidObject);
 			uidTemp = *uidUpdated;
@@ -486,9 +486,9 @@ public:
 
 			uidUpdated = m_mpUIDUpdates[uidObject].first;
 
-#ifdef VALIDITY_CHECKS
+#ifdef __VALIDITY_CHECK__
 			assert(uidUpdated != std::nullopt);
-#endif //VALIDITY_CHECKS
+#endif //__VALIDITY_CHECK__
 
 			m_mpUIDUpdates.erase(uidObject);
 			uidTemp = &(*uidUpdated);
@@ -1038,7 +1038,7 @@ private:
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: Can't proceed with the flushItemsToStorage operations as lock can't be acquired on object." << std::endl;
+				std::cout << "Critical State: Can't proceed with the flushItemsToStorage operations as object already exists in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1054,7 +1054,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: (flushItemsToStorage) Object with similar key already exists in the Updates' list." << std::endl;
+				std::cout << "Critical State: (flushItemsToStorage) Object with similar key does not exists in the Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1094,7 +1094,7 @@ private:
 
 				if (m_mpUIDUpdates.find(m_ptrTail->m_uidSelf) != m_mpUIDUpdates.end())
 				{
-					std::cout << "Critical State: Recently add object to Storage doest not exist in Updates' list." << std::endl;
+					std::cout << "Critical State: Can't proceed with the flushItemsToStorage operations as object already exists in Updates' list." << std::endl;
 					throw new std::logic_error(".....");   // TODO: critical log.
 				}
 
@@ -1202,7 +1202,7 @@ private:
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: Can't proceed with the flushAllItemsToStorage operations as lock can't be acquired on object." << std::endl;
+				std::cout << "Critical State: Can't proceed with the flushAllItemsToStorage operations as object already exists in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1223,7 +1223,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: (flushItemsToStorage) Object with similar key already exists in the Updates' list." << std::endl;
+				std::cout << "Critical State: Can't proceed with the flushAllItemsToStorage operations as object does not exists in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1344,7 +1344,7 @@ private:
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: Can't proceed with the flushDataItemsToStorage operations as lock can't be acquired on object." << std::endl;
+				std::cout << "Critical State: Can't proceed with the flushDataItemsToStorage operations as object already exists in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1365,7 +1365,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: (flushDataItemsToStorage) Object with similar key already exists in the Updates' list." << std::endl;
+				std::cout << "Critical State: Can't proceed with the flushDataItemsToStorage operations as object does not exists in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 
@@ -1445,7 +1445,7 @@ private:
 
 			if (m_mpUIDUpdates.find((*itObject).first) != m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: Can't proceed with the presistCurrentCacheState operations as lock can't be acquired on object." << std::endl;
+				std::cout << "Critical State: Can't proceed with the presistCurrentCacheState operations as object already exists in Updates' list.." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 			m_mpUIDUpdates[(*itObject).first] = std::make_pair(std::nullopt, (*itObject).second.second);
@@ -1458,7 +1458,7 @@ private:
 		{
 			if (m_mpUIDUpdates.find((*itObject).first) == m_mpUIDUpdates.end())
 			{
-				std::cout << "Critical State: (presistCurrentCacheState) Object with similar key already exists in the Updates' list." << std::endl;
+				std::cout << "Critical State: Can't proceed with the persistCurrentCacheStateoperations as object does not exist in Updates' list." << std::endl;
 				throw new std::logic_error(".....");   // TODO: critical log.
 			}
 

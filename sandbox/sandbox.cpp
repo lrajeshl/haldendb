@@ -31,10 +31,11 @@
 #include "ObjectFatUID.h"
 #include "ObjectUID.h"
 
-//#define VALIDITY_CHECKS
+#define __VALIDITY_CHECK__
 
 #ifdef _MSC_VER
 #define FILE_STORAGE_PATH "c:\\filestore.hdb"
+#define PMEM_STORAGE_PATH "c:\\filestore.hdb"
 #else
 #define FILE_STORAGE_PATH "/mnt/tmpfs/filestore.hdb"
 #define PMEM_STORAGE_PATH "/mnt/tmpfs/datafile1"
@@ -792,7 +793,7 @@ void test_for_threaded()
 void quick_test()
 {
     for (size_t idx = 0; idx < 100; idx++) {
-        test_for_ints();
+        //test_for_ints();
         test_for_string();
         test_for_threaded();
     }
@@ -914,9 +915,9 @@ void fptree_bm()
 
     // Single-threaded test
     {
-        size_t nMaxNumber = 50000000;
+        size_t nMaxNumber = 5000000;
         //size_t nMaxNumber = 100000;
-        for (size_t nDegree = 16; nDegree < 4096; nDegree = nDegree + 16)
+        for (size_t nDegree = 3; nDegree < 4096; nDegree = nDegree + 16)
         {
             size_t nInternalNodeSize = (nDegree - 1) * sizeof(ValueType) + nDegree * sizeof(ObjectUIDType) + sizeof(int*);
             size_t nTotalInternalNodes = nMaxNumber / nDegree;
@@ -925,7 +926,7 @@ void fptree_bm()
             size_t nTotalMemory = nTotalInternalNodes * nInternalNodeSize;
             size_t nTotalMemoryInMB = nTotalMemory / (1024 * 1024);
 
-            size_t nBlockSize = nInternalNodeSize > 4096 ? 4096 : 512;
+            size_t nBlockSize = nInternalNodeSize > 4096 ? 4096 : 32;
 
             std::cout
                 << "Order = " << nDegree
@@ -936,9 +937,9 @@ void fptree_bm()
 
             for (size_t nCntr = 0; nCntr < 5; nCntr++)
             {
-		BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
-	        //BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
-        	ptrTree.init<DataNodeType>();
+                BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+                //BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
+                ptrTree.init<DataNodeType>();
 
                 std::cout << "Iteration = " << nCntr + 1 << std::endl;
                 fptree_test<BPlusStoreType>(&ptrTree, nMaxNumber);
@@ -973,9 +974,9 @@ void fptree_bm()
 
             for (size_t nCntr = 0; nCntr < 5; nCntr++)
             {
-		BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
-            	//BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
-            	ptrTree.init<DataNodeType>();
+                BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+                //BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 10ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH);
+                ptrTree.init<DataNodeType>();
 
                 std::cout << "Iteration = " << nCntr + 1 << std::endl;
                 fptree_threaded_test<BPlusStoreType>(&ptrTree, nMaxNumber, 8);
@@ -990,8 +991,8 @@ void fptree_bm()
 
 int main(int argc, char* argv[])
 {
-    fptree_bm();
-    return 0;
+    //fptree_bm();
+    //return 0;
 
     quick_test();
     return 0;

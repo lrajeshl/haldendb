@@ -896,8 +896,7 @@ public:
     void applyExistingUpdates(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
         , std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>& mpUIDUpdates)
     {
-        auto it = vtNodes.begin();
-        while (it != vtNodes.end())
+        for (auto it = vtNodes.begin(), itend = vtNodes.end(); it != itend; it++)
         {
             if (std::holds_alternative<std::shared_ptr<IndexNodeType>>((*it).second.second->getInnerData()))
             {
@@ -925,22 +924,22 @@ public:
                 //    it_children++;
                 //}
             }
-            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>((*it).second.second->getInnerData()))
-            {
+            //else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>((*it).second.second->getInnerData()))
+            //{
                 // Nothing to update in this case!
-            }
-            it++;
+            //}
+            //it++;
         }
     }
 
-        void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-            , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
+    void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
+        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
     {
         nNewOffset = nOffset;
 
         std::unordered_map<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>> mpUIDUpdates;
 
-        for (int idx = 0; idx < vtNodes.size(); idx++)
+        for (size_t idx = 0; idx < vtNodes.size(); idx++)
         {
             if (std::holds_alternative<std::shared_ptr<IndexNodeType>>(vtNodes[idx].second.second->getInnerData()))
             {
@@ -994,7 +993,7 @@ public:
                     mpUIDUpdates[vtNodes[idx].first] = std::make_pair(uidUpdated, vtNodes[idx].second.second);
                 }
             }
-            else if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData()))
+            else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(vtNodes[idx].second.second->getInnerData()))
             {
                 if (!vtNodes[idx].second.second->getDirtyFlag())
                 {
