@@ -749,7 +749,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx - 1], ptrLHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -757,6 +757,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData()))
+			{
+				ptrLHSNode = std::get<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -805,7 +810,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx + 1], ptrRHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -813,6 +818,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData()))
+			{
+				ptrRHSNode = std::get<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -950,7 +960,8 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
+			//ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx - 1], ptrLHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -958,6 +969,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData()))
+			{
+				ptrLHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -1007,7 +1023,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx + 1], ptrRHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -1015,6 +1031,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData()))
+			{
+				ptrRHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
