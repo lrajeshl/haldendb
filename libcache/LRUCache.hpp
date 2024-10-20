@@ -335,119 +335,119 @@ public:
 		return CacheErrorCode::Success;
 	}
 
-	template <typename Type>
-	CacheErrorCode getObjectOfType(const ObjectUIDType& uidObject, Type& ptrCoreObject, std::optional<ObjectUIDType>& uidUpdated)
-	{
-#ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
-#endif //__CONCURRENT__
-
-		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
-		{
-			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
-			moveToFront(ptrItem);
-
-			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
-			{
-				ptrCoreObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
-				return CacheErrorCode::Success;
-			}
-
-			return CacheErrorCode::Error;
-		}
-
-#ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
-		lock_cache.unlock();
-#endif //__CONCURRENT__
-
-		const ObjectUIDType* uidTemp = &uidObject;
-		if (m_mpUIDUpdates.find(uidObject) != m_mpUIDUpdates.end())
-		{
-#ifdef __CONCURRENT__
-			std::optional< ObjectUIDType >& _condition = m_mpUIDUpdates[uidObject].first;
-			m_cvUIDUpdates.wait(lock_storage, [&_condition] { return _condition != std::nullopt; });
-#endif //__CONCURRENT__
-
-			uidUpdated = m_mpUIDUpdates[uidObject].first;
-
-#ifdef __VALIDITY_CHECK__
-			assert(uidUpdated != std::nullopt);
-#endif //__VALIDITY_CHECK__
-
-			m_mpUIDUpdates.erase(uidObject);
-			uidTemp = *uidUpdated;
-		}
-
-#ifdef __CONCURRENT__
-		lock_storage.unlock();
-#endif //__CONCURRENT__
-
-		std::shared_ptr<ObjectType> ptrStorageObject = m_ptrStorage->getObject(*uidTemp);
-
-		if (ptrStorageObject != nullptr)
-		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidTemp, ptrStorageObject);
-
-#ifdef __CONCURRENT__
-			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
-
-			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
-			{
-#ifdef __TRACK_CACHE_FOOTPRINT__
-				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
-
-				;
-
-				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
-#endif //__TRACK_CACHE_FOOTPRINT__
-
-				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
-				moveToFront(ptrItem);
-
-				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
-				{
-					ptrCoreObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
-					return CacheErrorCode::Success;
-				}
-
-				return CacheErrorCode::Error;
-			}
-#endif //__CONCURRENT__
-
-			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
-
-#ifdef __TRACK_CACHE_FOOTPRINT__
-			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
-#endif //__TRACK_CACHE_FOOTPRINT__
-
-			if (!m_ptrHead)
-			{
-				m_ptrHead = ptrItem;
-				m_ptrTail = ptrItem;
-			}
-			else
-			{
-				ptrItem->m_ptrNext = m_ptrHead;
-				m_ptrHead->m_ptrPrev = ptrItem;
-				m_ptrHead = ptrItem;
-			}
-
-			if (std::holds_alternative<Type>(ptrStorageObject->getInnerData()))
-			{
-				ptrCoreObject = std::get<Type>(ptrStorageObject->getInnerData());
-			}
-
-#ifndef __CONCURRENT__
-			flushItemsToStorage();
-#endif //__CONCURRENT__
-
-			return CacheErrorCode::Error;
-		}
-
-		ptrCoreObject = nullptr;
-		return CacheErrorCode::Error;
-	}
+//	template <typename Type>
+//	CacheErrorCode getObjectOfType(const ObjectUIDType& uidObject, Type& ptrCoreObject, std::optional<ObjectUIDType>& uidUpdated)
+//	{
+//#ifdef __CONCURRENT__
+//		std::unique_lock<std::shared_mutex> lock_cache(m_mtxCache);
+//#endif //__CONCURRENT__
+//
+//		if (m_mpObjects.find(uidObject) != m_mpObjects.end())
+//		{
+//			std::shared_ptr<Item> ptrItem = m_mpObjects[uidObject];
+//			moveToFront(ptrItem);
+//
+//			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
+//			{
+//				ptrCoreObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
+//				return CacheErrorCode::Success;
+//			}
+//
+//			return CacheErrorCode::Error;
+//		}
+//
+//#ifdef __CONCURRENT__
+//		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+//		lock_cache.unlock();
+//#endif //__CONCURRENT__
+//
+//		const ObjectUIDType* uidTemp = &uidObject;
+//		if (m_mpUIDUpdates.find(uidObject) != m_mpUIDUpdates.end())
+//		{
+//#ifdef __CONCURRENT__
+//			std::optional< ObjectUIDType >& _condition = m_mpUIDUpdates[uidObject].first;
+//			m_cvUIDUpdates.wait(lock_storage, [&_condition] { return _condition != std::nullopt; });
+//#endif //__CONCURRENT__
+//
+//			uidUpdated = m_mpUIDUpdates[uidObject].first;
+//
+//#ifdef __VALIDITY_CHECK__
+//			assert(uidUpdated != std::nullopt);
+//#endif //__VALIDITY_CHECK__
+//
+//			m_mpUIDUpdates.erase(uidObject);
+//			uidTemp = *uidUpdated;
+//		}
+//
+//#ifdef __CONCURRENT__
+//		lock_storage.unlock();
+//#endif //__CONCURRENT__
+//
+//		std::shared_ptr<ObjectType> ptrStorageObject = m_ptrStorage->getObject(*uidTemp);
+//
+//		if (ptrStorageObject != nullptr)
+//		{
+//			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidTemp, ptrStorageObject);
+//
+//#ifdef __CONCURRENT__
+//			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
+//
+//			if (m_mpObjects.find(*uidTemp) != m_mpObjects.end())
+//			{
+//#ifdef __TRACK_CACHE_FOOTPRINT__
+//				m_nCacheFootprint -= m_mpObjects[*uidTemp]->m_ptrObject->getMemoryFootprint();
+//
+//				;
+//
+//				m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+//#endif //__TRACK_CACHE_FOOTPRINT__
+//
+//				std::shared_ptr<Item> ptrItem = m_mpObjects[*uidTemp];
+//				moveToFront(ptrItem);
+//
+//				if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
+//				{
+//					ptrCoreObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
+//					return CacheErrorCode::Success;
+//				}
+//
+//				return CacheErrorCode::Error;
+//			}
+//#endif //__CONCURRENT__
+//
+//			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+//
+//#ifdef __TRACK_CACHE_FOOTPRINT__
+//			m_nCacheFootprint += ptrStorageObject->getMemoryFootprint();
+//#endif //__TRACK_CACHE_FOOTPRINT__
+//
+//			if (!m_ptrHead)
+//			{
+//				m_ptrHead = ptrItem;
+//				m_ptrTail = ptrItem;
+//			}
+//			else
+//			{
+//				ptrItem->m_ptrNext = m_ptrHead;
+//				m_ptrHead->m_ptrPrev = ptrItem;
+//				m_ptrHead = ptrItem;
+//			}
+//
+//			if (std::holds_alternative<Type>(ptrStorageObject->getInnerData()))
+//			{
+//				ptrCoreObject = std::get<Type>(ptrStorageObject->getInnerData());
+//			}
+//
+//#ifndef __CONCURRENT__
+//			flushItemsToStorage();
+//#endif //__CONCURRENT__
+//
+//			return CacheErrorCode::Error;
+//		}
+//
+//		ptrCoreObject = nullptr;
+//		return CacheErrorCode::Error;
+//	}
 
 	template <typename Type>
 	CacheErrorCode getObjectOfType(const ObjectUIDType& uidObject, Type& ptrCoreObject, ObjectTypePtr& ptrStorageObject, std::optional<ObjectUIDType>& uidUpdated)
@@ -502,8 +502,6 @@ public:
 
 		if (ptrStorageObject != nullptr)
 		{
-			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidTemp, ptrStorageObject);
-
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> re_lock_cache(m_mtxCache);
 
@@ -531,6 +529,7 @@ public:
 				return CacheErrorCode::Error;
 			}
 #endif //__CONCURRENT__
+			std::shared_ptr<Item> ptrItem = std::make_shared<Item>(*uidTemp, ptrStorageObject);
 
 			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
@@ -550,9 +549,9 @@ public:
 				m_ptrHead = ptrItem;
 			}
 
-			if (std::holds_alternative<Type>(ptrStorageObject->getInnerData()))
+			if (std::holds_alternative<Type>(ptrItem->m_ptrObject->getInnerData()))
 			{
-				ptrCoreObject = std::get<Type>(ptrStorageObject->getInnerData());
+				ptrCoreObject = std::get<Type>(ptrItem->m_ptrObject->getInnerData());
 			}
 
 #ifndef __CONCURRENT__
