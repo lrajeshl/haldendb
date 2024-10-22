@@ -573,7 +573,7 @@ public:
 #ifdef __CONCURRENT__
                     // Although lock to the last node is enough. 
                     // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
-                    //if (vtLocks.size() > 3)
+                   // if (vtLocks.size() > 3)
                     vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
 #endif //__CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);

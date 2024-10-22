@@ -19,6 +19,7 @@ target_compile_features(haldendb_compiler_flags  INTERFACE cxx_std_20)
 add_compile_definitions(__TRACK_CACHE_FOOTPRINT__)
 add_compile_definitions(__CONCURRENT__)
 add_compile_definitions(__TREE_WITH_CACHE__)
+#add_compile_definitions(__VALIDITY_CHECK__)
 
 add_subdirectory(../libcache ${PROJECT_BINARY_DIR}/libcache)
 add_subdirectory(../libbtree ${PROJECT_BINARY_DIR}/libbtree)
