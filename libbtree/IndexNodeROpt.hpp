@@ -758,7 +758,7 @@ public:
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
 
-			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData()))
+			//if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData()))
 			{
 				ptrLHSNode = std::get<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData());
 			}
@@ -819,7 +819,7 @@ public:
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
 
-			if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData()))
+			//if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData()))
 			{
 				ptrRHSNode = std::get<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData());
 			}
@@ -970,7 +970,7 @@ public:
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
 
-			if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData()))
+			//if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData()))
 			{
 				ptrLHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData());
 			}
@@ -1032,7 +1032,7 @@ public:
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
 
-			if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData()))
+			//if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData()))
 			{
 				ptrRHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData());
 			}
