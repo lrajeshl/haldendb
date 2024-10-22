@@ -767,13 +767,14 @@ public:
                     std::shared_ptr<IndexNodeType> ptrInnerNode = std::get<std::shared_ptr<IndexNodeType>>(ptrChildNode->getInnerData());
                     if (ptrInnerNode->getKeysCount() == 0)
                     {
+#ifdef __CONCURRENT__
+                        vtLocks.pop_back();
+#endif //__CONCURRENT__
+
                         ObjectUIDType uidNewRootNode = ptrInnerNode->getChildAt(0);
                         m_ptrCache->remove(uidChildNode);
                         m_uidRootNode = uidNewRootNode;
 
-#ifdef __CONCURRENT__
-                        vtLocks.pop_back();
-#endif //__CONCURRENT__
 
 #ifdef __TREE_WITH_CACHE__
                         // ptrChildNode->setDirtyFlag(true); Not needed!

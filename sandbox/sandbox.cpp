@@ -30,6 +30,10 @@
 
 #include "ObjectFatUID.h"
 #include "ObjectUID.h"
+#include <set>
+#include <random>
+#include <numeric>
+
 
 #define __VALIDITY_CHECK__
 
@@ -46,16 +50,24 @@
 #ifdef __CONCURRENT__
 
 template <typename BPlusStoreType>
-void insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) {
-    for (size_t nCntr = nRangeStart; nCntr < nRangeEnd; nCntr++)
+void insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) 
+{
+    std::vector<int> random_numbers(nRangeEnd - nRangeStart);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), nRangeStart); // Fill vector with 1 to 5,000,000
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
+
+    for (size_t nCntr = 0; nCntr < nRangeEnd - nRangeStart; nCntr++)
     {
-        ErrorCode ec = ptrTree->insert(nCntr, nCntr);
+        ErrorCode ec = ptrTree->insert(random_numbers[nCntr], random_numbers[nCntr]);
         assert(ec == ErrorCode::Success);        
     }
 }
 
 template <typename BPlusStoreType>
-void reverse_insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) {
+void reverse_insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) 
+{
     for (int nCntr = nRangeEnd - 1; nCntr >= nRangeStart; nCntr--)
     {
         ErrorCode ec = ptrTree->insert(nCntr, nCntr);
@@ -64,13 +76,20 @@ void reverse_insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRan
 }
 
 template <typename BPlusStoreType>
-void search_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) {
-    for (size_t nCntr = nRangeStart; nCntr < nRangeEnd; nCntr++)
+void search_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) 
+{
+    std::vector<int> random_numbers(nRangeEnd - nRangeStart);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), nRangeStart); // Fill vector with 1 to 5,000,000
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
+
+    for (size_t nCntr = 0; nCntr < nRangeEnd - nRangeStart; nCntr++)
     {
         int nValue = 0;
-        ErrorCode ec = ptrTree->search(nCntr, nValue);
+        ErrorCode ec = ptrTree->search(random_numbers[nCntr], nValue);
 
-        assert(nCntr == nValue && ec == ErrorCode::Success);
+        assert(random_numbers[nCntr] == nValue && ec == ErrorCode::Success);
     }
 }
 
@@ -87,9 +106,15 @@ void search_not_found_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nR
 
 template <typename BPlusStoreType>
 void delete_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd) {
-    for (size_t nCntr = nRangeStart; nCntr < nRangeEnd; nCntr++)
+    std::vector<int> random_numbers(nRangeEnd - nRangeStart);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), nRangeStart); // Fill vector with 1 to 5,000,000
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
+
+    for (size_t nCntr = 0; nCntr < nRangeEnd - nRangeStart; nCntr++)
     {
-        ErrorCode ec = ptrTree->remove(nCntr);
+        ErrorCode ec = ptrTree->remove(random_numbers[nCntr]);
 
         assert(ec == ErrorCode::Success);
     }
@@ -286,13 +311,22 @@ void fptree_threaded_test(BPlusStoreType* ptrTree, int total_entries, int thread
 template <typename BPlusStoreType>
 void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
 {
+    std::vector<int> random_numbers(nMaxNumber);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), 1); // Fill vector with 1 to 5,000,000
+
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
+
+
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     for( size_t nTestCntr = 0; nTestCntr < 10; nTestCntr++)
     {        
+        std::cout << "iteration i" << std::endl;
         for (size_t nCntr = 0; nCntr < nMaxNumber; nCntr = nCntr + 1)
         {
-            ErrorCode code = ptrTree->insert(nCntr, nCntr);
+            ErrorCode code = ptrTree->insert(random_numbers[nCntr], random_numbers[nCntr]);
             assert(code == ErrorCode::Success);
         }
 
@@ -304,20 +338,20 @@ void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
         for (size_t nCntr = 0; nCntr < nMaxNumber; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = ptrTree->search(nCntr, nValue);
+            ErrorCode code = ptrTree->search(random_numbers[nCntr], nValue);
 
             assert(nValue == nCntr);
         }
 
         for (size_t nCntr = 0; nCntr < nMaxNumber; nCntr = nCntr + 2)
         {
-            ErrorCode code = ptrTree->remove(nCntr);
+            ErrorCode code = ptrTree->remove(random_numbers[nCntr]);
 
             assert(code == ErrorCode::Success);
         }
         for (size_t nCntr = 1; nCntr < nMaxNumber; nCntr = nCntr + 2)
         {
-            ErrorCode code = ptrTree->remove(nCntr);
+            ErrorCode code = ptrTree->remove(random_numbers[nCntr]);
 
             assert(code == ErrorCode::Success);
         }
@@ -325,7 +359,7 @@ void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
         for (int nCntr = 0; nCntr < nMaxNumber; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = ptrTree->search(nCntr, nValue);
+            ErrorCode code = ptrTree->search(random_numbers[nCntr], nValue);
 
             assert(code == ErrorCode::KeyDoesNotExist);
         }
@@ -516,7 +550,7 @@ void test_for_ints()
             BPlusStoreType ptrTree(nDegree);
             ptrTree.template init<DataNodeType>();
 
-            int_test<BPlusStoreType>(&ptrTree, 100000);
+            int_test<BPlusStoreType>(&ptrTree, 10000000);
         }
 #else //__TREE_WITH_CACHE__
         {
@@ -794,7 +828,7 @@ void quick_test()
 {
     for (size_t idx = 0; idx < 100; idx++) {
         //test_for_ints();
-        test_for_string();
+        //test_for_string();
         test_for_threaded();
     }
 }
@@ -891,6 +925,7 @@ void fptree_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
 
 void fptree_bm()
 {
+#ifdef __TREE_WITH_CACHE__
     typedef int KeyType;
     typedef int ValueType;
 
@@ -986,6 +1021,7 @@ void fptree_bm()
         }
     }
 #endif //__CONCURRENT__
+#endif //__TREE_WITH_CACHE__
 
 }
 
@@ -1015,11 +1051,11 @@ int main(int argc, char* argv[])
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
     
-    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    //BPlusStoreType ptrTree(24, 1024, 4096, 10ULL * 1024 * 1024 * 1024);
-
-    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
+    
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
 
     ptrTree.init<DataNodeType>();
 #else //__TREE_WITH_CACHE__
@@ -1031,27 +1067,33 @@ int main(int argc, char* argv[])
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
     typedef BPlusStore<KeyType, ValueType, NoCache<ObjectUIDType, NoCacheObject, DataNodeType, IndexNodeType>> BPlusStoreType;
-    BPlusStoreType ptrTree(3);
+    BPlusStoreType ptrTree(24);
     ptrTree.init<DataNodeType>();
 
 #endif //__TREE_WITH_CACHE__
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+    std::vector<int> random_numbers(50000000);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), 1); // Fill vector with 1 to 5,000,000
+
+std::random_device rd; // Obtain a random number from hardware
+std::mt19937 eng(rd()); // Seed the generator
+std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
     //for (size_t nCntr = 0; nCntr <= 50000000; nCntr = nCntr + 2)
-    for (size_t nCntr = 0; nCntr <= 100000; nCntr = nCntr + 2)
+    for (size_t nCntr = 0; nCntr < 50000000; nCntr = nCntr + 1)
     {
-        ptrTree.insert(nCntr, nCntr);
+        ptrTree.insert(random_numbers[nCntr], random_numbers[nCntr]);
     }
 
-    for (size_t nCntr = 0 + 1; nCntr <= 100000; nCntr = nCntr + 2)
+   // for (size_t nCntr = 0 + 1; nCntr <= 100000; nCntr = nCntr + 2)
     {
-        ptrTree.insert(nCntr, nCntr);
+    //    ptrTree.insert(nCntr, nCntr);
     }
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout
-        << ">> int_test [Time: "
+        << ">> insert [Time: "
         << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
         << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
         << std::endl;
@@ -1063,7 +1105,7 @@ int main(int argc, char* argv[])
 
     end = std::chrono::steady_clock::now();
     std::cout
-        << ">> int_test [Time: "
+        << ">> flush [Time: "
         << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
         << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
         << std::endl;
@@ -1090,7 +1132,7 @@ int main(int argc, char* argv[])
 
     end = std::chrono::steady_clock::now();
     std::cout
-        << ">> int_test [Time: "
+        << ">> search [Time: "
         << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
         << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
         << std::endl;
