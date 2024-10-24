@@ -140,8 +140,8 @@ public:
 		, m_hMemory(nullptr)
 		, m_ptrCallback(NULL)
 	{
-		nStorageSize = 10ULL *1024*1024*1024;
-		m_nStorageSize = 10ULL*1024*1024*1024;
+		//nStorageSize = 10ULL *1024*1024*1024;
+		//m_nStorageSize = 10ULL*1024*1024*1024;
 
 		if( !openMMapFile(m_hMemory, stFilename.c_str(), m_nMappedLen, nIsPMem))
 		{
