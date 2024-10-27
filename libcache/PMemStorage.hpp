@@ -51,6 +51,7 @@ bool writeMMapFile(void* hMemory, const char* szBuf, size_t nLen)
 	{
 		return false;
 	}
+	//pmem_drain();
 #endif //_MSC_VER
 
 	return true;
@@ -192,6 +193,8 @@ public:
 
 	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
 	{
+		//if(uidObject.getMediaType() != 3)
+		//std::cout << "----------------------------------------------------->> " << static_cast<int>(uidObject.getMediaType()) << "," << uidObject.getPersistentPointerValue() << std::endl;
 		return std::make_shared<ObjectType>((char*)m_hMemory + uidObject.getPersistentPointerValue());
 
 		/*

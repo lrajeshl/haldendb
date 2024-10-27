@@ -120,7 +120,7 @@ public:
 
 			assert( UID == m_ptrRawData->nUID);
 
-			moveDataToDRAM();
+			//moveDataToDRAM();
 		}
 		else
 		{
@@ -440,7 +440,7 @@ public:
 			std::is_standard_layout<ValueType>::value)
 		{
 			return sizeof(uint8_t)
-				+ sizeof(size_t)
+				+ sizeof(uint16_t)
 				+ (m_vtKeys.size() * sizeof(KeyType))
 				+ (m_vtValues.size() * sizeof(ValueType));
 		}

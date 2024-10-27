@@ -155,8 +155,8 @@ public:
 #ifdef __CONCURRENT__
                     // Although lock to the last node is enough. 
                     // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
-                    //if( vtLocks.size() > 3)
-                    vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
+                    if( vtLocks.size() > 2)
+                    vtLocks.erase(vtLocks.begin(), vtLocks.end() - 3);
 #endif //__CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);
                 }
@@ -934,7 +934,7 @@ public:
     }
 
     void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-        , size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
+        , size_t nOffset, size_t& nNewOffset, size_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
     {
         nNewOffset = nOffset;
 
@@ -982,7 +982,7 @@ public:
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
+                nNewOffset += (nNodeSize + nBlockSize - 1)/nBlockSize; //std::ceil(nNodeSize / (float)nBlockSize);
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {
@@ -1011,7 +1011,8 @@ public:
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
+                //nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
+		nNewOffset += (nNodeSize + nBlockSize - 1)/nBlockSize;
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {

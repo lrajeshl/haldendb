@@ -59,6 +59,10 @@ public:
 		case TypeB::UID:
 			ptrObject = std::make_shared<TypeB>(szData);
 			break;
+		default:
+			std::cout << ".............." << std::endl;
+			assert(1==2);
+			break;
 		}
 	}
 };

@@ -191,6 +191,8 @@ public:
 #ifdef __CONCURRENT__
 		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage); // TODO: requesting the same key?
 		lock_cache.unlock();
+
+		bool lr = true;
 #endif //__CONCURRENT__
 
 		ObjectUIDType uidTemp = uidObject;
@@ -198,8 +200,14 @@ public:
 		if (m_mpUIDUpdates.find(uidObject) != m_mpUIDUpdates.end())
 		{
 #ifdef __CONCURRENT__
-			std::optional< ObjectUIDType >& _condition = m_mpUIDUpdates[uidObject].first;
-			m_cvUIDUpdates.wait(lock_storage, [&_condition] { return _condition != std::nullopt; });
+			//std::optional< ObjectUIDType >& _condition = m_mpUIDUpdates[uidObject].first;
+			m_cvUIDUpdates.wait(lock_storage, [this, &uidObject] { return m_mpUIDUpdates[uidObject].first != std::nullopt; });
+			
+/*			if(!lock_storage.owns_lock()) {
+				lock_storage.lock();
+					std::cout << "xxxx" << std::endl;
+			}*/
+			//std::unique_lock<std::shared_mutex> lock_storage2(m_mtxStorage);
 #endif //__CONCURRENT__
 
 			uidUpdated = m_mpUIDUpdates[uidObject].first;
@@ -210,10 +218,11 @@ public:
 
 			m_mpUIDUpdates.erase(uidObject);
 			uidTemp = *uidUpdated;
-		}
+		}else{lr=false;}
 
 #ifdef __CONCURRENT__
 		lock_storage.unlock();
+		//if(lock_storage.owns_lock()) lock_storage.unlock();
 #endif //__CONCURRENT__
 
 		ptrObject = m_ptrStorage->getObject(uidTemp);
@@ -227,6 +236,9 @@ public:
 
 			if (m_mpObjects.find(uidTemp) != m_mpObjects.end())
 			{
+				std::cout << "yeh kay hwa" << std::endl;
+				assert(1==2);
+				throw new std::logic_error("...");
 #ifdef __TRACK_CACHE_FOOTPRINT__
 				m_nCacheFootprint -= m_mpObjects[uidTemp]->m_ptrObject->getMemoryFootprint();
 
@@ -241,11 +253,13 @@ public:
 			}
 #endif //__CONCURRENT__
 
-			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
+			//m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
-			m_nCacheFootprint += ptrObject->getMemoryFootprint();
+			m_nCacheFootprint += ptrItem->m_ptrObject->getMemoryFootprint();
 #endif //__TRACK_CACHE_FOOTPRINT__
+
+			m_mpObjects[ptrItem->m_uidSelf] = ptrItem;
 
 			if (!m_ptrHead)
 			{
@@ -956,8 +970,8 @@ private:
 		if (m_mpObjects.size() <= m_nCacheCapacity)
 			return;
 
-		uint16_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
-		for (uint16_t idx = 0; idx < nFlushCount; idx++)
+		size_t nFlushCount = m_mpObjects.size() - m_nCacheCapacity;
+		for (size_t idx = 0; idx < nFlushCount; idx++)
 #endif //__TRACK_CACHE_FOOTPRINT__
 		{
 			//std::cout << "..going to flush.." << std::endl;
@@ -1045,6 +1059,7 @@ private:
 
 		lock_storage.unlock();
 		
+		//std::cout << m_ptrStorage->getNextAvailableBlockOffset() << ", " <<  nNewOffset << "=" << (nNewOffset - m_ptrStorage->getNextAvailableBlockOffset())*m_ptrStorage->getBlockSize() << std::endl;
 		m_ptrStorage->addObjects(vtObjects, nNewOffset);
 
 		std::unique_lock<std::shared_mutex> relock_storage(m_mtxStorage);
@@ -1551,7 +1566,7 @@ public:
 	}
 
 	void prepareFlush(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtNodes
-		, size_t nOffset, size_t& nNewOffset, uint16_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
+		, size_t nOffset, size_t& nNewOffset, size_t nBlockSize, ObjectUIDType::StorageMedia nMediaType)
 	{
 	}
 #endif //__TREE_WITH_CACHE__

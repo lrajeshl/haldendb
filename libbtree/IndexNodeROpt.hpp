@@ -123,7 +123,7 @@ public:
 
 			assert(UID == m_ptrRawData->nUID);
 
-			moveDataToDRAM();
+			//moveDataToDRAM();
 		}
 		else
 		{
@@ -497,7 +497,7 @@ public:
 		{
 			return 
 				sizeof(uint8_t)
-				+ sizeof(size_t)
+				+ sizeof(int16_t)
 				+ (m_vtPivots.size() * sizeof(KeyType))
 				+ (m_vtChildren.size() * sizeof(typename ObjectUIDType::NodeUID));
 		}

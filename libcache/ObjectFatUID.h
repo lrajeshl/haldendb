@@ -20,7 +20,7 @@ public:
 
 	struct FilePointer
 	{
-		uint32_t m_nOffset;
+		size_t m_nOffset;
 		uint32_t m_nSize;
 	};
 
@@ -54,7 +54,7 @@ public:
 		return m_uid.FATPOINTER.m_ptrVolatile;
 	}
 
-	inline uint32_t getPersistentPointerValue() const
+	inline size_t getPersistentPointerValue() const
 	{
 		return m_uid.FATPOINTER.m_ptrFile.m_nOffset;
 	}
@@ -88,7 +88,7 @@ public:
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
-        static void createAddressFromPMemOffset(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
+        static void createAddressFromPMemOffset(ObjectFatUID& uid, uint8_t nType, size_t nOffset, uint32_t nSize)
         {
                 uid.m_uid.m_nType = nType;
                 uid.m_uid.m_nMediaType = PMem;
@@ -96,7 +96,7 @@ public:
                 uid.m_uid.FATPOINTER.m_ptrFile.m_nSize = nSize;
         }
 
-	static void createAddressFromFileOffset(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
+	static void createAddressFromFileOffset(ObjectFatUID& uid, uint8_t nType, size_t nOffset, uint32_t nSize)
 	{
 		uid.m_uid.m_nType = nType;
 		uid.m_uid.m_nMediaType = File;
@@ -111,7 +111,7 @@ public:
 		uid.m_uid.FATPOINTER.m_ptrVolatile = ptr;
 	}
 
-	static void createAddressFromDRAMCacheCounter(ObjectFatUID& uid, uint8_t nType, uint32_t nOffset, uint32_t nSize)
+	static void createAddressFromDRAMCacheCounter(ObjectFatUID& uid, uint8_t nType, size_t nOffset, uint32_t nSize)
 	{
 		uid.m_uid.m_nType = nType;
 		uid.m_uid.m_nMediaType = DRAM;
@@ -170,14 +170,14 @@ public:
 			break;
                 case ObjectFatUID::StorageMedia::PMem:
 			{
-                        size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+                        size_t offsetHash = std::hash<size_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
                         size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
                         hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
 			}
                         break;
 		case ObjectFatUID::StorageMedia::File:
 			{
-			size_t offsetHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
+			size_t offsetHash = std::hash<size_t>()(m_uid.FATPOINTER.m_ptrFile.m_nOffset);
 			size_t sizeHash = std::hash<uint32_t>()(m_uid.FATPOINTER.m_ptrFile.m_nSize);
 			hashValue ^= offsetHash ^ (sizeHash + 0x9e3779b9 + (offsetHash << 6) + (offsetHash >> 2));
 			}
