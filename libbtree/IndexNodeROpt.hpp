@@ -21,6 +21,9 @@
 #define END_PACKED_STRUCT _Pragma("pack(pop)")
 #endif
 
+#define MICROSEC_CHECK_FOR_FREQUENT_REQUESTS_TO_MEMORY 100
+#define ACCESSED_FREQUENCY_AS_PER_THE_TIME_CHECK 10
+
 using namespace std;
 
 template <typename KeyType, typename ValueType, typename ObjectUIDType, typename DataNodeType, uint8_t TYPE_UID>
@@ -145,9 +148,8 @@ public:
 			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
 			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value)
 		{
-			uint16_t nPivotCount;// , nValueCount;
+			uint16_t nPivotCount;
 			fs.read(reinterpret_cast<char*>(&nPivotCount), sizeof(uint16_t));
-			//fs.read(reinterpret_cast<char*>(&nValueCount), sizeof(uint16_t));
 
 			m_vtPivots.resize(nPivotCount);
 			m_vtChildren.resize(nPivotCount + 1);
@@ -236,17 +238,14 @@ public:
 			uidObjectType = SelfType::UID;
 
 			uint16_t nPivotCount = m_vtPivots.size();
-			//uint16_t nValueCount = m_vtChildren.size();
 
 			nDataSize = sizeof(uint8_t)					// UID
 				+ sizeof(uint16_t)						// Total keys
-			//	+ sizeof(uint16_t)						// Total values
 				+ (nPivotCount * sizeof(KeyType))			// Size of all keys
-				+ ( (nPivotCount + 1) * sizeof(typename ObjectUIDType::NodeUID));	// Size of all values
+				+ ((nPivotCount + 1) * sizeof(typename ObjectUIDType::NodeUID));	// Size of all values
 
 			fs.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
 			fs.write(reinterpret_cast<const char*>(&nPivotCount), sizeof(uint16_t));
-			//fs.write(reinterpret_cast<const char*>(&nValueCount), sizeof(uint16_t));
 			fs.write(reinterpret_cast<const char*>(m_vtPivots.data()), nPivotCount * sizeof(KeyType));
 			fs.write(reinterpret_cast<const char*>(m_vtChildren.data()), (nPivotCount + 1) * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
 
@@ -281,11 +280,9 @@ public:
 			uidObjectType = UID;
 
 			uint16_t nPivotCount = m_vtPivots.size();
-			//uint16_t nValueCount = m_vtChildren.size();
 
 			nBufferSize = sizeof(uint8_t)				// UID
 				+ sizeof(uint16_t)						// Total keys
-			//	+ sizeof(uint16_t)						// Total values
 				+ (nPivotCount * sizeof(KeyType))			// Size of all keys
 				+ ( (nPivotCount +1)* sizeof(typename ObjectUIDType::NodeUID));	// Size of all values
 
@@ -299,16 +296,12 @@ public:
 			memcpy(szBuffer + nOffset, &nPivotCount, sizeof(uint16_t));
 			nOffset += sizeof(uint16_t);
 
-			//memcpy(szBuffer + nOffset, &nValueCount, sizeof(uint16_t));
-			//nOffset += sizeof(uint16_t);
-
 			size_t nKeysSize = nPivotCount * sizeof(KeyType);
 			memcpy(szBuffer + nOffset, m_vtPivots.data(), nKeysSize);
 			nOffset += nKeysSize;
 
 			size_t nValuesSize = (nPivotCount + 1) * sizeof(typename ObjectUIDType::NodeUID);
 			memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
-			//nOffset += nValuesSize;
 
 #ifdef __VALIDITY_CHECK__
 			const RAWDATA* ptrRawData = new RAWDATA(szBuffer);
@@ -324,7 +317,6 @@ public:
 			for (auto it = m_vtChildren.begin(); it != m_vtChildren.end(); it++)
 			{
 				assert((*it).getMediaType() > 1);
-				//assert((*it).getMediaType() < 3);
 			}
 #endif //__VALIDITY_CHECK__
 		}
@@ -346,18 +338,15 @@ public:
 		if (m_ptrRawData == nullptr)
 			return false;
 
-		//std::cout << "xxxxx" << std::endl;
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - m_ptrRawData->tLastAccessTime;
 
-		if (std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() < 100)
-		//if (duration.count() < 100)
+		if (std::chrono::duration_cast<std::chrono::microseconds>(duration).count() < MICROSEC_CHECK_FOR_FREQUENT_REQUESTS_TO_MEMORY)
 		{
 			m_ptrRawData->nCounter++;
 
-			if (m_ptrRawData->nCounter >= 10)
+			if (m_ptrRawData->nCounter >= ACCESSED_FREQUENCY_AS_PER_THE_TIME_CHECK)
 			{
-				std::cout << "....." << std::endl;
 				moveDataToDRAM();
 				return false;
 			}
@@ -384,12 +373,6 @@ public:
 	{
 		if (canAccessDataDirectly())
 		{
-			/*size_t nChildIdx = 0;
-			while (nChildIdx < m_ptrRawData->nTotalPivots && key >= m_ptrRawData->ptrPivots[nChildIdx])
-			{
-				nChildIdx++;
-			}
-			return nChildIdx;*/
 			auto it = std::upper_bound(m_ptrRawData->ptrPivots, m_ptrRawData->ptrPivots + m_ptrRawData->nTotalPivots, key);
 			return std::distance(m_ptrRawData->ptrPivots, it);
 		}
@@ -398,16 +381,6 @@ public:
 
 		auto it = std::upper_bound(m_vtPivots.begin(), m_vtPivots.end(), key);
 		return std::distance(m_vtPivots.begin(), it);
-
-		//size_t nChildIdx = 0;
-		//while (nChildIdx < m_vtPivots.size() && key >= m_vtPivots[nChildIdx])
-		//{
-		//	nChildIdx++;
-		//}
-
-		//assert(val == nChildIdx);
-
-		//return val;
 	}
 
 	// Gets the child at the given index
@@ -556,19 +529,6 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
 		return;
 #endif //__TRACK_CACHE_FOOTPRINT__
-		//int idx = 0;
-		//auto it = m_vtChildren.begin();
-		//while (it != m_vtChildren.end())
-		//{
-		//	if (*it == uidOld)
-		//	{
-		//		*it = uidNew;
-		//		return;
-		//	}
-		//	it++;
-		//}
-
-		//throw new std::logic_error("should not occur!");
 	}
 
 	template <typename CacheObjectType>
@@ -651,18 +611,6 @@ public:
 
 		auto it = std::lower_bound(m_vtPivots.begin(), m_vtPivots.end(), pivotKey);
 		auto nChildIdx = std::distance(m_vtPivots.begin(), it);
-
-		//size_t nChildIdx_ = m_vtPivots.size();
-		//for (int nIdx = 0; nIdx < m_vtPivots.size(); ++nIdx)
-		//{
-		//	if (pivotKey < m_vtPivots[nIdx])
-		//	{
-		//		nChildIdx_ = nIdx;
-		//		break;
-		//	}
-		//}
-
-		//assert(nChildIdx == nChildIdx_);
 
 		m_vtPivots.insert(m_vtPivots.begin() + nChildIdx, pivotKey);
 		m_vtChildren.insert(m_vtChildren.begin() + nChildIdx + 1, uidSibling);
@@ -801,8 +749,6 @@ public:
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
 			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
 
-			//uidObjectToDelete = uidChild;
-
 			return ErrorCode::Success;
 		}
 
@@ -866,46 +812,6 @@ public:
 			return ErrorCode::Success;
 		}
 
-		//		if (nChildIdx > 0)
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());	//Lock acquired twice!!! merge the respective sections!
-		//#endif //__CONCURRENT__
-		//
-		//			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx];
-		//			if (uidObjectToDelete != uidChild)
-		//			{
-		//				throw new std::logic_error("should not occur!");
-		//			}
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-		//
-		//			//uidObjectToDelete = uidChild;
-		//
-		//			return ErrorCode::Success;
-		//		}
-		//
-		//		if (nChildIdx < m_vtPivots.size())
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
-		//
-		//			assert(uidChild == m_vtChildren[nChildIdx]);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
-		//
-		//			return ErrorCode::Success;
-		//		}
-
 		std::cout << "Critical State: The rebalance logic for IndexNode failed." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
@@ -932,15 +838,6 @@ public:
 #endif //__TRACK_CACHE_FOOTPRINT__
 		}
 
-//		if (ptrChild->m_ptrRawData != nullptr)
-//		{
-//#ifdef __TRACK_CACHE_FOOTPRINT__
-//			nMemoryFootprint += ptrChild->moveDataToDRAM();
-//#else //__TRACK_CACHE_FOOTPRINT__
-//			ptrChild->moveDataToDRAM();
-//#endif //__TRACK_CACHE_FOOTPRINT__
-//		}
-
 		typedef typename CacheType::ObjectTypePtr ObjectTypePtr;
 
 		ObjectTypePtr ptrLHSStorageObject = nullptr;
@@ -960,7 +857,6 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			//ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
 			ptrCache->getObject(m_vtChildren[nChildIdx - 1], ptrLHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject);    //TODO: lock
@@ -1013,8 +909,6 @@ public:
 
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
 			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-
-			//uidObjectToDelete = uidChild;
 
 			return ErrorCode::Success;
 		}
@@ -1076,44 +970,6 @@ public:
 
 			return ErrorCode::Success;
 		}
-
-		//		if (nChildIdx > 0)
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrLHSNode->mergeNode(ptrChild);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx];
-		//			if (uidObjectToDelete != uidChild)
-		//			{
-		//				throw new std::logic_error("should not occur!");
-		//			}
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-		//
-		//			//uidObjectToDelete = uidChild;
-		//
-		//			return ErrorCode::Success;
-		//		}
-		//
-		//		if (nChildIdx < m_vtPivots.size())
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrChild->mergeNode(ptrRHSNode);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
-		//
-		//			return ErrorCode::Success;
-		//		}
 
 		std::cout << "Critical State: The rebalance logic for DataNode failed." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
@@ -1318,7 +1174,7 @@ public:
 		m_vtPivots.push_back(pivotKeyForEntity);
 		m_vtChildren.push_back(value);
 
-		pivotKeyForParent = key;// ptrRHSSibling->m_vtPivots.front();
+		pivotKeyForParent = key;
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		if constexpr (std::is_trivial<KeyType>::value &&
@@ -1387,15 +1243,6 @@ public:
 			m_vtPivots.push_back(pivotKey);
 			m_vtPivots.insert(m_vtPivots.end(), ptrSibling->m_ptrRawData->ptrPivots, ptrSibling->m_ptrRawData->ptrPivots + ptrSibling->m_ptrRawData->nTotalPivots);
 			m_vtChildren.insert(m_vtChildren.end(), ptrSibling->m_ptrRawData->ptrChildren, ptrSibling->m_ptrRawData->ptrChildren + ptrSibling->m_ptrRawData->nTotalPivots + 1);
-
-			//memcpy(m_vtPivots.data() + m_vtPivots.size(), ptrSibling->m_ptrRawData->ptrPivots, ptrSibling->m_ptrRawData->nTotalPivots * sizeof(KeyType));
-			//memcpy(m_vtChildren.data() + m_vtChildren.size(), ptrSibling->m_ptrRawData->ptrChildren, ptrSibling->m_ptrRawData->nTotalPivots * sizeof(typename ObjectUIDType::NodeUID));
-
-//#ifdef __TRACK_CACHE_FOOTPRINT__
-//			nMemoryFootprint += ptrSibling->moveDataToDRAM();
-//#else //__TRACK_CACHE_FOOTPRINT__
-//			ptrSibling->moveDataToDRAM();
-//#endif //__TRACK_CACHE_FOOTPRINT__
 		}
 		else
 		{

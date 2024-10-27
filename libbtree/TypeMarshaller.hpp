@@ -60,9 +60,8 @@ public:
 			ptrObject = std::make_shared<TypeB>(szData);
 			break;
 		default:
-			std::cout << ".............." << std::endl;
-			assert(1==2);
-			break;
+			std::cout << "Deserialization request for Uknown UID." << std::endl;
+			throw new std::logic_error(".....");
 		}
 	}
 };

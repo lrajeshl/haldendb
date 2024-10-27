@@ -61,24 +61,21 @@ public:
 			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
 			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value)
 		{
-			uint16_t nKeyCount, nValueCount = 0;
+			uint16_t nKeyCount = 0;
 
 			uint32_t nOffset = sizeof(uint8_t);
 
 			memcpy(&nKeyCount, szData + nOffset, sizeof(uint16_t));
 			nOffset += sizeof(uint16_t);
 
-			memcpy(&nValueCount, szData + nOffset, sizeof(uint16_t));
-			nOffset += sizeof(uint16_t);
-
 			m_vtPivots.resize(nKeyCount);
-			m_vtChildren.resize(nValueCount);
+			m_vtChildren.resize(nKeyCount + 1);
 
 			uint32_t nKeysSize = nKeyCount * sizeof(KeyType);
 			memcpy(m_vtPivots.data(), szData + nOffset, nKeysSize);
 			nOffset += nKeysSize;
 
-			uint32_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			uint32_t nValuesSize = (nKeyCount + 1) * sizeof(typename ObjectUIDType::NodeUID);
 			memcpy(m_vtChildren.data(), szData + nOffset, nValuesSize);
 		}
 		else
@@ -100,15 +97,14 @@ public:
 			std::is_trivial<typename ObjectUIDType::NodeUID>::value &&
 			std::is_standard_layout<typename ObjectUIDType::NodeUID>::value)
 		{
-			uint16_t nKeyCount, nValueCount;
-			fs.read(reinterpret_cast<char*>(&nKeyCount), sizeof(uint16_t));
-			fs.read(reinterpret_cast<char*>(&nValueCount), sizeof(uint16_t));
+			uint16_t nPivotCount;
+			fs.read(reinterpret_cast<char*>(&nPivotCount), sizeof(uint16_t));
 
-			m_vtPivots.resize(nKeyCount);
-			m_vtChildren.resize(nValueCount);
+			m_vtPivots.resize(nPivotCount);
+			m_vtChildren.resize(nPivotCount + 1);
 
-			fs.read(reinterpret_cast<char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			fs.read(reinterpret_cast<char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));
+			fs.read(reinterpret_cast<char*>(m_vtPivots.data()), nPivotCount * sizeof(KeyType));
+			fs.read(reinterpret_cast<char*>(m_vtChildren.data()), (nPivotCount + 1) * sizeof(typename ObjectUIDType::NodeUID));
 		}
 		else
 		{
@@ -150,17 +146,16 @@ public:
 			uint16_t nKeyCount = m_vtPivots.size();
 			uint16_t nValueCount = m_vtChildren.size();
 
-			nDataSize = sizeof(uint8_t)					// UID
+			nDataSize 
+				= sizeof(uint8_t)					// UID
 				+ sizeof(uint16_t)						// Total keys
-				+ sizeof(uint16_t)						// Total values
 				+ (nKeyCount * sizeof(KeyType))			// Size of all keys
 				+ (nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// Size of all values
 
 			fs.write(reinterpret_cast<const char*>(&uidObjectType), sizeof(uint8_t));
 			fs.write(reinterpret_cast<const char*>(&nKeyCount), sizeof(uint16_t));
-			fs.write(reinterpret_cast<const char*>(&nValueCount), sizeof(uint16_t));
 			fs.write(reinterpret_cast<const char*>(m_vtPivots.data()), nKeyCount * sizeof(KeyType));
-			fs.write(reinterpret_cast<const char*>(m_vtChildren.data()), nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
+			fs.write(reinterpret_cast<const char*>(m_vtChildren.data()), (nKeyCount + 1) * sizeof(typename ObjectUIDType::NodeUID));	// fix it!
 
 #ifdef __VALIDITY_CHECK__
 			for (auto it = m_vtChildren.begin(); it != m_vtChildren.end(); it++)
@@ -193,9 +188,9 @@ public:
 			uint16_t nKeyCount = m_vtPivots.size();
 			uint16_t nValueCount = m_vtChildren.size();
 
-			nBufferSize = sizeof(uint8_t)					// UID
+			nBufferSize 
+				= sizeof(uint8_t)					// UID
 				+ sizeof(uint16_t)						// Total keys
-				+ sizeof(uint16_t)						// Total values
 				+ (nKeyCount * sizeof(KeyType))			// Size of all keys
 				+ (nValueCount * sizeof(typename ObjectUIDType::NodeUID));	// Size of all values
 
@@ -209,14 +204,11 @@ public:
 			memcpy(szBuffer + nOffset, &nKeyCount, sizeof(uint16_t));
 			nOffset += sizeof(uint16_t);
 
-			memcpy(szBuffer + nOffset, &nValueCount, sizeof(uint16_t));
-			nOffset += sizeof(uint16_t);
-
 			size_t nKeysSize = nKeyCount * sizeof(KeyType);
 			memcpy(szBuffer + nOffset, m_vtPivots.data(), nKeysSize);
 			nOffset += nKeysSize;
 
-			size_t nValuesSize = nValueCount * sizeof(typename ObjectUIDType::NodeUID);
+			size_t nValuesSize = (nKeyCount + 1) * sizeof(typename ObjectUIDType::NodeUID);
 			memcpy(szBuffer + nOffset, m_vtChildren.data(), nValuesSize);
 			nOffset += nValuesSize;
 
@@ -250,16 +242,6 @@ public:
 	{
 		auto it = std::upper_bound(m_vtPivots.begin(), m_vtPivots.end(), key);
 		return std::distance(m_vtPivots.begin(), it);
-
-		//size_t nChildIdx = 0;
-		//while (nChildIdx < m_vtPivots.size() && key >= m_vtPivots[nChildIdx])
-		//{
-		//	nChildIdx++;
-		//}
-
-		//assert(val == nChildIdx);
-
-		//return val;
 	}
 
 	// Gets the child at the given index
@@ -309,8 +291,7 @@ public:
 			std::is_standard_layout<ValueType>::value)
 		{
 			return sizeof(uint8_t)
-				+ sizeof(size_t)
-				+ sizeof(size_t)
+				+ sizeof(uint16_t)
 				+ (m_vtPivots.size() * sizeof(KeyType))
 				+ (m_vtChildren.size() * sizeof(typename ObjectUIDType::NodeUID));
 		}
@@ -356,19 +337,6 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
 		return;
 #endif //__TRACK_CACHE_FOOTPRINT__
-		//int idx = 0;
-		//auto it = m_vtChildren.begin();
-		//while (it != m_vtChildren.end())
-		//{
-		//	if (*it == uidOld)
-		//	{
-		//		*it = uidNew;
-		//		return;
-		//	}
-		//	it++;
-		//}
-
-		//throw new std::logic_error("should not occur!");
 	}
 
 	template <typename CacheObjectType>
@@ -392,16 +360,6 @@ public:
 
 		return bDirty;
 	}
-
-	//inline std::vector<ObjectUIDType>::iterator getChildrenBeginIterator()
-	//{
-	//	return m_vtChildren.begin();
-	//}
-
-	//inline std::vector<ObjectUIDType>::iterator getChildrenEndIterator()
-	//{
-	//	return m_vtChildren.end();
-	//}
 
 	inline size_t getMemoryFootprint() const
 	{
@@ -440,18 +398,6 @@ public:
 
 		auto it = std::lower_bound(m_vtPivots.begin(), m_vtPivots.end(), pivotKey);
 		auto nChildIdx = std::distance(m_vtPivots.begin(), it);
-
-		//size_t nChildIdx_ = m_vtPivots.size();
-		//for (int nIdx = 0; nIdx < m_vtPivots.size(); ++nIdx)
-		//{
-		//	if (pivotKey < m_vtPivots[nIdx])
-		//	{
-		//		nChildIdx_ = nIdx;
-		//		break;
-		//	}
-		//}
-
-		//assert(nChildIdx == nChildIdx_);
 
 		m_vtPivots.insert(m_vtPivots.begin() + nChildIdx, pivotKey);
 		m_vtChildren.insert(m_vtChildren.begin() + nChildIdx + 1, uidSibling);
@@ -520,7 +466,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx - 1], ptrLHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -528,6 +474,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			//if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData()))
+			{
+				ptrLHSNode = std::get<std::shared_ptr<SelfType>>(ptrLHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -562,16 +513,10 @@ public:
 #endif //__TRACK_CACHE_FOOTPRINT__
 
 			uidObjectToDelete = m_vtChildren[nChildIdx];
-			if (uidObjectToDelete != uidChild)
-			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
-				throw new std::logic_error(".....");   // TODO: critical log.
-			}
+			assert(uidObjectToDelete == uidChild);
 
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
 			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-
-			//uidObjectToDelete = uidChild;
 
 			return ErrorCode::Success;
 		}
@@ -580,7 +525,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx + 1], ptrRHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<SelfType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -588,6 +533,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			//if (std::holds_alternative<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData()))
+			{
+				ptrRHSNode = std::get<std::shared_ptr<SelfType>>(ptrRHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -631,47 +581,8 @@ public:
 			return ErrorCode::Success;
 		}
 
-		//		if (nChildIdx > 0)
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());	//Lock acquired twice!!! merge the respective sections!
-		//#endif //__CONCURRENT__
-		//
-		//			ptrLHSNode->mergeNodes(ptrChild, m_vtPivots[nChildIdx - 1]);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx];
-		//			if (uidObjectToDelete != uidChild)
-		//			{
-		//				throw new std::logic_error("should not occur!");
-		//			}
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-		//
-		//			//uidObjectToDelete = uidChild;
-		//
-		//			return ErrorCode::Success;
-		//		}
-		//
-		//		if (nChildIdx < m_vtPivots.size())
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrChild->mergeNodes(ptrRHSNode, m_vtPivots[nChildIdx]);
-		//
-		//			assert(uidChild == m_vtChildren[nChildIdx]);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
-		//
-		//			return ErrorCode::Success;
-		//		}
 
-		std::cout << "Critical State: " << __LINE__ << std::endl;
+		std::cout << "Critical State: The rebalance logic for IndexNode failed." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
@@ -707,7 +618,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx - 1], ptrLHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx - 1], ptrLHSNode, ptrLHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -715,6 +626,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			//if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData()))
+			{
+				ptrLHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrLHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -750,16 +666,10 @@ public:
 #endif //__TRACK_CACHE_FOOTPRINT__
 
 			uidObjectToDelete = m_vtChildren[nChildIdx];
-			if (uidObjectToDelete != uidChild)
-			{
-				std::cout << "Critical State: " << __LINE__ << std::endl;
-				throw new std::logic_error(".....");   // TODO: critical log.
-			}
+			assert(uidObjectToDelete == uidChild);
 
 			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
 			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-
-			//uidObjectToDelete = uidChild;
 
 			return ErrorCode::Success;
 		}
@@ -768,7 +678,7 @@ public:
 		{
 #ifdef __TREE_WITH_CACHE__
 			std::optional<ObjectUIDType> uidUpdated = std::nullopt;
-			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject, uidUpdated);    //TODO: lock
+			ptrCache->getObject(m_vtChildren[nChildIdx + 1], ptrRHSStorageObject, uidUpdated);    //TODO: lock
 #else //__TREE_WITH_CACHE__
 			ptrCache->template getObjectOfType<std::shared_ptr<DataNodeType>>(m_vtChildren[nChildIdx + 1], ptrRHSNode, ptrRHSStorageObject);    //TODO: lock
 #endif //__TREE_WITH_CACHE__
@@ -776,6 +686,11 @@ public:
 #ifdef __CONCURRENT__
 			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
 #endif //__CONCURRENT__
+
+			//if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData()))
+			{
+				ptrRHSNode = std::get<std::shared_ptr<DataNodeType>>(ptrRHSStorageObject->getInnerData());
+			}
 
 #ifdef __TREE_WITH_CACHE__
 			if (uidUpdated != std::nullopt)
@@ -817,45 +732,7 @@ public:
 			return ErrorCode::Success;
 		}
 
-		//		if (nChildIdx > 0)
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrLHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrLHSNode->mergeNode(ptrChild);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx];
-		//			if (uidObjectToDelete != uidChild)
-		//			{
-		//				throw new std::logic_error("should not occur!");
-		//			}
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx - 1);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx);
-		//
-		//			//uidObjectToDelete = uidChild;
-		//
-		//			return ErrorCode::Success;
-		//		}
-		//
-		//		if (nChildIdx < m_vtPivots.size())
-		//		{
-		//#ifdef __CONCURRENT__
-		//			std::unique_lock<std::shared_mutex> lock(ptrRHSStorageObject->getMutex());
-		//#endif //__CONCURRENT__
-		//
-		//			ptrChild->mergeNode(ptrRHSNode);
-		//
-		//			uidObjectToDelete = m_vtChildren[nChildIdx + 1];
-		//
-		//			m_vtPivots.erase(m_vtPivots.begin() + nChildIdx);
-		//			m_vtChildren.erase(m_vtChildren.begin() + nChildIdx + 1);
-		//
-		//			return ErrorCode::Success;
-		//		}
-
-		std::cout << "Critical State: " << __LINE__ << std::endl;
+		std::cout << "Critical State: The rebalance logic for DataNode failed." << std::endl;
 		throw new std::logic_error(".....");   // TODO: critical log.
 	}
 
@@ -919,23 +796,6 @@ public:
 		return ErrorCode::Success;
 	}
 
-	/*
-		inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
-		{
-			size_t nMid = m_vtPivots.size() / 2;
-
-			ptrSibling->m_vtPivots.assign(m_vtPivots.begin() + nMid + 1, m_vtPivots.end());
-			ptrSibling->m_vtChildren.assign(m_vtChildren.begin() + nMid + 1, m_vtChildren.end());
-
-			pivotKeyForParent = m_vtPivots[nMid];
-
-			m_vtPivots.resize(nMid);
-			m_vtChildren.resize(nMid + 1);
-
-			return ErrorCode::Success;
-		}
-	*/
-
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForEntity, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
 #else //__TRACK_CACHE_FOOTPRINT__
@@ -956,11 +816,7 @@ public:
 		ptrLHSSibling->m_vtPivots.pop_back();
 		ptrLHSSibling->m_vtChildren.pop_back();
 
-		if (ptrLHSSibling->m_vtPivots.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrLHSSibling->m_vtPivots.size() > 0);
 
 		m_vtPivots.insert(m_vtPivots.begin(), pivotKeyForEntity);
 		m_vtChildren.insert(m_vtChildren.begin(), value);
@@ -1029,16 +885,12 @@ public:
 		ptrRHSSibling->m_vtPivots.erase(ptrRHSSibling->m_vtPivots.begin());
 		ptrRHSSibling->m_vtChildren.erase(ptrRHSSibling->m_vtChildren.begin());
 
-		if (ptrRHSSibling->m_vtPivots.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrRHSSibling->m_vtPivots.size() > 0);
 
 		m_vtPivots.push_back(pivotKeyForEntity);
 		m_vtChildren.push_back(value);
 
-		pivotKeyForParent = key;// ptrRHSSibling->m_vtPivots.front();
+		pivotKeyForParent = key;
 
 #ifdef __TRACK_CACHE_FOOTPRINT__
 		if constexpr (std::is_trivial<KeyType>::value &&

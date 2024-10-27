@@ -21,6 +21,9 @@
 #include "TypeUID.h"
 #include "ObjectFatUID.h"
 #include "IFlushCallback.h"
+#include <set>
+#include <random>
+#include <numeric>
 
 #ifdef __TREE_WITH_CACHE__
 namespace BPlusStore_LRUCache_FileStorage_Suite
@@ -38,14 +41,14 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
 
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 
-    class BPlusStore_LRUCache_FileStorage_Suite_1 : public ::testing::TestWithParam<std::tuple<int, int, int, int, int, int>>
+    class BPlusStore_LRUCache_FileStorage_Suite_1 : public ::testing::TestWithParam<std::tuple<size_t, size_t, size_t, size_t, size_t>>
     {
     protected:
         void SetUp() override
         {
-            std::tie(nDegree, nBulkInsert_StartKey, nBulkInsert_EndKey, nCacheSize, nFileStoreBlockSize, nFileStoreSize) = GetParam();
+            std::tie(nDegree, nTotalRecords, nCacheSize, nBlockSize, nStorageSize) = GetParam();
 
-            m_ptrTree = new BPlusStoreType(nDegree, nCacheSize, nFileStoreBlockSize, nFileStoreSize, fsTempFileStore.string());
+            m_ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nStorageSize, fsTempFileStore.string());
             m_ptrTree->init<DataNodeType>();
         }
 
@@ -57,248 +60,296 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
 
         BPlusStoreType* m_ptrTree = nullptr;
 
-        int nDegree;
-        int nBulkInsert_StartKey;
-        int nBulkInsert_EndKey;
-        int nCacheSize;
-        int nFileStoreBlockSize;
-        int nFileStoreSize;
+        size_t nDegree;
+        size_t nTotalRecords;
+        size_t nCacheSize;
+        size_t nBlockSize;
+        size_t nStorageSize;
 
         std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
     };
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Insert_v1) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Insert_v1)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
+
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(vtRandom[nCntr], vtRandom[nCntr]);
+            assert(ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Insert_v2) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Insert_v2)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey + 1; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        for (int nCntr = 1; nCntr < nTotalRecords; nCntr = nCntr + 2)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Insert_v3) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Insert_v3)
     {
-        for (int nCntr = nBulkInsert_EndKey; nCntr >= nBulkInsert_StartKey; nCntr--)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Search_v1) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Search_v1)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            ASSERT_EQ(nValue, nCntr);
+            assert(nCntr == nValue && ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Search_v2) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Search_v2)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
+
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(vtRandom[nCntr], vtRandom[nCntr]);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey + 1; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
-        {
-            m_ptrTree->insert(nCntr, nCntr);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            ASSERT_EQ(nValue, nCntr);
+            assert(nCntr == nValue && ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Search_v3) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Search_v3)
     {
-        for (int nCntr = nBulkInsert_EndKey; nCntr >= nBulkInsert_StartKey; nCntr--)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            ASSERT_EQ(nValue, nCntr);
+            assert(nCntr == nValue && ec == ErrorCode::Success);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Delete_v1) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Delete_v1)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+        {
+            ErrorCode ec = m_ptrTree->remove(nCntr);
+            assert(ec == ErrorCode::Success);
+        }
+
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            ASSERT_EQ(nValue, nCntr);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
-        {
-            ErrorCode code = m_ptrTree->remove(nCntr);
-
-            ASSERT_EQ(code, ErrorCode::Success);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
-        {
-            int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
-
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
+            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Delete_v2) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Delete_v2)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
+
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(vtRandom[nCntr], vtRandom[nCntr]);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey + 1; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->remove(vtRandom[nCntr]);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            ASSERT_EQ(nValue, nCntr);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
-        {
-            ErrorCode code = m_ptrTree->remove(nCntr);
-
-            ASSERT_EQ(code, ErrorCode::Success);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
-        {
-            int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
-
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
+            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Delete_v3) 
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Bulk_Delete_v3)
     {
-        for (int nCntr = nBulkInsert_EndKey; nCntr >= nBulkInsert_StartKey; nCntr--)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
+        {
+            ErrorCode ec = m_ptrTree->remove(nCntr);
+            assert(ec == ErrorCode::Success);
+        }
+
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
             int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
+            ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            ASSERT_EQ(nValue, nCntr);
-        }
-
-        for (int nCntr = nBulkInsert_EndKey; nCntr >= nBulkInsert_StartKey; nCntr--)
-        {
-            ErrorCode code = m_ptrTree->remove(nCntr);
-
-            ASSERT_EQ(code, ErrorCode::Success);
-        }
-
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
-        {
-            int nValue = 0;
-            ErrorCode code = m_ptrTree->search(nCntr, nValue);
-
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
+            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Flush_v1)
+    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, AllOperations)
     {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr++)
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
+
+        for (int nTestCntr = 0; nTestCntr < 2; nTestCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 1)
+            {
+                ErrorCode ec = m_ptrTree->insert(vtRandom[nCntr], vtRandom[nCntr]);
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                int nValue = 0;
+                ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
+
+                assert(nValue == vtRandom[nCntr]);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(vtRandom[nCntr]);
+
+                assert(ec == ErrorCode::Success);
+            }
+            for (int nCntr = 1; nCntr < nTotalRecords; nCntr = nCntr + 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(vtRandom[nCntr]);
+
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                int nValue = 0;
+                ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
+
+                assert(ec == ErrorCode::KeyDoesNotExist);
+            }
         }
 
-        //TODO: A proper way would be to read/reload the entrie tree from the store.
-        ASSERT_EQ(m_ptrTree->flush(), ErrorCode::Success);
-    }
-
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Flush_v2)
-    {
-        for (size_t nCntr = nBulkInsert_StartKey; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
+        for (int nTestCntr = 0; nTestCntr < 2; nTestCntr++)
         {
-            m_ptrTree->insert(nCntr, nCntr);
+            for (int nCntr = nTotalRecords; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+                assert(ec == ErrorCode::Success);
+
+            }
+            for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                int nValue = 0;
+                ErrorCode ec = m_ptrTree->search(nCntr, nValue);
+
+                assert(nValue == nCntr && ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = nTotalRecords; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(nCntr);
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(nCntr);
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                int nValue = 0;
+                ErrorCode ec = m_ptrTree->search(nCntr, nValue);
+
+                assert(ec == ErrorCode::KeyDoesNotExist);
+            }
         }
-
-        for (size_t nCntr = nBulkInsert_StartKey + 1; nCntr <= nBulkInsert_EndKey; nCntr = nCntr + 2)
-        {
-            m_ptrTree->insert(nCntr, nCntr);
-        }
-
-        //TODO: A proper way would be to read/reload the entrie tree from the store.
-        ASSERT_EQ(m_ptrTree->flush(), ErrorCode::Success);
-    }
-
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_1, Flush_v3)
-    {
-        for (int nCntr = nBulkInsert_EndKey; nCntr >= nBulkInsert_StartKey; nCntr--)
-        {
-            m_ptrTree->insert(nCntr, nCntr);
-        }
-
-        //TODO: A proper way would be to read/reload the entrie tree from the store.
-        ASSERT_EQ(m_ptrTree->flush(), ErrorCode::Success);
     }
 
     INSTANTIATE_TEST_CASE_P(
-        Insert_Search_Delete_Flush,
+        Insert_Search_Delete,
         BPlusStore_LRUCache_FileStorage_Suite_1,
         ::testing::Values(
-            std::make_tuple(3, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(4, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(5, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(6, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(7, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(8, 0, 99999, 100, 1024, 1024 * 1024 * 1024),
-            std::make_tuple(15, 0, 199999, 100, 1024, 1024* 1024 * 1024),
-            std::make_tuple(16, 0, 199999, 100, 1024, 1024* 1024 * 1024),
-            std::make_tuple(32, 0, 199999, 100, 1024, 1024* 1024 * 1024),
-            std::make_tuple(64, 0, 199999, 100, 2048, 1024* 1024 * 1024)
-        ));    
+            std::make_tuple(3, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(4, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(5, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(6, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(7, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(8, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(15, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(16, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(32, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(64, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(128, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(256, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(512, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(1024, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(2048, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024)
+        ));
+
 }
 #endif //__TREE_WITH_CACHE__

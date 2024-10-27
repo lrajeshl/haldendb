@@ -20,6 +20,9 @@
 #define END_PACKED_STRUCT _Pragma("pack(pop)")
 #endif
 
+#define MICROSEC_CHECK_FOR_FREQUENT_REQUESTS_TO_MEMORY 100
+#define ACCESSED_FREQUENCY_AS_PER_THE_TIME_CHECK 10
+
 template <typename KeyType, typename ValueType, typename ObjectUIDType, uint8_t TYPE_UID>
 class DataNodeROpt
 {
@@ -322,12 +325,11 @@ public:
 		auto now = std::chrono::high_resolution_clock::now();
 		auto duration = now - m_ptrRawData->tLastAccessTime;
 
-		if(std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() < 100)
-		//if (duration.count() < 100)
+		if(std::chrono::duration_cast<std::chrono::microseconds>(duration).count() < MICROSEC_CHECK_FOR_FREQUENT_REQUESTS_TO_MEMORY)
 		{
 			m_ptrRawData->nCounter++;
 
-			if (m_ptrRawData->nCounter >= 100)
+			if (m_ptrRawData->nCounter >= ACCESSED_FREQUENCY_AS_PER_THE_TIME_CHECK)
 			{
 				moveDataToDRAM();
 				return false;
@@ -389,26 +391,6 @@ public:
 		//if (m_ptrRawData != nullptr)
 		if( canAccessDataDirectly())
 		{
-			/*
-			size_t left = 0;
-			size_t right = size;
-
-			while (left < right) {
-				size_t mid = left + (right - left) / 2;
-
-				if (keys[mid] < key) {
-					left = mid + 1;
-				} else {
-					right = mid;
-				}
-			}
-
-			if (left < size && keys[left] == key) {
-				value = values[left];
-				return ErrorCode::Success;
-			}
-			*/
-
 			const KeyType* it = &(*std::lower_bound(m_ptrRawData->ptrKeys, m_ptrRawData->ptrKeys + m_ptrRawData->nTotalEntries, key));
 			if (it != m_ptrRawData->ptrKeys + m_ptrRawData->nTotalEntries && *it == key) {
 				value = m_ptrRawData->ptrValues[it - m_ptrRawData->ptrKeys];
@@ -459,8 +441,7 @@ public:
 	{
 		if (m_ptrRawData != nullptr)
 		{
-			return	
-				sizeof(*this)
+			return sizeof(*this)
 				+ sizeof(RAWDATA);
 		}
 
@@ -469,8 +450,7 @@ public:
 			std::is_trivial<ValueType>::value &&
 			std::is_standard_layout<ValueType>::value)
 		{
-			return 
-				sizeof(*this) 
+			return sizeof(*this) 
 				+ (m_vtKeys.capacity() * sizeof(KeyType)) 
 				+ (m_vtValues.capacity() * sizeof(ValueType));
 		}
@@ -800,17 +780,6 @@ public:
 		{
 			m_vtKeys.insert(m_vtKeys.end(), ptrSibling->m_ptrRawData->ptrKeys, ptrSibling->m_ptrRawData->ptrKeys + ptrSibling->m_ptrRawData->nTotalEntries);
 			m_vtValues.insert(m_vtValues.end(), ptrSibling->m_ptrRawData->ptrValues, ptrSibling->m_ptrRawData->ptrValues + ptrSibling->m_ptrRawData->nTotalEntries);
-
-			//memcpy(m_vtKeys.data() + m_vtKeys.size(), ptrSibling->m_ptrRawData->ptrKeys, ptrSibling->m_ptrRawData->nTotalEntries * sizeof(KeyType));
-			//memcpy(m_vtValues.data() + m_vtValues.size(), ptrSibling->m_ptrRawData->ptrValues, ptrSibling->m_ptrRawData->nTotalEntries * sizeof(ValueType));
-/*
-			// TODO: Can be bypassed!
-#ifdef __TRACK_CACHE_FOOTPRINT__
-			nMemoryFootprint += ptrSibling->moveDataToDRAM();
-#else //__TRACK_CACHE_FOOTPRINT__
-			ptrSibling->moveDataToDRAM();
-#endif //__TRACK_CACHE_FOOTPRINT__
-*/
 		}
 		else
 		{

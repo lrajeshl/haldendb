@@ -117,8 +117,13 @@ public:
 	// Constructor that initializes DataNode with iterators over keys and values
 	DataNode(KeyTypeIterator itBeginKeys, KeyTypeIterator itEndKeys, ValueTypeIterator itBeginValues, ValueTypeIterator itEndValues)
 	{
-		m_vtKeys.assign(itBeginKeys, itEndKeys);
-		m_vtValues.assign(itBeginValues, itEndValues);
+		m_vtKeys.resize(std::distance(itBeginKeys, itEndKeys));
+		m_vtValues.resize(std::distance(itBeginValues, itEndValues));
+
+		std::move(itBeginKeys, itEndKeys, m_vtKeys.begin());
+		std::move(itBeginValues, itEndValues, m_vtValues.begin());
+		//m_vtKeys.assign(itBeginKeys, itEndKeys);
+		//m_vtValues.assign(itBeginValues, itEndValues);
 	}
 
 public:
@@ -250,8 +255,7 @@ public:
 			std::is_standard_layout<ValueType>::value)
 		{
 			return sizeof(uint8_t)
-				+ sizeof(size_t)
-				+ sizeof(size_t)
+				+ sizeof(uint16_t)
 				+ (m_vtKeys.size() * sizeof(KeyType))
 				+ (m_vtValues.size() * sizeof(ValueType));
 		}
@@ -463,23 +467,7 @@ public:
 
 		return ErrorCode::Success;
 	}
-	/*
-		// Splits the node and assigns the right half to the sibling node
-		inline ErrorCode split(std::shared_ptr<SelfType> ptrSibling, KeyType& pivotKeyForParent)
-		{
-			size_t nMid = m_vtKeys.size() / 2;
 
-			ptrSibling->m_vtKeys.assign(m_vtKeys.begin() + nMid, m_vtKeys.end());
-			ptrSibling->m_vtValues.assign(m_vtValues.begin() + nMid, m_vtValues.end());
-
-			pivotKeyForParent = m_vtKeys[nMid];
-
-			m_vtKeys.resize(nMid);
-			m_vtValues.resize(nMid);
-
-			return ErrorCode::Success;
-		}
-	*/
 	// Moves an entity from the left-hand sibling to the current node
 #ifdef __TRACK_CACHE_FOOTPRINT__
 	inline void moveAnEntityFromLHSSibling(std::shared_ptr<SelfType> ptrLHSSibling, KeyType& pivotKeyForParent, int32_t& nMemoryFootprint)
@@ -501,11 +489,7 @@ public:
 		ptrLHSSibling->m_vtKeys.pop_back();
 		ptrLHSSibling->m_vtValues.pop_back();
 
-		if (ptrLHSSibling->m_vtKeys.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrLHSSibling->m_vtKeys.size() > 0);
 
 		m_vtKeys.insert(m_vtKeys.begin(), key);
 		m_vtValues.insert(m_vtValues.begin(), value);
@@ -621,11 +605,7 @@ public:
 		ptrRHSSibling->m_vtKeys.erase(ptrRHSSibling->m_vtKeys.begin());
 		ptrRHSSibling->m_vtValues.erase(ptrRHSSibling->m_vtValues.begin());
 
-		if (ptrRHSSibling->m_vtKeys.size() == 0)
-		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
-			throw new std::logic_error(".....");   // TODO: critical log.
-		}
+		assert(ptrRHSSibling->m_vtKeys.size() > 0);
 
 		m_vtKeys.push_back(key);
 		m_vtValues.push_back(value);

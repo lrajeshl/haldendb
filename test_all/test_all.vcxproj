@@ -79,6 +79,9 @@
     <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_1.cpp" />
     <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_2.cpp" />
     <ClCompile Include="BPlusStore_LRUCache_FileStorage_Suite_3.cpp" />
+    <ClCompile Include="BPlusStore_LRUCache_PMemStorage_Suite_1.cpp" />
+    <ClCompile Include="BPlusStore_LRUCache_PMemStorage_Suite_2.cpp" />
+    <ClCompile Include="BPlusStore_LRUCache_PMemStorage_Suite_3.cpp" />
     <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_1.cpp" />
     <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_2.cpp" />
     <ClCompile Include="BPlusStore_LRUCache_VolatileStorage_Suite_3.cpp" />
@@ -321,7 +324,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;__TREE_WITH_CACHE__;__CONCURRENT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;__TREE_WITH_CACHE__;__CONCURRENT__;__TRACK_CACHE_FOOTPRINT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -340,7 +343,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;__TREE_WITH_CACHE__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;__TREE_WITH_CACHE__;__TRACK_CACHE_FOOTPRINT__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>

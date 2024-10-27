@@ -31,6 +31,7 @@
 #ifdef _MSC_VER
 #define FILE_STORAGE_PATH "c:\\filestore.hdb"
 #define PMEM_STORAGE_PATH "c:\\filestore.hdb"
+#define PMEM_STORAGE_PATH_II "/mnt/tmpfs/datafile2"
 #else
 #define FILE_STORAGE_PATH "/mnt/tmpfs/filestore.hdb"
 #define PMEM_STORAGE_PATH "/mnt/tmpfs/datafile1"
@@ -348,7 +349,7 @@ void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
             ErrorCode code = ptrTree->search(random_numbers[nCntr], nValue);
 
             assert(code == ErrorCode::KeyDoesNotExist);
-    }
+        }
 
 #ifdef __TREE_WITH_CACHE__
         size_t nLRU, nMap;
@@ -1008,7 +1009,7 @@ return;
 
 int main(int argc, char* argv[])
 {
-    fptree_bm();
+    //fptree_bm();
     quick_test();
     return 0;
 

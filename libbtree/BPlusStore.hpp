@@ -129,7 +129,7 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #endif //__TRACK_CACHE_FOOTPRINT__
-                    //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
+
                     ptrLastNode->setDirtyFlag(true);
                 }
                 else
@@ -153,10 +153,7 @@ public:
                 if (!ptrIndexNode->canTriggerSplit(m_nDegree))
                 {
 #ifdef __CONCURRENT__
-                    // Although lock to the last node is enough. 
-                    // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
-                    if( vtLocks.size() > 2)
-                    vtLocks.erase(vtLocks.begin(), vtLocks.end() - 3);
+                    vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
 #endif //__CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);
                 }
@@ -336,26 +333,6 @@ public:
                 throw new std::logic_error(".....");   // TODO: critical log.
             }
         }
-        //else if (uidCurrentNode != m_uidRootNode && ptrRHSChildNode != nullptr)
-        //{
-        //    throw new std::logic_error("should not occur!");
-        //    
-        //    bool bTest = false;
-        //    for (auto itCurrent = vtAccessedNodes.cbegin(), itEnd = vtAccessedNodes.cend(); itCurrent != itEnd; itCurrent++)
-        //    {
-        //        if ((*itCurrent).first == uidCurrentNode)
-        //        {
-        //            bTest = true;
-        //            vtAccessedNodes.insert(itCurrent + 1, std::make_pair(*uidRHSChildNode, nullptr));
-        //            break;
-        //        }
-        //    }
-
-        //    if (!bTest)
-        //    {
-        //        throw new std::logic_error("should not occur!");
-        //    }
-        //}
 
         m_ptrCache->reorder(vtAccessedNodes);
         vtAccessedNodes.clear();
@@ -428,7 +405,6 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrIndexNode->template updateChildUID<ObjectType>(ptrCurrentNode, uidCurrentNode, *uidUpdated);
 #endif //__TRACK_CACHE_FOOTPRINT__
-                    //ptrIndexNode->updateChildUID(uidCurrentNode, *uidUpdated);
 
                     ptrLastNode->setDirtyFlag(true);
                 }
@@ -443,9 +419,7 @@ public:
 #endif //__TREE_WITH_CACHE__
 
 #ifdef __CONCURRENT__
-            //if (vtLocks.size() > 3)
             vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2); 
-            //vtLocks.erase(vtLocks.begin());
 #endif //__CONCURRENT__
 
 #ifdef __TREE_WITH_CACHE__
@@ -512,8 +486,6 @@ public:
 
         uidCurrentNode = m_uidRootNode.value();
 
-        //vtNodes.push_back(std::pair<ObjectUIDType, ObjectTypePtr>(uidLastNode, ptrLastNode));
-
         do
         {
 #ifdef __TREE_WITH_CACHE__
@@ -573,7 +545,6 @@ public:
 #ifdef __CONCURRENT__
                     // Although lock to the last node is enough. 
                     // However, the preceeding one is maintainig for the root node so that "m_uidRootNode" can be updated safely if the root node is needed to be deleted.
-                   // if (vtLocks.size() > 3)
                     vtLocks.erase(vtLocks.begin(), vtLocks.end() - 2);
 #endif //__CONCURRENT__
                     vtNodes.erase(vtNodes.begin(), vtNodes.end() - 1);
@@ -624,8 +595,6 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
                         ptrParentNode->template rebalanceDataNode<CacheType>(m_ptrCache, uidCurrentNode, ptrDataNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode);
 #endif //__TRACK_CACHE_FOOTPRINT__
-
-
 
 #else //__TREE_WITH_CACHE__
                         ptrParentNode->template rebalanceDataNode<CacheType>(m_ptrCache, uidCurrentNode, ptrDataNode, key, m_nDegree, uidToDelete);
@@ -689,7 +658,6 @@ public:
 
             while (vtNodes.size() > 0)
             {
-                //uidCurrentNode = vtNodes.back().first; 
                 ptrCurrentNode = vtNodes.back().second;
 
                 bool bReleaseLock = true;
@@ -710,7 +678,6 @@ public:
 #else //__TRACK_CACHE_FOOTPRINT__
                     ptrParentIndexNode->template rebalanceIndexNode<CacheType>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete, uidAffectedNode, ptrAffectedNode);
 #endif //__TRACK_CACHE_FOOTPRINT__
-
 
 #else //__TREE_WITH_CACHE__
                     ptrParentIndexNode->template rebalanceIndexNode<CacheType>(m_ptrCache, uidChildNode, ptrChildIndexNode, key, m_nDegree, uidToDelete);
@@ -871,26 +838,6 @@ public:
             {
                 ptrObject->setDirtyFlag(true);
             }
-
-            //auto it = ptrIndexNode->getChildrenBeginIterator();
-            //while (it != ptrIndexNode->getChildrenEndIterator())
-            //{
-            //    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
-            //    {
-            //        ObjectUIDType uidTemp = *it;
-
-            //        *it = *(mpUIDUpdates[*it].first);
-
-            //        mpUIDUpdates.erase(uidTemp);
-
-            //        ptrObject->setDirtyFlag( true);
-            //    }
-            //    it++;
-            //}
-        }
-        else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>(ptrObject->getInnerData()))
-        {
-            // Nothing to update in this case!
         }
     }
 
@@ -909,27 +856,7 @@ public:
                 {
                     (*it).second.second->setDirtyFlag(true);
                 }
-                //auto it_children = ptrIndexNode->getChildrenBeginIterator();
-                //while (it_children != ptrIndexNode->getChildrenEndIterator())
-                //{
-                //    if (mpUIDUpdates.find(*it_children) != mpUIDUpdates.end())
-                //    {
-                //        ObjectUIDType uidTemp = *it_children;
-
-                //        *it_children = *(mpUIDUpdates[*it_children].first);
-
-                //        mpUIDUpdates.erase(uidTemp);
-
-                //        (*it).second.second->setDirtyFlag( true);
-                //    }
-                //    it_children++;
-                //}
             }
-            //else //if (std::holds_alternative<std::shared_ptr<DataNodeType>>((*it).second.second->getInnerData()))
-            //{
-                // Nothing to update in this case!
-            //}
-            //it++;
         }
     }
 
@@ -953,22 +880,6 @@ public:
                     vtNodes[idx].second.second->setDirtyFlag(true);
                 }
 
-                //auto it = ptrIndexNode->getChildrenBeginIterator();
-                //while (it != ptrIndexNode->getChildrenEndIterator())
-                //{
-                //    if (mpUIDUpdates.find(*it) != mpUIDUpdates.end())
-                //    {
-                //        ObjectUIDType uidTemp = *it;
-
-                //        *it = *(mpUIDUpdates[*it].first);
-
-                //        mpUIDUpdates.erase(uidTemp);
-
-                //        vtNodes[idx].second.second->setDirtyFlag(true);
-                //    }
-                //    it++;
-                //}
-
                 if (!vtNodes[idx].second.second->getDirtyFlag())
                 {
                     vtNodes.erase(vtNodes.begin() + idx); idx--;
@@ -982,7 +893,7 @@ public:
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                nNewOffset += (nNodeSize + nBlockSize - 1)/nBlockSize; //std::ceil(nNodeSize / (float)nBlockSize);
+                nNewOffset += (nNodeSize + nBlockSize - 1) / nBlockSize; //std::ceil(nNodeSize / (float)nBlockSize);
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {
@@ -1011,8 +922,7 @@ public:
 
                 vtNodes[idx].second.first = uidUpdated;
 
-                //nNewOffset += std::ceil(nNodeSize / (float)nBlockSize);
-		nNewOffset += (nNodeSize + nBlockSize - 1)/nBlockSize;
+                nNewOffset += (nNodeSize + nBlockSize - 1) / nBlockSize;
 
                 if (mpUIDUpdates.find(vtNodes[idx].first) != mpUIDUpdates.end())
                 {

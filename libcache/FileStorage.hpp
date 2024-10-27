@@ -79,7 +79,7 @@ public:
 
 		if (!m_fsStorage.is_open())
 		{
-			std::cout << "Critical State: " << __LINE__ << std::endl;
+			std::cout << "Failed to open file as a storage." << std::endl;
 			throw new std::logic_error(".....");   // TODO: critical log.
 		}
 

@@ -25,6 +25,8 @@
 #include <random>
 #include <numeric>
 
+#ifndef _MSC_VER
+
 #ifdef __TREE_WITH_CACHE__
 namespace BPlusStore_LRUCache_FileStorage_Suite
 {
@@ -534,3 +536,5 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
 #endif //__CONCURRENT__
 }
 #endif //__TREE_WITH_CACHE__
+
+#endif //_MSC_VER
