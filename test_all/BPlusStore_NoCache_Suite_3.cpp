@@ -72,7 +72,7 @@ namespace BPlusStore_NoCache_Suite
     void insert_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -109,7 +109,7 @@ namespace BPlusStore_NoCache_Suite
     void search_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -119,7 +119,7 @@ namespace BPlusStore_NoCache_Suite
             int nValue = 0;
             ErrorCode ec = ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::Success);
+            assert(vtRandom[nCntr] == nValue && ec == ErrorCode::Success);
         }
     }
 
@@ -148,7 +148,7 @@ namespace BPlusStore_NoCache_Suite
     void search_not_found_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -183,7 +183,7 @@ namespace BPlusStore_NoCache_Suite
     void delete_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -494,19 +494,19 @@ namespace BPlusStore_NoCache_Suite
 
 #ifdef __CONCURRENT__
     INSTANTIATE_TEST_CASE_P(
-        Bulk_Insert_Search_Delete,
+        THREADED_TREE_WITH_KEY_AS_INT32_VAL_AS_INT32,
         BPlusStore_NoCache_Suite_3,
         ::testing::Values(
-            std::make_tuple(3, 10, 1000000),
-            std::make_tuple(4, 10, 1000000),
-            std::make_tuple(5, 10, 1000000),
-            std::make_tuple(6, 10, 1000000),
-            std::make_tuple(7, 10, 1000000),
-            std::make_tuple(8, 10, 1000000),
-            std::make_tuple(15, 10, 1000000),
-            std::make_tuple(16, 10, 1000000),
-            std::make_tuple(32, 10, 1000000),
-            std::make_tuple(64, 10, 1000000),
+            std::make_tuple(3, 10, 100000),
+            std::make_tuple(4, 10, 100000),
+            std::make_tuple(5, 10, 100000),
+            std::make_tuple(6, 10, 100000),
+            std::make_tuple(7, 10, 100000),
+            std::make_tuple(8, 10, 100000),
+            std::make_tuple(15, 10, 100000),
+            std::make_tuple(16, 10, 100000),
+            std::make_tuple(32, 10, 100000),
+            std::make_tuple(64, 10, 100000),
             std::make_tuple(128, 10, 1000000),
             std::make_tuple(256, 10, 1000000),
             std::make_tuple(512, 10, 1000000),

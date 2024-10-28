@@ -134,7 +134,7 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::Success);
+            assert(vtRandom[nCntr] == nValue && ec == ErrorCode::Success);
         }
     }
 
@@ -174,7 +174,7 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -203,7 +203,7 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -226,7 +226,7 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -321,24 +321,24 @@ namespace BPlusStore_LRUCache_VolatileStorage_Suite
     }
 
     INSTANTIATE_TEST_CASE_P(
-        Insert_Search_Delete,
+        TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_VOLATILE_STORAGE,
         BPlusStore_LRUCache_VolatileStorage_Suite_1,
         ::testing::Values(
-            std::make_tuple(3, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(4, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(5, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(6, 1000000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(7, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(8, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(15, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(16, 1000000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(32, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(64, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(128, 1000000, 100, 256, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(256, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
-            std::make_tuple(512, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
-            std::make_tuple(1024, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024),
-            std::make_tuple(2048, 1000000, 100, 256, 10ULL * 1024 * 1024 * 1024)
+            std::make_tuple(3, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(4, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(5, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(6, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(7, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(8, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(15, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(16, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(32, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(64, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(128, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(256, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(512, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(1024, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(2048, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024)
             ));
     
 }

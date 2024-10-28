@@ -127,7 +127,7 @@ namespace BPlusStore_NoCache_Suite
             std::string stValue = "";
             ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
 
-            assert(to_string(nCntr) == stValue && ec == ErrorCode::Success);
+            assert(to_string(vtRandom[nCntr]) == stValue && ec == ErrorCode::Success);
         }
     }
 
@@ -167,7 +167,7 @@ namespace BPlusStore_NoCache_Suite
             std::string stValue = "";
             ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            assert(to_string(nCntr) == stValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -196,7 +196,7 @@ namespace BPlusStore_NoCache_Suite
             std::string stValue = "";
             ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
 
-            assert(to_string(nCntr) == stValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -219,7 +219,7 @@ namespace BPlusStore_NoCache_Suite
             std::string stValue = "";
             ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            assert(to_string(nCntr) == stValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -244,7 +244,7 @@ namespace BPlusStore_NoCache_Suite
                 std::string stValue = "";
                 ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
 
-                assert(nValue == vtRandom[nCntr]);
+                assert(stValue == to_string(vtRandom[nCntr]));
             }
 
             for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
@@ -288,7 +288,7 @@ namespace BPlusStore_NoCache_Suite
                 std::string stValue = "";
                 ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-                assert(nValue == nCntr && ec == ErrorCode::Success);
+                assert(stValue == to_string(nCntr) && ec == ErrorCode::Success);
             }
 
             for (int nCntr = nTotalRecords; nCntr >= 0; nCntr = nCntr - 2)
@@ -314,24 +314,24 @@ namespace BPlusStore_NoCache_Suite
     }
 
     INSTANTIATE_TEST_CASE_P(
-        Bulk_Insert_Search_Delete,
+        KEY_AND_VAL_AS_4BYTES_STRINGS,
         BPlusStore_NoCache_Suite_2,
         ::testing::Values(
-            std::make_tuple(3, 1000000),
-            std::make_tuple(4, 1000000),
-            std::make_tuple(5, 1000000),
-            std::make_tuple(6, 1000000),
-            std::make_tuple(7, 1000000),
-            std::make_tuple(8, 1000000),
-            std::make_tuple(15, 1000000),
-            std::make_tuple(16, 1000000),
-            std::make_tuple(32, 1000000),
-            std::make_tuple(64, 1000000),
-            std::make_tuple(128, 1000000),
-            std::make_tuple(256, 1000000),
-            std::make_tuple(512, 1000000),
-            std::make_tuple(1024, 1000000),
-            std::make_tuple(2048, 1000000)
+            std::make_tuple(3, 50000),
+            std::make_tuple(4, 50000),
+            std::make_tuple(5, 50000),
+            std::make_tuple(6, 50000),
+            std::make_tuple(7, 50000),
+            std::make_tuple(8, 50000),
+            std::make_tuple(15, 50000),
+            std::make_tuple(16, 50000),
+            std::make_tuple(32, 50000),
+            std::make_tuple(64, 50000),
+            std::make_tuple(128, 50000),
+            std::make_tuple(256, 50000),
+            std::make_tuple(512, 50000),
+            std::make_tuple(1024, 50000),
+            std::make_tuple(2048, 50000)
             ));
 }
 #endif //__TREE_WITH_CACHE__

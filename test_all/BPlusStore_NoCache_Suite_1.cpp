@@ -125,7 +125,7 @@ namespace BPlusStore_NoCache_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::Success);
+            assert(vtRandom[nCntr] == nValue && ec == ErrorCode::Success);
         }
     }
 
@@ -165,7 +165,7 @@ namespace BPlusStore_NoCache_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -194,7 +194,7 @@ namespace BPlusStore_NoCache_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -217,7 +217,7 @@ namespace BPlusStore_NoCache_Suite
             int nValue = 0;
             ErrorCode ec = m_ptrTree->search(nCntr, nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::KeyDoesNotExist);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
     }
 
@@ -312,7 +312,7 @@ namespace BPlusStore_NoCache_Suite
     }
 
     INSTANTIATE_TEST_CASE_P(
-        Bulk_Insert_Search_Delete,
+        KEY_AS_INT32_VAL_AS_INT32,
         BPlusStore_NoCache_Suite_1,
         ::testing::Values(
             std::make_tuple(3, 1000000),
