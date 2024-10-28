@@ -33,8 +33,8 @@ set(CMAKE_CXX_COMPILER g++-11)
 
 add_executable(test_all 
 	       BPlusStore_LRUCache_FileStorage_Suite_1.cpp 
-	#       BPlusStore_LRUCache_FileStorage_Suite_2.cpp 
-	#       BPlusStore_LRUCache_FileStorage_Suite_3.cpp
+	       BPlusStore_LRUCache_FileStorage_Suite_2.cpp 
+	       BPlusStore_LRUCache_FileStorage_Suite_3.cpp
                BPlusStore_LRUCache_VolatileStorage_Suite_1.cpp
                BPlusStore_LRUCache_VolatileStorage_Suite_2.cpp
                BPlusStore_LRUCache_VolatileStorage_Suite_3.cpp

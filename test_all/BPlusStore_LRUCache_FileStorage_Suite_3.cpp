@@ -66,7 +66,13 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         size_t nStorageSize;
         size_t nThreadCount;
 
+#ifdef _MSC_VER
         std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
+#else //_MSC_VER
+        std::filesystem::path fsTempFileStore = "/mnt/tmpfs/filestore.hdb";
+#endif //_MSC_VER
+
+//        std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
     };
 
     void insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
@@ -90,7 +96,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void insert_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -127,7 +133,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void search_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -137,7 +143,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
             int nValue = 0;
             ErrorCode ec = ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::Success);
+            assert(vtRandom[nCntr] == nValue && ec == ErrorCode::Success);
         }
     }
 
@@ -166,7 +172,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void search_not_found_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -201,7 +207,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void delete_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -512,7 +518,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
 
 #ifdef __CONCURRENT__
     INSTANTIATE_TEST_CASE_P(
-        Insert_Search_Delete,
+        THREADED_TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_TREE_STORAGE,
         BPlusStore_LRUCache_FileStorage_Suite_3,
         ::testing::Values(
             std::make_tuple(3, 10000, 1024, 64, 4ULL * 1024 * 1024 * 1024, 8),
