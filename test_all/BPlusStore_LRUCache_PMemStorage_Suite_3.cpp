@@ -16,7 +16,7 @@
 #include "DataNode.hpp"
 #include "BPlusStore.hpp"
 #include "LRUCacheObject.hpp"
-#include "FileStorage.hpp"
+#include "PMemStorage.hpp"
 #include "TypeMarshaller.hpp"
 
 #include "TypeUID.h"
@@ -25,10 +25,8 @@
 #include <random>
 #include <numeric>
 
-#ifndef _MSC_VER
-
 #ifdef __TREE_WITH_CACHE__
-namespace BPlusStore_LRUCache_FileStorage_Suite
+namespace BPlusStore_LRUCache_PMemStorage_Suite
 {
     typedef int KeyType;
     typedef int ValueType;
@@ -40,9 +38,9 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 
-    class BPlusStore_LRUCache_FileStorage_Suite_3 : public ::testing::TestWithParam<std::tuple<size_t, size_t, size_t, size_t, size_t, size_t>>
+    class BPlusStore_LRUCache_PMemStorage_Suite_3 : public ::testing::TestWithParam<std::tuple<size_t, size_t, size_t, size_t, size_t, size_t>>
     {
     protected:
         void SetUp() override
@@ -53,7 +51,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
             m_ptrTree->init<DataNodeType>();
         }
 
-        void TearDown() override 
+        void TearDown() override
         {
             delete m_ptrTree;
             std::filesystem::remove(fsTempFileStore);
@@ -68,7 +66,13 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         size_t nStorageSize;
         size_t nThreadCount;
 
+#ifdef _MSC_VER
         std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
+#else //_MSC_VER
+        std::filesystem::path fsTempFileStore = "/mnt/tmpfs/filestore.hdb";
+#endif //_MSC_VER
+
+        //        std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
     };
 
     void insert_concurent(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
@@ -92,7 +96,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void insert_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -129,7 +133,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void search_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -139,7 +143,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
             int nValue = 0;
             ErrorCode ec = ptrTree->search(vtRandom[nCntr], nValue);
 
-            assert(nCntr == nValue && ec == ErrorCode::Success);
+            assert(vtRandom[nCntr] == nValue && ec == ErrorCode::Success);
         }
     }
 
@@ -168,7 +172,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void search_not_found_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -203,7 +207,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
     void delete_concurent_random(BPlusStoreType* ptrTree, int nRangeStart, int nRangeEnd)
     {
         std::vector<int> vtRandom(nRangeEnd - nRangeStart);
-        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::iota(vtRandom.begin(), vtRandom.end(), nRangeStart);
         std::random_device rd; // Obtain a random number from hardware
         std::mt19937 eng(rd()); // Seed the generator
         std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
@@ -215,7 +219,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Insert_v1)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Insert_v1)
     {
         std::vector<std::thread> vtThreads;
 
@@ -233,7 +237,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Insert_v2)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Insert_v2)
     {
         std::vector<std::thread> vtThreads;
 
@@ -251,7 +255,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Insert_v3)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Insert_v3)
     {
         std::vector<std::thread> vtThreads;
 
@@ -269,7 +273,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Search_v1)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Search_v1)
     {
         std::vector<std::thread> vtThreads;
 
@@ -302,7 +306,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Search_v2)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Search_v2)
     {
         std::vector<std::thread> vtThreads;
 
@@ -335,7 +339,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Search_v3)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Search_v3)
     {
         std::vector<std::thread> vtThreads;
 
@@ -368,7 +372,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Delete_v1)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Delete_v1)
     {
         std::vector<std::thread> vtThreads;
 
@@ -383,7 +387,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         {
             (*it).join();
             it++;
-}
+        }
 
         vtThreads.clear();
 
@@ -416,7 +420,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Delete_v2)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Delete_v2)
     {
         std::vector<std::thread> vtThreads;
 
@@ -464,7 +468,7 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
         }
     }
 
-    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_3, Bulk_Delete_v3)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_3, Bulk_Delete_v3)
     {
         std::vector<std::thread> vtThreads;
 
@@ -514,8 +518,8 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
 
 #ifdef __CONCURRENT__
     INSTANTIATE_TEST_CASE_P(
-        Insert_Search_Delete,
-        BPlusStore_LRUCache_FileStorage_Suite_3,
+        THREADED_TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_PMEM_STORAGE,
+        BPlusStore_LRUCache_PMemStorage_Suite_3,
         ::testing::Values(
             std::make_tuple(3, 10000, 1024, 64, 4ULL * 1024 * 1024 * 1024, 8),
             std::make_tuple(4, 10000, 1024, 64, 4ULL * 1024 * 1024 * 1024, 8),
@@ -524,17 +528,15 @@ namespace BPlusStore_LRUCache_FileStorage_Suite
             std::make_tuple(7, 10000, 1024, 128, 4ULL * 1024 * 1024 * 1024, 8),
             std::make_tuple(8, 10000, 1024, 128, 4ULL * 1024 * 1024 * 1024, 8),
             std::make_tuple(15, 10000, 1024, 128, 4ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(16, 10000, 1024, 128, 4ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(32, 10000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(64, 10000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(128, 10000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(256, 10000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(512, 10000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(1024, 10000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
-            std::make_tuple(2048, 10000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8)
+            std::make_tuple(16, 100000, 1024, 128, 4ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(32, 100000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(64, 100000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(128, 100000, 1024, 256, 4ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(256, 100000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(512, 100000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(1024, 100000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8),
+            std::make_tuple(2048, 100000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8)
         ));
 #endif //__CONCURRENT__
 }
 #endif //__TREE_WITH_CACHE__
-
-#endif //_MSC_VER

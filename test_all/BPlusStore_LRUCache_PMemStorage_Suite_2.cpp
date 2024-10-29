@@ -14,7 +14,7 @@
 #include "DataNode.hpp"
 #include "BPlusStore.hpp"
 #include "LRUCacheObject.hpp"
-#include "FileStorage.hpp"
+#include "PMemStorage.hpp"
 #include "TypeMarshaller.hpp"
 
 #include "TypeUID.h"
@@ -23,9 +23,9 @@
 #ifndef _MSC_VER
 
 //#ifdef __TREE_WITH_CACHE__
-//namespace BPlusStore_LRUCache_FileStorage_Suite
+//namespace BPlusStore_LRUCache_PMemStorage_Suite
 //{
-//    class BPlusStore_LRUCache_FileStorage_Suite_2 : public ::testing::TestWithParam<std::tuple<int, int, int, int, int, int, string>>
+//    class BPlusStore_LRUCache_PMemStorage_Suite_2 : public ::testing::TestWithParam<std::tuple<int, int, int, int, int, int, string>>
 //    {
 //    protected:
 //        typedef string KeyType;
@@ -38,7 +38,7 @@
 //        typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
 //        typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 //
-//        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+//        typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
 //
 //        BPlusStoreType* m_ptrTree;
 //
@@ -63,7 +63,7 @@
 //        string stFileName;
 //    };
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Insert_v1) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Insert_v1) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -76,7 +76,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Insert_v2) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Insert_v2) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -94,7 +94,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Insert_v3) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Insert_v3) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -107,7 +107,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Search_v1) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Search_v1) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -128,7 +128,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Search_v2) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Search_v2) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -154,7 +154,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Search_v3) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Search_v3) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -175,7 +175,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Delete_v1) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Delete_v1) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -211,7 +211,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Delete_v2) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Delete_v2) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -251,7 +251,7 @@
 //        delete ptrTree;
 //    }
 //
-//    TEST_P(BPlusStore_LRUCache_FileStorage_Suite_2, Bulk_Delete_v3) {
+//    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_2, Bulk_Delete_v3) {
 //
 //        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nFileSize, stFileName);
 //        ptrTree->template init<DataNodeType>();
@@ -290,7 +290,7 @@
 //
 //    INSTANTIATE_TEST_CASE_P(
 //        Bulk_Insert_Search_Delete,
-//        BPlusStore_LRUCache_FileStorage_Suite_2,
+//        BPlusStore_LRUCache_PMemStorage_Suite_2,
 //        ::testing::Values(
 //            std::make_tuple(3, 0, 99999, 100, 1024, 1024, ""),
 //            std::make_tuple(4, 0, 99999, 100, 1024, 1024, ""),

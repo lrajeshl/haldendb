@@ -12,72 +12,6 @@
 #include <libpmem.h>
 #endif //_MSC_VER
 
-bool createMMapFile(void*& hMemory, const char* szPath, size_t nFileSize, size_t& nMappedLen, int& bIsPMem)
-{
-#ifndef _MSC_VER
-	if ((hMemory = pmem_map_file(szPath,
-		nFileSize,
-		PMEM_FILE_CREATE | PMEM_FILE_EXCL,
-		0666, &nMappedLen, &bIsPMem)) == NULL)
-	{
-		return false;
-	}
-#endif //_MSC_VER
-
-	return true;
-}
-
-bool openMMapFile(void*& hMemory, const char* szPath, size_t& nMappedLen, int& bIsPMem)
-{
-#ifndef _MSC_VER
-	if ((hMemory = pmem_map_file(szPath,
-		0,
-		0,
-		0666, &nMappedLen, &bIsPMem)) == NULL)
-	{
-		return false;
-	}
-#endif //_MSC_VER
-
-	return true;
-}
-
-bool writeMMapFile(void* hMemory, const char* szBuf, size_t nLen)
-{
-#ifndef _MSC_VER
-	void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
-
-	if (hDestBuf == NULL)
-	{
-		return false;
-	}
-	//pmem_drain();
-#endif //_MSC_VER
-
-	return true;
-}
-
-bool readMMapFile(const void* hMemory, char* szBuf, size_t nLen)
-{
-#ifndef _MSC_VER
-	void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
-
-	if (hDestBuf == NULL)
-	{
-		return false;
-	}
-#endif //_MSC_VER
-
-	return true;
-}
-
-void closeMMapFile(void* hMemory, size_t nMappedLen)
-{
-#ifndef _MSC_VER
-	pmem_unmap(hMemory, nMappedLen);
-#endif //_MSC_VER
-}
-
 template<
 	typename ICallback,
 	typename ObjectUIDType_,
@@ -87,6 +21,72 @@ template<
 >
 class PMemStorage
 {
+	bool createMMapFile(void*& hMemory, const char* szPath, size_t nFileSize, size_t& nMappedLen, int& bIsPMem)
+	{
+#ifndef _MSC_VER
+		if ((hMemory = pmem_map_file(szPath,
+			nFileSize,
+			PMEM_FILE_CREATE | PMEM_FILE_EXCL,
+			0666, &nMappedLen, &bIsPMem)) == NULL)
+		{
+			return false;
+		}
+#endif //_MSC_VER
+
+		return true;
+	}
+
+	bool openMMapFile(void*& hMemory, const char* szPath, size_t& nMappedLen, int& bIsPMem)
+	{
+#ifndef _MSC_VER
+		if ((hMemory = pmem_map_file(szPath,
+			0,
+			0,
+			0666, &nMappedLen, &bIsPMem)) == NULL)
+		{
+			return false;
+		}
+#endif //_MSC_VER
+
+		return true;
+	}
+
+	bool writeMMapFile(void* hMemory, const char* szBuf, size_t nLen)
+	{
+#ifndef _MSC_VER
+		void* hDestBuf = pmem_memcpy_persist(hMemory, szBuf, nLen);
+
+		if (hDestBuf == NULL)
+		{
+			return false;
+		}
+		//pmem_drain();
+#endif //_MSC_VER
+
+		return true;
+	}
+
+	bool readMMapFile(const void* hMemory, char* szBuf, size_t nLen)
+	{
+#ifndef _MSC_VER
+		void* hDestBuf = pmem_memcpy(szBuf, hMemory, nLen, PMEM_F_MEM_NOFLUSH);
+
+		if (hDestBuf == NULL)
+		{
+			return false;
+		}
+#endif //_MSC_VER
+
+		return true;
+	}
+
+	void closeMMapFile(void* hMemory, size_t nMappedLen)
+	{
+#ifndef _MSC_VER
+		pmem_unmap(hMemory, nMappedLen);
+#endif //_MSC_VER
+	}
+
 	typedef PMemStorage<ICallback, ObjectUIDType_, ValueType, CoreTypesMarshaller, ValueCoreTypes...> SelfType;
 
 public:
