@@ -48,14 +48,14 @@ namespace BPlusStore_LRUCache_PMemStorage_Suite
         {
             std::tie(nDegree, nTotalRecords, nCacheSize, nBlockSize, nStorageSize) = GetParam();
 
-            m_ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nStorageSize, fsTempFileStore.string());
+            m_ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nStorageSize, "/mnt/tmpfs/datafile1");
             m_ptrTree->init<DataNodeType>();
         }
 
         void TearDown() override
         {
             delete m_ptrTree;
-            std::filesystem::remove(fsTempFileStore);
+            //std::filesystem::remove(fsTempFileStore);
         }
 
         BPlusStoreType* m_ptrTree = nullptr;
@@ -65,12 +65,6 @@ namespace BPlusStore_LRUCache_PMemStorage_Suite
         size_t nCacheSize;
         size_t nBlockSize;
         size_t nStorageSize;
-
-#ifdef _MSC_VER
-        std::filesystem::path fsTempFileStore = std::filesystem::temp_directory_path() / "tempfilestore.hdb";
-#else //_MSC_VER
-        std::filesystem::path fsTempFileStore = "/mnt/tmpfs/filestore.hdb";
-#endif //_MSC_VER
     };
 
     TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Insert_v1)
@@ -338,17 +332,17 @@ namespace BPlusStore_LRUCache_PMemStorage_Suite
         TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_PMEM_STORAGE,
         BPlusStore_LRUCache_PMemStorage_Suite_1,
         ::testing::Values(
-            std::make_tuple(3, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(4, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(5, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(6, 10000, 100, 64, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(7, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(8, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(15, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(16, 10000, 100, 128, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(32, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(64, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
-            std::make_tuple(128, 10000, 100, 256, 4ULL * 1024 * 1024 * 1024),
+            std::make_tuple(3, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(4, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(5, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(6, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(7, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(8, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(15, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(16, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(32, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(64, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(128, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
             std::make_tuple(256, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
             std::make_tuple(512, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
             std::make_tuple(1024, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),

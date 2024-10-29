@@ -215,7 +215,7 @@ public:
 #ifdef __VALIDITY_CHECK__
 			for (auto it = m_vtChildren.begin(); it != m_vtChildren.end(); it++)
 			{
-				assert((*it).getMediaType() < 3);
+				assert((*it).getMediaType() >= 2);
 			}
 #endif //__VALIDITY_CHECK__
 		}

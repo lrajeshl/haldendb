@@ -7,6 +7,16 @@ find_package (glog 0.7.0 REQUIRED)
 add_library(haldendb_compiler_flags INTERFACE)
 target_compile_features(haldendb_compiler_flags  INTERFACE cxx_std_20)
 
+
+
+#find_package(PkgConfig REQUIRED)
+#pkg_check_modules(LIBPMEM REQUIRED libpmem)
+
+#target_link_libraries(test_all PRIVATE ${LIBPMEM_LIBRARIES})
+#target_include_directories(test_all PRIVATE ${LIBPMEM_INCLUDE_DIRS})
+
+
+
 add_compile_definitions(__TRACK_CACHE_FOOTPRINT__)
 add_compile_definitions(__CONCURRENT__)
 add_compile_definitions(__TREE_WITH_CACHE__)
@@ -32,6 +42,8 @@ add_subdirectory(../libbtree ${PROJECT_BINARY_DIR}/libbtree)
 set(CMAKE_CXX_COMPILER g++-11)
 
 add_executable(test_all 
+	       BPlusStore_LRUCache_PMemStorage_Suite_1.cpp
+	       BPlusStore_LRUCache_PMemStorage_Suite_3.cpp
 	       BPlusStore_LRUCache_FileStorage_Suite_1.cpp 
 	       BPlusStore_LRUCache_FileStorage_Suite_2.cpp 
 	       BPlusStore_LRUCache_FileStorage_Suite_3.cpp
@@ -43,6 +55,14 @@ add_executable(test_all
                BPlusStore_NoCache_Suite_3.cpp 
                main.cpp 
 )
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBPMEM REQUIRED libpmem)
+
+target_link_libraries(test_all PRIVATE ${LIBPMEM_LIBRARIES})
+target_include_directories(test_all PRIVATE ${LIBPMEM_INCLUDE_DIRS})
+
+
 
 set_target_properties(test_all PROPERTIES
     CXX_STANDARD 20
