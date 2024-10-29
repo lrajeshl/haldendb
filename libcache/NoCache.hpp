@@ -17,7 +17,6 @@ public:
 	typedef KeyType ObjectUIDType;
 	typedef ValueType<ValueCoreTypes...> ObjectType;
 	typedef ValueType<ValueCoreTypes...>* ObjectTypePtr;
-	typedef std::tuple<ValueCoreTypes...> ObjectCoreTypes;
 
 public:
 	~NoCache()
@@ -49,13 +48,27 @@ public:
 	}
 
 	template <typename Type>
+	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject, ObjectTypePtr& ptrValue)
+	{
+		ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
+
+		if (std::holds_alternative<Type>(ptrValue->getInnerData()))
+		{
+			ptrObject = std::get<Type>(ptrValue->getInnerData());
+			return CacheErrorCode::Success;
+		}
+
+		return CacheErrorCode::Error;
+	}
+
+	template <typename Type>
 	CacheErrorCode getObjectOfType(ObjectUIDType objKey, Type& ptrObject)
 	{
 		ObjectTypePtr ptrValue = reinterpret_cast<ObjectTypePtr>(objKey);
 
-		if (std::holds_alternative<Type>(*ptrValue->data))
+		if (std::holds_alternative<Type>(ptrValue->getInnerData()))
 		{
-			ptrObject = std::get<Type>(*ptrValue->data);
+			ptrObject = std::get<Type>(ptrValue->getInnerData());
 			return CacheErrorCode::Success;
 		}
 
@@ -63,24 +76,30 @@ public:
 	}
 
 	template<class Type, typename... ArgsType>
-	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& key, ArgsType... args)
+	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& key, const ArgsType... args)
 	{
-		//ObjectTypePtr ptrValue = new std::variant<ValueCoreTypes...>(std::make_shared<Type>(args...));
-		
-		ValueType<ValueCoreTypes...>* ptrValue = ValueType<ValueCoreTypes...>::template createObjectOfType<Type>(args...);
+		ObjectTypePtr ptrObject = new ObjectType(std::make_shared<Type>(args...));
 
-		key = reinterpret_cast<ObjectUIDType>(ptrValue);
+		key = reinterpret_cast<ObjectUIDType>(ptrObject);
 		return CacheErrorCode::Success;
 	}
 
-	void getCacheState(size_t& lru, size_t& map)
+	template<class Type, typename... ArgsType>
+	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& key, ObjectTypePtr& ptrObject, const ArgsType... args)
 	{
-		lru = 1;
-		map = 1;
+		ptrObject = new ObjectType(std::make_shared<Type>(args...));
+
+		key = reinterpret_cast<ObjectUIDType>(ptrObject);
+		return CacheErrorCode::Success;
 	}
 
-	CacheErrorCode reorder(std::vector<std::pair<ObjectUIDType, ObjectTypePtr>>& vt, bool ensure = true)
+	template<class Type, typename... ArgsType>
+	CacheErrorCode createObjectOfType(std::optional<ObjectUIDType>& key, std::shared_ptr<Type>& ptrCoreObject, const ArgsType... args)
 	{
+		ptrCoreObject = std::make_shared<Type>(args...);
+		ObjectTypePtr ptrObject = new ObjectType(ptrCoreObject);
+
+		key = reinterpret_cast<ObjectUIDType>(ptrObject);
 		return CacheErrorCode::Success;
 	}
 };

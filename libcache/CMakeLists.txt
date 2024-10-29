@@ -1,17 +1,16 @@
 add_library(libcache
-            DRAMCacheObject.cpp
-            DRAMCacheObjectKey.cpp
-            DRAMLRUCache.cpp
-            DRAMVolatileStorage.cpp
-            NoCache.cpp
-            NVRAMCacheObject.cpp
-            NVRAMCacheObjectKey.cpp
-            NVRAMDAXStorage.cpp
-            NVRAMLRUCache.cpp
-            NVRAMObjectStorage.cpp
-            NVRAMVolatileStorage.cpp
-            UnsortedMapUtil.cpp
-            ICacheObject.h
+            CacheErrorCodes.h
+            FileStorage.hpp
+            IFlushCallback.h
+            LRUCache.hpp
+            LRUCacheObject.hpp
+            NoCache.hpp
+            NoCacheObject.hpp
+            ObjectFatUID.h
+            VariadicNthType.h
+            VolatileStorage.hpp
+            PMemStorage.hpp
 )
+set_target_properties(libcache PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries(libcache PUBLIC haldendb_compiler_flags)

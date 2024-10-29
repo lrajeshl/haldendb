@@ -6,51 +6,68 @@
 #include <variant>
 #include <typeinfo>
 #include <type_traits>
+#include <fstream>
+#include <filesystem>
+
 #include "glog/logging.h"
-#include "NoCache.hpp"
+
+#include "LRUCache.hpp"
 #include "IndexNode.hpp"
 #include "DataNode.hpp"
 #include "BPlusStore.hpp"
-#include "NoCacheObject.hpp"
+#include "LRUCacheObject.hpp"
+#include "PMemStorage.hpp"
+#include "TypeMarshaller.hpp"
 #include "TypeUID.h"
+#include "ObjectFatUID.h"
+#include "IFlushCallback.h"
 #include <set>
 #include <random>
 #include <numeric>
 
-#ifndef __TREE_WITH_CACHE__
-namespace BPlusStore_NoCache_Suite
+#ifdef __TREE_WITH_CACHE__
+namespace BPlusStore_LRUCache_PMemStorage_Suite
 {
     typedef int KeyType;
     typedef int ValueType;
-    typedef uintptr_t ObjectUIDType;
+
+    typedef ObjectFatUID ObjectUIDType;
 
     typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT > DataNodeType;
     typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT > IndexNodeType;
 
-    typedef BPlusStore<KeyType, ValueType, NoCache<ObjectUIDType, NoCacheObject, DataNodeType, IndexNodeType>> BPlusStoreType;
+    typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
+    typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-    class BPlusStore_NoCache_Suite_1 : public ::testing::TestWithParam<std::tuple<int, int>>
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+
+    class BPlusStore_LRUCache_PMemStorage_Suite_1 : public ::testing::TestWithParam<std::tuple<size_t, size_t, size_t, size_t, size_t>>
     {
     protected:
         void SetUp() override
         {
-            std::tie(nDegree, nTotalRecords) = GetParam();
+            std::tie(nDegree, nTotalRecords, nCacheSize, nBlockSize, nStorageSize) = GetParam();
 
-            m_ptrTree = new BPlusStoreType(nDegree);
+            m_ptrTree = new BPlusStoreType(nDegree, nCacheSize, nBlockSize, nStorageSize, "/mnt/tmpfs/datafile1");
             m_ptrTree->init<DataNodeType>();
         }
 
-        void TearDown() override {
+        void TearDown() override
+        {
             delete m_ptrTree;
+            //std::filesystem::remove(fsTempFileStore);
         }
 
-        BPlusStoreType* m_ptrTree;
+        BPlusStoreType* m_ptrTree = nullptr;
 
-        int nDegree;
-        int nTotalRecords;
+        size_t nDegree;
+        size_t nTotalRecords;
+        size_t nCacheSize;
+        size_t nBlockSize;
+        size_t nStorageSize;
     };
-    
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Insert_v1) 
+
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Insert_v1)
     {
         std::vector<int> vtRandom(nTotalRecords);
         std::iota(vtRandom.begin(), vtRandom.end(), 1);
@@ -65,9 +82,9 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Insert_v2) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Insert_v2)
     {
-        for (int nCntr = 0; nCntr < nTotalRecords ; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
         {
             ErrorCode ec = m_ptrTree->insert(nCntr, nCntr);
             assert(ec == ErrorCode::Success);
@@ -80,7 +97,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Insert_v3) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Insert_v3)
     {
         for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
@@ -89,7 +106,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Search_v1) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Search_v1)
     {
         for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
@@ -105,8 +122,8 @@ namespace BPlusStore_NoCache_Suite
             assert(nCntr == nValue && ec == ErrorCode::Success);
         }
     }
-    
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Search_v2) 
+
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Search_v2)
     {
         std::vector<int> vtRandom(nTotalRecords);
         std::iota(vtRandom.begin(), vtRandom.end(), 1);
@@ -129,7 +146,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Search_v3) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Search_v3)
     {
         for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
@@ -146,7 +163,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Delete_v1) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Delete_v1)
     {
         for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
@@ -169,7 +186,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Delete_v2) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Delete_v2)
     {
         std::vector<int> vtRandom(nTotalRecords);
         std::iota(vtRandom.begin(), vtRandom.end(), 1);
@@ -198,7 +215,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, Bulk_Delete_v3) 
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, Bulk_Delete_v3)
     {
         for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
@@ -221,7 +238,7 @@ namespace BPlusStore_NoCache_Suite
         }
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_1, AllOperations)
+    TEST_P(BPlusStore_LRUCache_PMemStorage_Suite_1, AllOperations)
     {
         std::vector<int> vtRandom(nTotalRecords);
         std::iota(vtRandom.begin(), vtRandom.end(), 1);
@@ -312,24 +329,25 @@ namespace BPlusStore_NoCache_Suite
     }
 
     INSTANTIATE_TEST_CASE_P(
-        KEY_AS_INT32_VAL_AS_INT32,
-        BPlusStore_NoCache_Suite_1,
+        TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_PMEM_STORAGE,
+        BPlusStore_LRUCache_PMemStorage_Suite_1,
         ::testing::Values(
-            std::make_tuple(3, 1000000),
-            std::make_tuple(4, 1000000),
-            std::make_tuple(5, 1000000),
-            std::make_tuple(6, 1000000),
-            std::make_tuple(7, 1000000),
-            std::make_tuple(8, 1000000),
-            std::make_tuple(15, 1000000),
-            std::make_tuple(16, 1000000),
-            std::make_tuple(32, 1000000),
-            std::make_tuple(64, 1000000),
-            std::make_tuple(128, 1000000),
-            std::make_tuple(256, 1000000),
-            std::make_tuple(512, 1000000),
-            std::make_tuple(1024, 1000000),
-            std::make_tuple(2048, 1000000)
+            std::make_tuple(3, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(4, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(5, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(6, 10000, 100, 64, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(7, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(8, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(15, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(16, 10000, 100, 128, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(32, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(64, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(128, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(256, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(512, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(1024, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024),
+            std::make_tuple(2048, 10000, 100, 256, 10ULL * 1024 * 1024 * 1024)
         ));
+
 }
 #endif //__TREE_WITH_CACHE__

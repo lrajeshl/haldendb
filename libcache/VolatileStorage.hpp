@@ -1,137 +1,158 @@
 #pragma once
 #include <memory>
-#include <unordered_map>
+#include <iostream>
+#include <fcntl.h>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <variant>
+#include <cmath>
 
 #include "ErrorCodes.h"
-
-#define __CONCURRENT__
+#include "IFlushCallback.h"
 
 template<
 	typename ICallback,
-	typename ObjectUIDType, 
-	template <typename, typename...> typename ObjectType, 
-	typename CoreTypesMarshaller, 
-	typename... ObjectCoreTypes>
+	typename KeyType,
+	template <typename, typename...> typename ValueType,
+	typename CoreTypesMarshaller,
+	typename... ValueCoreTypes
+>
 class VolatileStorage
 {
-	typedef VolatileStorage<ICallback, ObjectUIDType, ObjectType, CoreTypesMarshaller, ObjectCoreTypes...> SelfType;
+	typedef VolatileStorage<ICallback, KeyType, ValueType, CoreTypesMarshaller, ValueCoreTypes...> SelfType;
 
 public:
-	typedef ObjectUIDType ObjectUIDType;
-	typedef ObjectType<CoreTypesMarshaller, ObjectCoreTypes...> ObjectType;
+	typedef KeyType ObjectUIDType;
+	typedef ValueType<CoreTypesMarshaller, ValueCoreTypes...> ObjectType;
 
 private:
-	size_t m_nCounter;
-	mutable std::shared_mutex m_mtxStorage;
+	char* m_szStorage;
+	size_t m_nStorageSize;
+	
+	size_t m_nBlockSize;
+	size_t m_nNextBlock;
 
-	size_t m_nPoolSize;
-	std::unordered_map<ObjectUIDType, std::shared_ptr<ObjectType>> m_mpObject;
+	ICallback* m_ptrCallback;
+
+	std::vector<bool> m_vtAllocationTable;
+
+#ifdef __CONCURRENT__
+	mutable std::shared_mutex m_mtxStorage;
+#endif //__CONCURRENT__
 
 public:
-	VolatileStorage(size_t nPoolSize)
-		: m_nCounter(0)
-		, m_nPoolSize(nPoolSize)
+	~VolatileStorage()
 	{
+		delete[] m_szStorage;
 	}
 
-	template <typename... InitArgs>
-	CacheErrorCode init(InitArgs... args)
+	VolatileStorage(size_t nBlockSize, size_t nStorageSize)
+		: m_nStorageSize(nStorageSize)
+		, m_nBlockSize(nBlockSize)
+		, m_nNextBlock(0)
+		, m_ptrCallback(NULL)
 	{
-		return CacheErrorCode::Success;
+		m_szStorage = new(std::nothrow) char[m_nStorageSize];
+		memset(m_szStorage, 0, m_nStorageSize);
+
+		assert(m_szStorage != nullptr);
+
+		m_vtAllocationTable.resize(nStorageSize / nBlockSize, false);
 	}
 
-	std::shared_ptr<ObjectType> getObject(ObjectUIDType uidObject)
+public:
+	inline size_t getNextAvailableBlockOffset() const
 	{
-#ifdef __CONCURRENT__
-		std::shared_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
-
-		std::shared_ptr<ObjectType> ptrObject = nullptr;
-		if (m_mpObject.find(uidObject) != m_mpObject.end())
-		{
-			ptrObject = m_mpObject[uidObject];
-			//m_mpObject.erase(uidObject);	// since it is volatile cache.. add each time.. if this is set then 'dirty' should be false.
-
-			ptrObject->dirty = false; //if this is set then dont erase the object! here.. technically object should be erased here...
-		}
-
-		return ptrObject;
+		return m_nNextBlock;
 	}
 
-	CacheErrorCode remove(ObjectUIDType uidObject)
+	inline size_t getBlockSize() const
 	{
-#ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
-
-		auto it = m_mpObject.find(uidObject);
-		if (it != m_mpObject.end())
-		{
-			m_mpObject.erase((*it).first);
-			return CacheErrorCode::Success;
-		}
-
-		return CacheErrorCode::KeyDoesNotExist;
+		return m_nBlockSize;
 	}
 
-	CacheErrorCode addObject(ObjectUIDType uidObject, std::shared_ptr<ObjectType> ptrValue, ObjectUIDType& uidUpdated)
-	{
-#ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
-
-		if (m_mpObject.size() >= m_nPoolSize)
-		{
-			return CacheErrorCode::Error;
-		}
-
-		uidUpdated = ObjectUIDType::createAddressFromDRAMCacheCounter(m_nCounter);
-
-		m_nCounter++;
-
-		m_mpObject[uidUpdated] = std::make_shared<ObjectType>(*ptrValue);
-
-		return CacheErrorCode::Success;
-	}
-
-	inline size_t getWritePos()
-	{
-		return m_nCounter;
-	}
-
-	inline size_t getBlockSize()
-	{
-		return UINT32_MAX;
-	}
-
-	inline ObjectUIDType::Media getMediaType()
+	inline ObjectUIDType::StorageMedia getStorageType()
 	{
 		return ObjectUIDType::DRAM;
+	}
+
+public:
+	template <typename... InitArgs>
+	CacheErrorCode init(ICallback* ptrCallback, InitArgs... args)
+	{
+		m_ptrCallback = ptrCallback;	// getNthElement<0>(args...);
+		
+		return CacheErrorCode::Success;
+	}
+
+	CacheErrorCode remove(const ObjectUIDType& uidObject)
+	{
+		//throw new std::logic_error(".....");
+
+		return CacheErrorCode::Success;
+	}
+
+	std::shared_ptr<ObjectType> getObject(const ObjectUIDType& uidObject)
+	{
+		//char* szBuffer = new char[uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1];
+		//memset(szBuffer, 0, uidObject.m_uid.FATPOINTER.m_ptrFile.m_nSize + 1);
+		//ptrObject->setDirtyFlag(false);
+		//delete[] szBuffer;
+
+		return std::make_shared<ObjectType>(m_szStorage + uidObject.getPersistentPointerValue());
+	}
+
+	CacheErrorCode addObject(const ObjectUIDType& uidObject, std::shared_ptr<ObjectType> ptrObject, ObjectUIDType& uidUpdated)
+	{
+		uint32_t nBufferSize = 0;
+		uint8_t uidObjectType = 0;
+
+		char* szBuffer = NULL;
+		ptrObject->serialize(szBuffer, uidObjectType, nBufferSize);
+
+		size_t nOffset = m_nNextBlock * m_nBlockSize;
+
+#ifdef __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_storage(m_mtxStorage);
+#endif //__CONCURRENT__
+
+		memcpy(m_szStorage + nOffset, szBuffer, nBufferSize);
+
+		//m_nNextBlock += std::ceil((nBufferSize + sizeof(uint8_t)) / (float)m_nBlockSize);;
+		m_nNextBlock += std::ceil(nBufferSize / (float)m_nBlockSize);
+
+#ifdef __CONCURRENT__
+		lock_storage.unlock();
+#endif //__CONCURRENT__
+
+		delete[] szBuffer;
+
+		ObjectUIDType::createAddressFromFileOffset(uidUpdated, uidObject.getObjectType(), nOffset, nBufferSize);
+
+		return CacheErrorCode::Success;
 	}
 
 	CacheErrorCode addObjects(std::vector<std::pair<ObjectUIDType, std::pair<std::optional<ObjectUIDType>, std::shared_ptr<ObjectType>>>>& vtObjects, size_t nNewOffset)
 	{
 #ifdef __CONCURRENT__
-		std::unique_lock<std::shared_mutex> lock_file_storage(m_mtxStorage);
-#endif __CONCURRENT__
+		std::unique_lock<std::shared_mutex> lock_dram_storage(m_mtxStorage);
+#endif //__CONCURRENT__
 
-		m_nCounter = nNewOffset;
-
-		auto it = vtObjects.begin();
-		while (it != vtObjects.end())
+		for (auto it = vtObjects.begin(); it != vtObjects.end(); it++)
 		{
-			
-			if (m_mpObject.find(*(*it).second.first) != m_mpObject.end())
-			{
-				throw new std::exception("should not occur!");
-			}
+			uint32_t nBufferSize = 0;
+			uint8_t uidObjectType = 0;
 
-			m_mpObject[*(*it).second.first] = std::make_shared<ObjectType>(*(*it).second.second);
+			char* szBuffer = NULL;
+			(*it).second.second->serialize(szBuffer, uidObjectType, nBufferSize);
+			memcpy(m_szStorage + (*(*it).second.first).getPersistentPointerValue(), szBuffer, nBufferSize);
 
-			it++;
+			delete[] szBuffer;
 		}
+
+		m_nNextBlock = nNewOffset;
 
 		return CacheErrorCode::Success;
 	}
 };
-

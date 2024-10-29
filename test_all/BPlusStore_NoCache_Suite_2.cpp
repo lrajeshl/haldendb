@@ -15,281 +15,323 @@
 #include "BPlusStore.hpp"
 #include "NoCacheObject.hpp"
 #include "TypeUID.h"
+#include <set>
+#include <random>
+#include <numeric>
 
-#ifndef __TREE_AWARE_CACHE__
+#ifndef __TREE_WITH_CACHE__
 namespace BPlusStore_NoCache_Suite
 {
-    class BPlusStore_NoCache_Suite_2 : public ::testing::TestWithParam<std::tuple<int, int, int>>
+    class BPlusStore_NoCache_Suite_2 : public ::testing::TestWithParam<std::tuple<int, int>>
     {
     protected:
         typedef string KeyType;
         typedef string ValueType;
         typedef uintptr_t ObjectUIDType;
 
-        typedef IFlushCallback<ObjectUIDType> ICallback;
-
         typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_STRING_STRING> DataNodeType;
-        typedef IndexNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::INDEX_NODE_STRING_STRING> InternalNodeType;
+        typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_STRING_STRING> IndexNodeType;
 
-        typedef BPlusStore<KeyType, ValueType, NoCache<ObjectUIDType, NoCacheObject, DataNodeType, InternalNodeType>> BPlusStoreType;
-
-        BPlusStoreType* m_ptrTree;
+        typedef BPlusStore<KeyType, ValueType, NoCache<ObjectUIDType, NoCacheObject, DataNodeType, IndexNodeType>> BPlusStoreType;
 
         void SetUp() override
         {
-            std::tie(nDegree, nBegin_BulkInsert, nEnd_BulkInsert) = GetParam();
+            std::tie(nDegree, nTotalRecords) = GetParam();
 
-            //m_ptrTree = new BPlusStoreType(3);
-            //m_ptrTree->template init<DataNodeType>();
+            m_ptrTree = new BPlusStoreType(nDegree);
+            m_ptrTree->init<DataNodeType>();
         }
 
         void TearDown() override {
-            //delete m_ptrTree;
+            delete m_ptrTree;
         }
+
+        BPlusStoreType* m_ptrTree;
 
         int nDegree;
-        int nBegin_BulkInsert;
-        int nEnd_BulkInsert;
+        int nTotalRecords;
     };
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v1) {
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v1)
+    {
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
 
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(vtRandom[nCntr]), to_string(vtRandom[nCntr]));
+            assert(ec == ErrorCode::Success);
         }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v2) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v2)
+    {
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert + 1; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+        for (int nCntr = 1; nCntr < nTotalRecords; nCntr = nCntr + 2)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v3) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (int nCntr = nEnd_BulkInsert; nCntr >= nBegin_BulkInsert; nCntr--)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Insert_v3)
+    {
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v1) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v1)
+    {
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            ASSERT_EQ(nValue, to_string(nCntr));
+            assert(to_string(nCntr) == stValue && ec == ErrorCode::Success);
         }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v2) {
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v2)
+    {
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
 
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(vtRandom[nCntr]), to_string(vtRandom[nCntr]));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert + 1; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
+
+            assert(to_string(vtRandom[nCntr]) == stValue && ec == ErrorCode::Success);
         }
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
-        {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
-
-            ASSERT_EQ(nValue, to_string(nCntr));
-        }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v3) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (int nCntr = nEnd_BulkInsert; nCntr >= nBegin_BulkInsert; nCntr--)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Search_v3)
+    {
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            ASSERT_EQ(nValue, to_string(nCntr));
+            assert(to_string(nCntr) == stValue && ec == ErrorCode::Success);
         }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v1) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v1)
+    {
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
-
-            ASSERT_EQ(nValue, to_string(nCntr));
+            ErrorCode ec = m_ptrTree->remove(to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ErrorCode code = ptrTree->remove(to_string(nCntr));
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            ASSERT_EQ(code, ErrorCode::Success);
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
-        {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
-
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
-        }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v2) {
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v2)
+    {
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
 
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(vtRandom[nCntr]), to_string(vtRandom[nCntr]));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert + 1; nCntr <= nEnd_BulkInsert; nCntr = nCntr + 2)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->remove(to_string(vtRandom[nCntr]));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
 
-            ASSERT_EQ(nValue, to_string(nCntr));
+            assert(ec == ErrorCode::KeyDoesNotExist);
         }
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
-        {
-            ErrorCode code = ptrTree->remove(to_string(nCntr));
-
-            ASSERT_EQ(code, ErrorCode::Success);
-        }
-
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
-        {
-            string  nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
-        }
-
-        delete ptrTree;
     }
 
-    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v3) {
-
-        BPlusStoreType* ptrTree = new BPlusStoreType(nDegree);
-        ptrTree->template init<DataNodeType>();
-
-        for (int nCntr = nEnd_BulkInsert; nCntr >= nBegin_BulkInsert; nCntr--)
+    TEST_P(BPlusStore_NoCache_Suite_2, Bulk_Delete_v3)
+    {
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
-
-            ASSERT_EQ(nValue, to_string(nCntr));
+            ErrorCode ec = m_ptrTree->remove(to_string(nCntr));
+            assert(ec == ErrorCode::Success);
         }
 
-        for (int nCntr = nEnd_BulkInsert; nCntr >= nBegin_BulkInsert; nCntr--)
+        for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr--)
         {
-            ErrorCode code = ptrTree->remove(to_string(nCntr));
+            std::string stValue = "";
+            ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
 
-            ASSERT_EQ(code, ErrorCode::Success);
+            assert(ec == ErrorCode::KeyDoesNotExist);
+        }
+    }
+
+    TEST_P(BPlusStore_NoCache_Suite_2, AllOperations)
+    {
+        std::vector<int> vtRandom(nTotalRecords);
+        std::iota(vtRandom.begin(), vtRandom.end(), 1);
+        std::random_device rd; // Obtain a random number from hardware
+        std::mt19937 eng(rd()); // Seed the generator
+        std::shuffle(vtRandom.begin(), vtRandom.end(), eng);
+
+        for (int nTestCntr = 0; nTestCntr < 2; nTestCntr++)
+        {
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 1)
+            {
+                ErrorCode ec = m_ptrTree->insert(to_string(vtRandom[nCntr]), to_string(vtRandom[nCntr]));
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                std::string stValue = "";
+                ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
+
+                assert(stValue == to_string(vtRandom[nCntr]));
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr = nCntr + 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(to_string(vtRandom[nCntr]));
+
+                assert(ec == ErrorCode::Success);
+            }
+            for (int nCntr = 1; nCntr < nTotalRecords; nCntr = nCntr + 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(to_string(vtRandom[nCntr]));
+
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                std::string stValue = "";
+                ErrorCode ec = m_ptrTree->search(to_string(vtRandom[nCntr]), stValue);
+
+                assert(ec == ErrorCode::KeyDoesNotExist);
+            }
         }
 
-        for (size_t nCntr = nBegin_BulkInsert; nCntr <= nEnd_BulkInsert; nCntr++)
+        for (int nTestCntr = 0; nTestCntr < 2; nTestCntr++)
         {
-            string nValue;
-            ErrorCode code = ptrTree->search(to_string(nCntr), nValue);
+            for (int nCntr = nTotalRecords; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+                assert(ec == ErrorCode::Success);
 
-            ASSERT_EQ(code, ErrorCode::KeyDoesNotExist);
+            }
+            for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->insert(to_string(nCntr), to_string(nCntr));
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                std::string stValue = "";
+                ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
+
+                assert(stValue == to_string(nCntr) && ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = nTotalRecords; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(to_string(nCntr));
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = nTotalRecords - 1; nCntr >= 0; nCntr = nCntr - 2)
+            {
+                ErrorCode ec = m_ptrTree->remove(to_string(nCntr));
+                assert(ec == ErrorCode::Success);
+            }
+
+            for (int nCntr = 0; nCntr < nTotalRecords; nCntr++)
+            {
+                std::string stValue = "";
+                ErrorCode ec = m_ptrTree->search(to_string(nCntr), stValue);
+
+                assert(ec == ErrorCode::KeyDoesNotExist);
+            }
         }
-
-
-        delete ptrTree;
     }
 
     INSTANTIATE_TEST_CASE_P(
-        Bulk_Insert_Search_Delete,
+        KEY_AND_VAL_AS_4BYTES_STRINGS,
         BPlusStore_NoCache_Suite_2,
         ::testing::Values(
-            std::make_tuple(3, 0, 99999),
-            std::make_tuple(4, 0, 99999),
-            std::make_tuple(5, 0, 99999),
-            std::make_tuple(6, 0, 99999),
-            std::make_tuple(7, 0, 99999),
-            std::make_tuple(8, 0, 99999),
-            std::make_tuple(15, 0, 199999),
-            std::make_tuple(16, 0, 199999),
-            std::make_tuple(32, 0, 199999),
-            std::make_tuple(64, 0, 199999)));
+            std::make_tuple(3, 50000),
+            std::make_tuple(4, 50000),
+            std::make_tuple(5, 50000),
+            std::make_tuple(6, 50000),
+            std::make_tuple(7, 50000),
+            std::make_tuple(8, 50000),
+            std::make_tuple(15, 50000),
+            std::make_tuple(16, 50000),
+            std::make_tuple(32, 50000),
+            std::make_tuple(64, 50000),
+            std::make_tuple(128, 50000),
+            std::make_tuple(256, 50000),
+            std::make_tuple(512, 50000),
+            std::make_tuple(1024, 50000),
+            std::make_tuple(2048, 50000)
+            ));
 }
-#endif __TREE_AWARE_CACHE__
+#endif //__TREE_WITH_CACHE__

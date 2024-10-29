@@ -12,40 +12,34 @@
 template <typename... ValueCoreTypes>
 class NoCacheObject
 {
-	typedef std::variant<std::shared_ptr<ValueCoreTypes>...> CacheValueType;
-	typedef std::variant<std::shared_ptr<ValueCoreTypes>...>* CacheValueTypePtr;
+private:
+	typedef std::variant<std::shared_ptr<ValueCoreTypes>...> ValueCoreTypesWrapper;
 
 public:
-	typedef std::tuple<ValueCoreTypes...> ObjectCoreTypes;
+	typedef std::tuple<ValueCoreTypes...> ValueCoreTypesTuple;
+
+private:
+	ValueCoreTypesWrapper m_objData;
+	mutable std::shared_mutex m_mtx;
 
 public:
-	CacheValueTypePtr data;
-	mutable std::shared_mutex mutex;
-
-public:
-	NoCacheObject(CacheValueTypePtr ptrValue)
+	~NoCacheObject()
 	{
-		data = ptrValue;
 	}
 
-	template<class Type, typename... ArgsType>
-	static NoCacheObject* createObjectOfType(ArgsType... args)
+	template<class CoreObjectType>
+	NoCacheObject(std::shared_ptr<CoreObjectType> ptrCoreObject)
 	{
-		CacheValueTypePtr ptrValue = new CacheValueType(std::make_shared<Type>(args...));
-
-		NoCacheObject* ptr = new NoCacheObject(ptrValue);
-
-		return ptr;
+		m_objData = ptrCoreObject;
 	}
 
-	template<class Type, typename... ArgsType>
-	static NoCacheObject* createObjectOfType(std::shared_ptr<Type>& ptrCoreValue, ArgsType... args)
+	inline const ValueCoreTypesWrapper& getInnerData() const
 	{
-		ptrCoreValue = std::make_shared<Type>(args...);
-		CacheValueTypePtr ptrValue = new CacheValueType(ptrCoreValue);
+		return m_objData;
+	}
 
-		NoCacheObject* ptr = new NoCacheObject(ptrValue);
-
-		return ptr;
+	inline std::shared_mutex& getMutex()
+	{
+		return m_mtx;
 	}
 };
