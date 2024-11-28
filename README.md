@@ -1,7 +1,7 @@
 ![C++ CI](https://github.com/SajadKarim/haldendb/actions/workflows/msbuild.yml/badge.svg)
 ![C++ CI](https://github.com/SajadKarim/haldendb/actions/workflows/cmake-multi-platform.yml/badge.svg)
 
-Note: Use branch "feature/sctp_I_v9_bug5584"
+Note: Use branch "feature/sctp_I_v10"
 
 # Project
 
