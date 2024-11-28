@@ -25,6 +25,9 @@
 #include <set>
 #include <random>
 #include <numeric>
+#include "SSARCCache.hpp"
+#include "SSARCCacheObject.hpp"
+
 
 #define __VALIDITY_CHECK__
 
@@ -1007,8 +1010,73 @@ return;
 
 }
 
+void cache_team_test()
+{
+    typedef int KeyType;
+    typedef int ValueType;
+    typedef ObjectFatUID ObjectUIDType;
+
+    typedef DataNodeROpt<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+    typedef IndexNodeROpt<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+    //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
+    //typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
+
+    typedef SSARCCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
+    typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
+
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+
+    typedef BPlusStore<ICallback, KeyType, ValueType, SSARCCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, SSARCCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
+
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+
+    ptrTree.init<DataNodeType>();
+
+    size_t nTotalEntries = 500000;
+    std::vector<int> random_numbers(nTotalEntries);//50000000);
+    std::iota(random_numbers.begin(), random_numbers.end(), 1); // Fill vector with 1 to 5,000,000
+    std::random_device rd; // Obtain a random number from hardware
+    std::mt19937 eng(rd()); // Seed the generator
+    std::shuffle(random_numbers.begin(), random_numbers.end(), eng);
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    for (size_t nCntr = 0; nCntr < nTotalEntries; nCntr = nCntr++)
+    {
+        ptrTree.insert(random_numbers[nCntr], random_numbers[nCntr]);
+    }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout
+        << ">> insert [Time: "
+        << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
+        << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
+        << std::endl;
+
+    begin = std::chrono::steady_clock::now();
+
+    ptrTree.flush();
+
+    end = std::chrono::steady_clock::now();
+    std::cout
+        << ">> flush [Time: "
+        << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
+        << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
+        << std::endl;
+
+
+}
+
+
 int main(int argc, char* argv[])
 {
+    cache_team_test();
+    return 0;
+
     //fptree_bm();
     quick_test();
     return 0;
