@@ -516,6 +516,7 @@ namespace BPlusStore_LRUCache_PMemStorage_Suite
         }
     }
 
+#ifndef _MSC_VER
 #ifdef __CONCURRENT__
     INSTANTIATE_TEST_CASE_P(
         THREADED_TREE_WITH_KEY_AND_VAL_AS_INT32_AND_WITH_PMEM_STORAGE,
@@ -538,5 +539,6 @@ namespace BPlusStore_LRUCache_PMemStorage_Suite
             std::make_tuple(2048, 100000, 1024, 256, 10ULL * 1024 * 1024 * 1024, 8)
         ));
 #endif //__CONCURRENT__
+#endif
 }
 #endif //__TREE_WITH_CACHE__

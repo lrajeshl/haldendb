@@ -5,7 +5,7 @@
 int main(int argc, char** argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
-	::testing::GTEST_FLAG(filter) = "-" \
+	//::testing::GTEST_FLAG(filter) = "-" \
 					"KEY_AS_INT32_VAL_AS_INT32*:" \
 					"KEY_AND_VAL_AS_4BYTES_STRINGS*:" \
 					"THREADED_TREE_WITH_KEY_AS_INT32_VAL_AS_INT32*:"\
