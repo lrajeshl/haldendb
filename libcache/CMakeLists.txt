@@ -4,6 +4,8 @@ add_library(libcache
             IFlushCallback.h
             LRUCache.hpp
             LRUCacheObject.hpp
+            SSARCCache.hpp
+            SSARCCacheObject.hpp
             NoCache.hpp
             NoCacheObject.hpp
             ObjectFatUID.h
