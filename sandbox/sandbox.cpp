@@ -1022,14 +1022,17 @@ void cache_team_test()
     //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     //typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
-    typedef SSARCCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
+    typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
+     
+    //typedef SSARCCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
+    //typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
 
-    typedef BPlusStore<ICallback, KeyType, ValueType, SSARCCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, SSARCCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
+    //typedef BPlusStore<ICallback, KeyType, ValueType, SSARCCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, SSARCCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
 
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);

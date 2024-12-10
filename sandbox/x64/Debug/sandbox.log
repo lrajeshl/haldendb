@@ -1,0 +1,283 @@
+﻿  sandbox.cpp
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(32,36): warning C4244: 'argument': conversion from 'const uintptr_t' to 'const _Kty', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(32,36): warning C4244:         with
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(32,36): warning C4244:         [
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(32,36): warning C4244:             _Kty=uint32_t
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(32,36): warning C4244:         ]
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(56,36): warning C4244: 'argument': conversion from 'const uintptr_t' to 'const _Kty', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(56,36): warning C4244:         with
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(56,36): warning C4244:         [
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(56,36): warning C4244:             _Kty=uint32_t
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectUID.h(56,36): warning C4244:         ]
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(557,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(574,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(609,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(626,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(720,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(723,53): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(737,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(740,53): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(773,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(776,53): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(790,36): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(793,53): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(957,40): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(997,40): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1001,64): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,39): warning C4267: 'argument': conversion from 'size_t' to 'const KeyType', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,39): warning C4267:         with
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,39): warning C4267:         [
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,39): warning C4267:             KeyType=test_for_ints::KeyType
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,39): warning C4267:         ]
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1181,39): warning C4267: 'argument': conversion from 'size_t' to 'const KeyType', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1181,39): warning C4267:         with
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1181,39): warning C4267:         [
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1181,39): warning C4267:             KeyType=test_for_ints::KeyType
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1181,39): warning C4267:         ]
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(494,14): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(494,14):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(612,39):
+          see reference to class template instantiation 'DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(473,19):
+          while compiling class template member function 'ErrorCode DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::remove(const KeyType &)'
+          with
+          [
+              KeyType=test_for_ints::KeyType
+          ]
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(565,17):
+              see the first reference to 'DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::remove' in 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::remove'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1175,22):
+              see the first reference to 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::remove' in 'main'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1140,33): warning C4267: 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1140,33):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(609,28):
+          see reference to class template instantiation 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(36,24):
+          see reference to class template instantiation 'LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1130,14):
+          while compiling class template member function 'void LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushDataItemsToStorage(void)'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(631,26):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushDataItemsToStorage' in 'LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flush'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(823,26):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flush' in 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::flush'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1146,18):
+              see the first reference to 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,VolatileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::flush' in 'main'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(367,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(367,24):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(560,13):
+          see reference to function template instantiation 'void int_test<test_for_ints::BPlusStoreType>(BPlusStoreType *,size_t)' being compiled
+          with
+          [
+              BPlusStoreType=test_for_ints::BPlusStoreType
+          ]
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(373,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(387,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(393,24): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectFatUID.h(77,50): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectFatUID.h(77,50):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(1032,20):
+          see reference to class template instantiation 'BPlusStore<cache_team_test::ICallback,cache_team_test::KeyType,cache_team_test::ValueType,SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(863,10):
+          while compiling class template member function 'void BPlusStore<cache_team_test::ICallback,cache_team_test::KeyType,cache_team_test::ValueType,SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>>::prepareFlush(std::vector<std::pair<ObjectUIDType,std::pair<std::optional<ObjectUIDType>,std::shared_ptr<ObjectType>>>,std::allocator<std::pair<ObjectUIDType,std::pair<std::optional<ObjectUIDType>,std::shared_ptr<ObjectType>>>>> &,size_t,size_t &,size_t,ObjectFatUID::StorageMedia)'
+          with
+          [
+              ObjectUIDType=cache_team_test::ObjectUIDType,
+              ObjectType=cache_team_test::ObjectType
+          ]
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(892,32):
+          see reference to function template instantiation 'void ObjectFatUID::createAddressFromArgs<uint8_t,size_t,size_t>(ObjectFatUID &,ObjectFatUID::StorageMedia,uint8_t,size_t,size_t)' being compiled
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectFatUID.h(80,44): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\ObjectFatUID.h(83,44): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(233,27): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(233,27):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(222,14):
+          while compiling class template member function 'void DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::serialize(char *&,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(22,20):
+              see the first reference to 'DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::serialize' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(313,14): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(313,14):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(560,39):
+          see reference to class template instantiation 'DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(301,19):
+          while compiling class template member function 'ErrorCode DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::remove(const KeyType &)'
+          with
+          [
+              KeyType=test_for_ints::KeyType
+          ]
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(565,17):
+              see the first reference to 'DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::remove' in 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,FileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::remove'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(338,28):
+              see the first reference to 'BPlusStore<test_for_ints::ICallback,test_for_ints::KeyType,test_for_ints::ValueType,LRUCache<test_for_ints::ICallback,FileStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>>::remove' in 'int_test'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40): warning C4267: 'argument': conversion from 'size_t' to 'const KeyType', possible loss of data
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40): warning C4267:         with
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40): warning C4267:         [
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40): warning C4267:             KeyType=test_for_ints::KeyType
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40): warning C4267:         ]
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(94,40):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(723,13):
+          see reference to function template instantiation 'void threaded_test<test_for_threaded::BPlusStoreType>(BPlusStoreType *,int,int,int)' being compiled
+          with
+          [
+              BPlusStoreType=test_for_threaded::BPlusStoreType
+          ]
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(183,45):
+          see reference to function template instantiation 'void search_not_found_concurent<test_for_threaded::BPlusStoreType>(BPlusStoreType *,int,int)' being compiled
+          with
+          [
+              BPlusStoreType=test_for_threaded::BPlusStoreType
+          ]
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(282,25): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(282,25):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(612,39):
+          see reference to class template instantiation 'IndexNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(271,14):
+          while compiling class template member function 'void IndexNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::serialize(char *&,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(22,20):
+              see the first reference to 'IndexNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::serialize' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\SSARCCache.hpp(70,3): warning C4297: 'SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>::~SSARCCache': function assumed not to throw an exception but does
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\SSARCCache.hpp(70,3):
+      destructor or deallocator has a (possibly implicit) non-throwing exception specification
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\SSARCCache.hpp(70,3):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(36,24):
+          see reference to class template instantiation 'SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\SSARCCache.hpp(67,3):
+          while compiling class template member function 'SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>::~SSARCCache(void)'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\SSARCCache.hpp(220,1):
+              see the first reference to 'SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>::~SSARCCache' in 'SSARCCache<cache_team_test::ICallback,VolatileStorage<cache_team_test::ICallback,cache_team_test::ObjectUIDType,SSARCCacheObject,TypeMarshaller,cache_team_test::DataNodeType,cache_team_test::IndexNodeType>>::~SSARCCache'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1020,33): warning C4267: 'initializing': conversion from 'size_t' to 'uint32_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1020,33):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1012,14):
+          while compiling class template member function 'void LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushAllItemsToStorage(void)'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(90,25):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushAllItemsToStorage' in 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::~LRUCache'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1447,1):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::~LRUCache' in 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::~LRUCache'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(52,11): warning C4101: 'uidObjectType': unreferenced local variable
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(52,11):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\BPlusStore.hpp(40,78):
+          see reference to class template instantiation 'LRUCacheObject<TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCacheObject.hpp(98,2):
+          while compiling class template member function 'LRUCacheObject<TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>::LRUCacheObject(const char *)'
+              C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\include\xutility(406,61):
+              see the first reference to 'LRUCacheObject<TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>::LRUCacheObject' in 'std::_Construct_in_place'
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCacheObject.hpp(101,33):
+          see reference to function template instantiation 'void TypeMarshaller::deserialize<std::variant<std::shared_ptr<test_for_ints::DataNodeType>,std::shared_ptr<test_for_ints::IndexNodeType>>,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>(const char *,ObjectType &)' being compiled
+          with
+          [
+              ObjectType=std::variant<std::shared_ptr<test_for_ints::DataNodeType>,std::shared_ptr<test_for_ints::IndexNodeType>>
+          ]
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(294,27): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(294,27):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNodeROpt.hpp(283,14):
+          while compiling class template member function 'void DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::writeToStream(std::fstream &,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(14,24):
+              see the first reference to 'DataNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::writeToStream' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(186,27): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(186,27):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(177,14):
+          while compiling class template member function 'void DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::writeToStream(std::fstream &,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(14,24):
+              see the first reference to 'DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::writeToStream' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(140,27): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(140,27):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\DataNode.hpp(131,14):
+          while compiling class template member function 'void DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::serialize(char *&,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(22,20):
+              see the first reference to 'DataNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,1>::serialize' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(240,25): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(240,25):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNodeROpt.hpp(231,14):
+          while compiling class template member function 'void IndexNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::writeToStream(std::fstream &,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(14,24):
+              see the first reference to 'IndexNodeROpt<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::writeToStream' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(188,23): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(188,23):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\sandbox\sandbox.cpp(560,39):
+          see reference to class template instantiation 'IndexNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>' being compiled
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(179,14):
+          while compiling class template member function 'void IndexNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::serialize(char *&,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(22,20):
+              see the first reference to 'IndexNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::serialize' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(189,25): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(146,23): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(146,23):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(137,14):
+          while compiling class template member function 'void IndexNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::writeToStream(std::fstream &,uint8_t &,uint32_t &) const'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\TypeMarshaller.hpp(14,24):
+              see the first reference to 'IndexNode<test_for_ints::KeyType,test_for_ints::ValueType,test_for_ints::ObjectUIDType,test_for_ints::DataNodeType,2>::writeToStream' in 'TypeMarshaller::serialize::<lambda_1>::operator ()'
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libbtree\IndexNode.hpp(147,25): warning C4267: 'initializing': conversion from 'size_t' to 'uint16_t', possible loss of data
+  (compiling source file '../sandbox/sandbox.cpp')
+  
+C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(844,26): warning C4018: '<=': signed/unsigned mismatch
+  (compiling source file '../sandbox/sandbox.cpp')
+      C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(844,26):
+      the template instantiation context (the oldest one first) is
+          C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(831,14):
+          while compiling class template member function 'void LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushItemsToStorage(void)'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(1422,32):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::flushItemsToStorage' in 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::handlerCacheFlush'
+              C:\Users\Rajesh\OneDrive\Desktop\dbdb\libcache\LRUCache.hpp(116,22):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::handlerCacheFlush' in 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::LRUCache'
+              C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\include\xutility(406,61):
+              see the first reference to 'LRUCache<test_for_ints::ICallback,PMemStorage<test_for_ints::ICallback,test_for_ints::ObjectUIDType,LRUCacheObject,TypeMarshaller,test_for_ints::DataNodeType,test_for_ints::IndexNodeType>>::LRUCache' in 'std::_Construct_in_place'
+  
+  sandbox.vcxproj -> C:\Users\Rajesh\OneDrive\Desktop\dbdb\x64\Debug\sandbox.exe
