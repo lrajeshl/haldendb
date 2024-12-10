@@ -166,7 +166,7 @@ void threaded_test(BPlusStoreType* ptrTree, int degree, int total_entries, int t
         {
             int nTotal = total_entries / thread_count;
             vtThreads.push_back(std::thread(delete_concurent<BPlusStoreType>, ptrTree, nIdx * nTotal, nIdx * nTotal + nTotal));
-        }   
+        }
 
         it = vtThreads.begin();
         while (it != vtThreads.end())
@@ -292,10 +292,10 @@ void fptree_threaded_test(BPlusStoreType* ptrTree, int total_entries, int thread
         << std::endl;
 
 #ifdef __TREE_WITH_CACHE__
-        size_t nLRU, nMap;
-        ptrTree->getCacheState(nLRU, nMap);
+    size_t nLRU, nMap;
+    ptrTree->getCacheState(nLRU, nMap);
 
-        assert(nLRU == 1 && nMap == 1);
+    assert(nLRU == 1 && nMap == 1);
 #endif //__TREE_WITH_CACHE__
 }
 #endif //__CONCURRENT__
@@ -360,7 +360,7 @@ void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
 
         assert(nLRU == 1 && nMap == 1);
 #endif //__TREE_WITH_CACHE__
-}
+    }
 
     for (size_t nTestCntr = 0; nTestCntr < 2; nTestCntr++)
     {
@@ -402,7 +402,7 @@ void int_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
             ErrorCode ec = ptrTree->search(nCntr, nValue);
 
             assert(ec == ErrorCode::KeyDoesNotExist);
-    }
+        }
 
 #ifdef __TREE_WITH_CACHE__
         size_t nLRU, nMap;
@@ -522,10 +522,10 @@ void string_test(BPlusStoreType* ptrTree, int degree, int total_entries)
 
 void test_for_ints()
 {
-    for( size_t nDegree = 1000; nDegree < 2000; nDegree = nDegree + 200)
+    for (size_t nDegree = 1000; nDegree < 2000; nDegree = nDegree + 200)
     {
         std::cout << "||||||| Running 'test_for_ints' for nDegree:" << nDegree << std::endl;
-        
+
 #ifndef __TREE_WITH_CACHE__
         {
             typedef int KeyType;
@@ -571,7 +571,7 @@ void test_for_ints()
             typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
             typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024* 1024 * 1024, FILE_STORAGE_PATH);
+            BPlusStoreType ptrTree(nDegree, 100, 1024, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
             ptrTree.init<DataNodeType>();
 
             int_test<BPlusStoreType>(&ptrTree, 1000000);
@@ -654,7 +654,7 @@ void test_for_ints()
 
 void test_for_string()
 {
-    for (size_t nDegree = 3; nDegree < 40; nDegree++) 
+    for (size_t nDegree = 3; nDegree < 40; nDegree++)
     {
         std::cout << "||||||| Running 'test_for_string' for nDegree:" << nDegree << std::endl;
 
@@ -687,7 +687,7 @@ void test_for_threaded()
     for (size_t nDegree = 200; nDegree < 1200; nDegree = nDegree + 200)
     {
         std::cout << "||||||| Running 'test_for_threaded' for nDegree:" << nDegree << std::endl;
-//continue;
+        //continue;
 #ifndef __TREE_WITH_CACHE__
         {
             typedef int KeyType;
@@ -848,7 +848,7 @@ void fptree_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
         << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "us"
         << ", " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "ns]"
         << std::endl;
- 
+
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
     begin = std::chrono::steady_clock::now();
@@ -882,8 +882,8 @@ void fptree_test(BPlusStoreType* ptrTree, size_t nMaxNumber)
         << std::endl;
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
-return;
-ptrTree->flush();
+    return;
+    ptrTree->flush();
 
     begin = std::chrono::steady_clock::now();
 
@@ -931,10 +931,10 @@ void fptree_bm()
     // Single-threaded test
     {
         size_t nMaxNumber = 5000000;
-	
+
         for (size_t nDegree = 2000; nDegree < 4000; nDegree = nDegree + 100)
         {
-		//break;
+            //break;
             size_t nInternalNodeSize = (nDegree - 1) * sizeof(ValueType) + nDegree * sizeof(ObjectUIDType) + sizeof(int*);
             size_t nTotalInternalNodes = nMaxNumber / nDegree;
             //size_t nMemoryOfNodes = nTotalNodes * nNodeSize;
@@ -954,7 +954,7 @@ void fptree_bm()
             for (size_t nCntr = 0; nCntr < 1; nCntr++)
             {
                 //BPlusStoreType ptrTree(nDegree, nTotalMemoryInMB, nBlockSize, 25ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
-                BPlusStoreType ptrTree(nDegree, 5* nTotalMemoryInMB, nBlockSize, 120ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH_II);
+                BPlusStoreType ptrTree(nDegree, 5 * nTotalMemoryInMB, nBlockSize, 120ULL * 1024 * 1024 * 1024, PMEM_STORAGE_PATH_II);
                 ptrTree.init<DataNodeType>();
 
                 std::cout << "Iteration = " << nCntr + 1 << std::endl;
@@ -962,12 +962,12 @@ void fptree_bm()
                 std::this_thread::sleep_for(std::chrono::seconds(10));
                 //break;
             }
-	    std::cout << std::endl;
+            std::cout << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(10));
             //break;
         }
     }
-return;
+    return;
 #ifdef __CONCURRENT__
     // Multi-threaded test
     {
@@ -1001,7 +1001,7 @@ return;
                 fptree_threaded_test<BPlusStoreType>(&ptrTree, nMaxNumber, 12);
                 std::this_thread::sleep_for(std::chrono::seconds(10));
             }
-	    std::cout << std::endl;
+            std::cout << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(10));
         }
     }
@@ -1022,17 +1022,14 @@ void cache_team_test()
     //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     //typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
-    typedef LRUCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
+    typedef SSARCCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
     typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
-     
-    //typedef SSARCCacheObject<TypeMarshaller, DataNodeType, IndexNodeType> ObjectType;
-    //typedef IFlushCallback<ObjectUIDType, ObjectType> ICallback;
 
-    typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
+    //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
 
-    //typedef BPlusStore<ICallback, KeyType, ValueType, SSARCCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, SSARCCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
-    //BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
+    typedef BPlusStore<ICallback, KeyType, ValueType, SSARCCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, SSARCCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
+    BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
 
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
@@ -1092,7 +1089,7 @@ int main(int argc, char* argv[])
 
     typedef DataNodeROpt<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     typedef IndexNodeROpt<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
-    
+
     //typedef DataNode<KeyType, ValueType, ObjectUIDType, TYPE_UID::DATA_NODE_INT_INT> DataNodeType;
     //typedef IndexNode<KeyType, ValueType, ObjectUIDType, DataNodeType, TYPE_UID::INDEX_NODE_INT_INT> IndexNodeType;
 
@@ -1101,10 +1098,10 @@ int main(int argc, char* argv[])
 
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, FileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(24, 1024, 512, 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
-    
+
     typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, VolatileStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     BPlusStoreType ptrTree(24, 1024, 1024, 10ULL * 1024 * 1024 * 1024);
-    
+
     //typedef BPlusStore<ICallback, KeyType, ValueType, LRUCache<ICallback, PMemStorage<ICallback, ObjectUIDType, LRUCacheObject, TypeMarshaller, DataNodeType, IndexNodeType>>> BPlusStoreType;
     //BPlusStoreType ptrTree(48, 4096 ,512 , 10ULL * 1024 * 1024 * 1024, FILE_STORAGE_PATH);
 
